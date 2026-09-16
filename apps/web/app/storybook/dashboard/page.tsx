@@ -14,6 +14,10 @@ import {
   ArrowRight,
   TrendingUp,
   Coins,
+  Package,
+  Truck,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +34,75 @@ interface StorySummary {
   childName?: string;
   pageCount?: number;
   heroName?: string;
+  coverImage?: string | null;
+}
+
+interface CustomerOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  totalAmount: number;
+  currency: string;
+  city: string;
+  createdAt: string;
+  story: {
+    id: string;
+    title: string;
+    childName?: string | null;
+  };
+}
+
+const ORDER_STEPS = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
+
+const ORDER_LABELS: Record<string, string> = {
+  PENDING: "Order received",
+  PROCESSING: "Being prepared",
+  SHIPPED: "On the way",
+  DELIVERED: "Delivered",
+};
+
+function orderStatusIcon(status: string) {
+  if (status === "DELIVERED") return <CheckCircle2 className="w-3.5 h-3.5" />;
+  if (status === "SHIPPED") return <Truck className="w-3.5 h-3.5" />;
+  if (status === "PROCESSING") return <Package className="w-3.5 h-3.5" />;
+  return <Clock className="w-3.5 h-3.5" />;
+}
+
+/** Visual progress of an order: received → preparing → shipped → delivered. */
+function OrderProgress({ status }: { status: string }) {
+  if (status === "CANCELLED") {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-semibold">
+        <XCircle className="w-3.5 h-3.5" /> Cancelled
+      </span>
+    );
+  }
+
+  const current = ORDER_STEPS.indexOf(status as (typeof ORDER_STEPS)[number]);
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center">
+        {ORDER_STEPS.map((step, i) => (
+          <div key={step} className="flex items-center">
+            <div
+              className={`w-3 h-3 rounded-full transition-colors ${
+                i <= current ? "bg-amber-500" : "bg-stone-200"
+              } ${i === current ? "ring-4 ring-amber-100" : ""}`}
+            />
+            {i < ORDER_STEPS.length - 1 && (
+              <div className={`w-7 h-0.5 rounded ${i < current ? "bg-amber-400" : "bg-stone-200"}`} />
+            )}
+          </div>
+        ))}
+      </div>
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+        {orderStatusIcon(status)}
+        {ORDER_LABELS[status] ?? status}
+      </span>
+    </div>
+  );
 }
 
 interface StorybookStats {
@@ -59,6 +132,7 @@ export default function StorybookDashboardPage() {
   const { getToken, user } = useAuth();
   const { credits, loading: creditsLoading } = useCredits();
   const [stats, setStats] = useState<StorybookStats>(EMPTY_STATS);
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,13 +141,20 @@ export default function StorybookDashboardPage() {
         const token = await getToken?.();
         if (!token) return;
 
-        const { data } = await axios.get(`${BACKEND_URL}/storybook/dashboard/stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const [{ data }, ordersResponse] = await Promise.all([
+          axios.get(`${BACKEND_URL}/storybook/dashboard/stats`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get(`${BACKEND_URL}/orders`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
         setStats(data);
+        setOrders(ordersResponse.data.orders || []);
       } catch (error) {
         console.error("Unable to load storybook stats", error);
         setStats(EMPTY_STATS);
+        setOrders([]);
       } finally {
         setLoading(false);
       }
@@ -224,6 +305,85 @@ export default function StorybookDashboardPage() {
         </Card>
       </section>
 
+      {/* My Orders */}
+      <section>
+        <Card className="p-6 border-stone-100">
+          <div className="mb-6">
+            <h2 className="font-serif text-2xl font-bold text-stone-900">My Orders</h2>
+            <p className="text-stone-500 text-sm mt-1">
+              Track your printed storybooks from order to delivery.
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/50 py-10 text-center">
+              <Package className="w-10 h-10 mx-auto text-stone-300 mb-3" />
+              <p className="text-stone-600 font-medium">No orders yet</p>
+              <p className="text-stone-400 text-sm mt-1">
+                Open a finished story and order your printed book.
+              </p>
+              <Link href="/stories">
+                <Button variant="outline" className="mt-4 rounded-full">
+                  Browse My Stories
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl bg-stone-50 border border-stone-100 hover:bg-stone-100/70 transition-colors"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center shrink-0">
+                    <Package className="w-6 h-6 text-amber-600" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-medium text-stone-900 truncate">{order.story.title}</h4>
+                      <span className="font-mono text-[11px] text-stone-400">
+                        {order.orderNumber}
+                      </span>
+                    </div>
+                    <p className="text-sm text-stone-500 flex items-center gap-1.5 mt-1">
+                      <Clock className="w-3 h-3" />
+                      {new Date(order.createdAt).toLocaleDateString()}
+                      {` • ${order.currency} ${order.totalAmount.toFixed(2)}`}
+                      {order.city ? ` • ${order.city}` : ""}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:items-end gap-2 shrink-0">
+                    <OrderProgress status={order.status} />
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                          order.paymentStatus === "PAID"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-stone-100 text-stone-600"
+                        }`}
+                      >
+                        {order.paymentStatus === "PAID" ? "Paid" : "Cash on Delivery"}
+                      </span>
+                      <Link href={`/stories/${order.story.id}`}>
+                        <Button variant="ghost" size="sm" className="rounded-full text-xs">
+                          View Book
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </section>
+
       {/* Recent Stories */}
       <section>
         <Card className="p-6 border-stone-100">
@@ -265,8 +425,16 @@ export default function StorybookDashboardPage() {
                   key={story.id}
                   className="flex items-center gap-4 p-4 rounded-2xl bg-stone-50 hover:bg-stone-100 transition-colors"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                    <BookOpen className="w-6 h-6 text-amber-600" />
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center shrink-0">
+                    {story.coverImage ? (
+                      <img
+                        src={story.coverImage}
+                        alt={story.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <BookOpen className="w-6 h-6 text-amber-600" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-stone-900 truncate">

@@ -457,6 +457,8 @@ router.get("/dashboard/stats", authMiddleware, async (req, res) => {
       childName: story.childName,
       pageCount: story.pages.length,
       heroName: story.model?.name || "Hero",
+      coverImage:
+        story.pages.find((p) => p.status === "Generated" && p.imageUrl)?.imageUrl ?? null,
     }));
 
     res.json({

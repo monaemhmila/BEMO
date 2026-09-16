@@ -11,6 +11,7 @@ import {
   BarChart3, Zap, ArrowUpRight, Download,
   X, UserCheck, FileText,
   PencilLine, ScanFace, Save, Upload,
+  ShoppingBag, Truck, Package, MapPin,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { handleImageError } from "../../components/ui/image-fallback";
@@ -91,7 +92,34 @@ interface FaceLabResult {
   references: { center: string; right: string; left: string };
 }
 
-type TabType = "overview" | "users" | "stories" | "facelab" | "models" | "activity";
+interface AdminOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  totalAmount: number;
+  currency: string;
+  customerName: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: { id: string; email: string; name?: string | null };
+  story: { id: string; title: string; childName?: string | null };
+}
+
+interface OrdersSummary {
+  PENDING: number;
+  PROCESSING: number;
+  SHIPPED: number;
+  DELIVERED: number;
+  CANCELLED: number;
+}
+
+type TabType = "overview" | "users" | "stories" | "facelab" | "orders" | "models" | "activity";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -339,7 +367,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
       setSourceImage(dataUrl);
       setSourceName(file.name);
       setResult(null);
-    } catch (err) {
+    } catch {
       toast.error("Could not read that image file");
     }
   };
@@ -360,7 +388,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
           ? "Face detected!"
           : "No face found — canvases use the full image"
       );
-    } catch (err) {
+    } catch {
       toast.error("Face lab request failed");
     } finally {
       setLoading(false);
@@ -520,7 +548,7 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
         if (cancelled) return;
         setStory(res.data.story);
         setPages(res.data.story?.pages ?? []);
-      } catch (err) {
+      } catch {
         if (!cancelled) setFailed(true);
       } finally {
         if (!cancelled) setLoading(false);
@@ -553,7 +581,7 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
       );
       toast.success("Story details saved");
       onChanged();
-    } catch (err) {
+    } catch {
       toast.error("Failed to save story details");
     } finally {
       setSaving("");
@@ -578,7 +606,7 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
       );
       toast.success(`Page ${page.pageNumber} saved`);
       onChanged();
-    } catch (err) {
+    } catch {
       toast.error(`Failed to save page ${page.pageNumber}`);
     } finally {
       setSaving("");
@@ -753,6 +781,227 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
   );
 }
 
+// ─── Orders Management ────────────────────────────────────────────────────────
+
+const ORDER_FLOW = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
+
+function OrderStatusBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    PENDING: "bg-amber-500/20 text-amber-400",
+    PROCESSING: "bg-blue-500/20 text-blue-400",
+    SHIPPED: "bg-purple-500/20 text-purple-400",
+    DELIVERED: "bg-emerald-500/20 text-emerald-400",
+    CANCELLED: "bg-red-500/20 text-red-400",
+  };
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${map[status] ?? "bg-white/10 text-white/60"}`}>
+      {status}
+    </span>
+  );
+}
+
+function PaymentBadge({ status }: { status: string }) {
+  const map: Record<string, string> = {
+    PENDING: "bg-stone-500/20 text-stone-300",
+    PAID: "bg-emerald-500/20 text-emerald-400",
+    FAILED: "bg-red-500/20 text-red-400",
+    REFUNDED: "bg-blue-500/20 text-blue-400",
+  };
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${map[status] ?? "bg-white/10 text-white/60"}`}>
+      {status === "PAID" ? "PAID ✓" : status}
+    </span>
+  );
+}
+
+function OrdersTab({ orders, summary, authHeaders, onChanged }: {
+  orders: AdminOrder[];
+  summary: OrdersSummary | null;
+  authHeaders: () => Promise<Record<string, string>>;
+  onChanged: () => void;
+}) {
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const filtered = statusFilter === "ALL" ? orders : orders.filter((o) => o.status === statusFilter);
+
+  const setOrderState = async (
+    id: string,
+    patch: { status?: string; paymentStatus?: string }
+  ) => {
+    setUpdatingId(id);
+    try {
+      const headers = await authHeaders();
+      await axios.put(`${BACKEND_URL}/admin/order/${id}`, patch, { headers });
+      toast.success(`Order updated → ${patch.status ?? patch.paymentStatus}`);
+      onChanged();
+    } catch {
+      toast.error("Failed to update order");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const summaryCards = [
+    { label: "Pending", value: summary?.PENDING ?? 0, cls: "text-amber-400 bg-amber-500/20" },
+    { label: "Processing", value: summary?.PROCESSING ?? 0, cls: "text-blue-400 bg-blue-500/20" },
+    { label: "Shipped", value: summary?.SHIPPED ?? 0, cls: "text-purple-400 bg-purple-500/20" },
+    { label: "Delivered", value: summary?.DELIVERED ?? 0, cls: "text-emerald-400 bg-emerald-500/20" },
+    { label: "Cancelled", value: summary?.CANCELLED ?? 0, cls: "text-red-400 bg-red-500/20" },
+  ];
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {summaryCards.map((card) => (
+          <div key={card.label} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <div className="flex items-center justify-between">
+              <p className="text-white/50 text-xs uppercase tracking-wide">{card.label}</p>
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${card.cls}`}>
+                <Package className="w-3.5 h-3.5" />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-white mt-2">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        {["ALL", ...ORDER_FLOW, "CANCELLED"].map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              statusFilter === s ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+            }`}
+          >
+            {s === "ALL" ? "All" : s}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-white/40 text-xs uppercase font-semibold tracking-wider">
+                <th className="text-left py-3.5 px-4">Order</th>
+                <th className="text-left py-3.5 px-4">Book</th>
+                <th className="text-left py-3.5 px-4">Customer</th>
+                <th className="text-left py-3.5 px-4">Total</th>
+                <th className="text-left py-3.5 px-4">Payment</th>
+                <th className="text-left py-3.5 px-4">Status</th>
+                <th className="text-right py-3.5 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filtered.map((o) => (
+                <tr key={o.id} className="hover:bg-white/5 transition-colors">
+                  <td className="py-3.5 px-4">
+                    <p className="font-mono text-xs text-white font-semibold">{o.orderNumber}</p>
+                    <p className="text-white/30 text-xs mt-0.5">{timeAgo(o.createdAt)}</p>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <a href={`/stories/${o.story.id}`} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white text-xs font-medium underline-offset-2 hover:underline">
+                      {o.story.title}
+                    </a>
+                    {o.story.childName && <p className="text-white/30 text-xs">For: {o.story.childName}</p>}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <p className="text-white/80 text-xs font-medium">{o.customerName}</p>
+                    <p className="text-white/30 text-xs flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3 h-3 shrink-0" /> {o.city} · {o.phone}
+                    </p>
+                    <p className="text-white/30 text-xs mt-0.5">{o.user?.email}</p>
+                  </td>
+                  <td className="py-3.5 px-4 text-white font-semibold text-xs">
+                    {o.currency} {o.totalAmount.toFixed(2)}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <PaymentBadge status={o.paymentStatus} />
+                    {o.paymentStatus === "PENDING" && o.status !== "CANCELLED" && (
+                      <button
+                        onClick={() => setOrderState(o.id, { paymentStatus: "PAID" })}
+                        disabled={updatingId === o.id}
+                        className="mt-1.5 block px-2 py-1 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <OrderStatusBadge status={o.status} />
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <div className="flex items-center justify-end gap-2 flex-wrap">
+                      {o.status === "PENDING" && (
+                        <>
+                          <button
+                            onClick={() => setOrderState(o.id, { status: "PROCESSING" })}
+                            disabled={updatingId === o.id}
+                            className="px-2.5 py-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
+                          >
+                            Process
+                          </button>
+                          <button
+                            onClick={() => setOrderState(o.id, { status: "CANCELLED" })}
+                            disabled={updatingId === o.id}
+                            className="px-2.5 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      {o.status === "PROCESSING" && (
+                        <>
+                          <button
+                            onClick={() => setOrderState(o.id, { status: "SHIPPED" })}
+                            disabled={updatingId === o.id}
+                            className="px-2.5 py-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
+                          >
+                            <Truck className="w-3 h-3 inline mr-1" />
+                            Ship
+                          </button>
+                          <button
+                            onClick={() => setOrderState(o.id, { status: "CANCELLED" })}
+                            disabled={updatingId === o.id}
+                            className="px-2.5 py-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                      {o.status === "SHIPPED" && (
+                        <button
+                          onClick={() => setOrderState(o.id, { status: "DELIVERED" })}
+                          disabled={updatingId === o.id}
+                          className="px-2.5 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
+                        >
+                          <CheckCircle2 className="w-3 h-3 inline mr-1" />
+                          Delivered
+                        </button>
+                      )}
+                      {(o.status === "DELIVERED" || o.status === "CANCELLED") && (
+                        <span className="text-white/20 text-xs">—</span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr><td colSpan={7} className="py-12 text-center text-white/30">No orders found</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -776,6 +1025,8 @@ export default function AdminPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [orderSummary, setOrderSummary] = useState<OrdersSummary | null>(null);
 
   const authHeaders = useCallback(async () => {
     const token = await getToken();
@@ -806,18 +1057,21 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const headers = await authHeaders();
-      const [statsRes, usersRes, storiesRes, modelsRes, activityRes] = await Promise.all([
+      const [statsRes, usersRes, storiesRes, modelsRes, activityRes, ordersRes] = await Promise.all([
         axios.get(`${BACKEND_URL}/admin/stats`, { headers }),
         axios.get(`${BACKEND_URL}/admin/users`, { headers }),
         axios.get(`${BACKEND_URL}/admin/stories`, { headers }),
         axios.get(`${BACKEND_URL}/admin/models`, { headers }),
         axios.get(`${BACKEND_URL}/admin/activity`, { headers }),
+        axios.get(`${BACKEND_URL}/admin/orders`, { headers }),
       ]);
       setStats(statsRes.data);
       setUsers(usersRes.data.users || []);
       setStories(storiesRes.data.stories || []);
       setModels(modelsRes.data.models || []);
       setActivity(activityRes.data.activity || []);
+      setOrders(ordersRes.data.orders || []);
+      setOrderSummary(ordersRes.data.summary || null);
     } catch (err) {
       toast.error("Failed to load admin data");
       console.error(err);
@@ -940,6 +1194,7 @@ export default function AdminPage() {
     { id: "users", label: "Users", icon: <Users className="w-4 h-4" />, count: users.length },
     { id: "stories", label: "Stories", icon: <BookOpen className="w-4 h-4" />, count: stories.length },
     { id: "facelab", label: "Face Lab", icon: <ScanFace className="w-4 h-4" /> },
+    { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" />, count: orders.length },
     { id: "models", label: "AI Models", icon: <Sparkles className="w-4 h-4" />, count: models.length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
   ];
@@ -1087,7 +1342,9 @@ export default function AdminPage() {
                   ? "Dashboard Overview"
                   : activeTab === "facelab"
                     ? "Face Detection Lab"
-                    : activeTab}
+                    : activeTab === "orders"
+                      ? "Order Management"
+                      : activeTab}
               </h1>
               <p className="text-white/40 text-xs mt-0.5">StoryBook AI · Super Admin</p>
             </div>
@@ -1381,6 +1638,16 @@ export default function AdminPage() {
 
             {/* ── FACE LAB TAB ─────────────────────────────────────────────── */}
             {activeTab === "facelab" && <FaceLabTab authHeaders={authHeaders} />}
+
+            {/* ── ORDERS TAB ───────────────────────────────────────────────── */}
+            {activeTab === "orders" && (
+              <OrdersTab
+                orders={orders}
+                summary={orderSummary}
+                authHeaders={authHeaders}
+                onChanged={fetchAll}
+              />
+            )}
 
             {/* ── MODELS TAB ───────────────────────────────────────────────── */}
             {activeTab === "models" && (

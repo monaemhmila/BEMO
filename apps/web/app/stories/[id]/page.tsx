@@ -1,10 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { StoryViewer } from "@/features/storybook";
+import { BookFlipbook } from "@/features/storybook";
 
-export default function StoryReaderPage() {
-  const { id } = useParams<{ id: string }>();
+export default function StoryPage() {
+  const params = useParams<{ id: string }>();
+  const storyId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
-  return <StoryViewer storyId={id} />;
+  if (!storyId) return null;
+
+  return <BookFlipbook storyId={storyId} />;
 }
+

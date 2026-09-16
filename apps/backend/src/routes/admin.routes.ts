@@ -658,4 +658,114 @@ router.post("/face-lab", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────
+// ORDERS
+// ─────────────────────────────────────────
+
+const ORDER_STATUS_VALUES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
+const PAYMENT_STATUS_VALUES = ["PENDING", "PAID", "FAILED", "REFUNDED"] as const;
+
+const UpdateOrderSchema = z.object({
+  status: z.enum(ORDER_STATUS_VALUES).optional(),
+  paymentStatus: z.enum(PAYMENT_STATUS_VALUES).optional(),
+});
+
+/**
+ * GET /admin/orders
+ * All orders with user + story details, plus a per-status summary.
+ * Optional ?status=PENDING|PROCESSING|SHIPPED|DELIVERED|CANCELLED filter.
+ */
+router.get("/orders", async (req, res) => {
+  try {
+    const { status } = req.query as Record<string, string>;
+    const validStatus = (ORDER_STATUS_VALUES as readonly string[]).includes(status ?? "")
+      ? (status as (typeof ORDER_STATUS_VALUES)[number])
+      : undefined;
+
+    const [orders, summaryRows] = await Promise.all([
+      prismaClient.order.findMany({
+        where: validStatus ? { status: validStatus } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 300,
+        include: {
+          user: { select: { id: true, email: true, name: true } },
+          story: { select: { id: true, title: true, childName: true } },
+        },
+      }),
+      prismaClient.order.groupBy({ by: ["status"], _count: true }),
+    ]);
+
+    const summary: Record<(typeof ORDER_STATUS_VALUES)[number], number> = {
+      PENDING: 0,
+      PROCESSING: 0,
+      SHIPPED: 0,
+      DELIVERED: 0,
+      CANCELLED: 0,
+    };
+    for (const row of summaryRows) {
+      summary[row.status] = row._count;
+    }
+
+    res.json({
+      orders: orders.map((o) => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        status: o.status,
+        paymentStatus: o.paymentStatus,
+        paymentMethod: o.paymentMethod,
+        totalAmount: Number(o.totalAmount),
+        currency: o.currency,
+        customerName: o.customerName,
+        phone: o.phone,
+        address: o.address,
+        city: o.city,
+        postalCode: o.postalCode,
+        createdAt: o.createdAt,
+        updatedAt: o.updatedAt,
+        user: o.user,
+        story: o.story,
+      })),
+      summary,
+    });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch admin orders");
+    res.status(500).json({ message: "Failed to fetch orders" });
+  }
+});
+
+/**
+ * PUT /admin/order/:id
+ * Update fulfillment status and/or payment status from the admin dashboard.
+ */
+router.put("/order/:id", async (req, res) => {
+  const parsed = UpdateOrderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const order = await prismaClient.order.update({
+      where: { id: req.params.id },
+      data: parsed.data,
+    });
+    logger.info(
+      { orderId: order.id, status: order.status, paymentStatus: order.paymentStatus },
+      "Order updated from admin dashboard"
+    );
+    res.json({
+      success: true,
+      order: {
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+      },
+    });
+  } catch (error) {
+    logger.error({ error }, "Failed to update order from admin dashboard");
+    res.status(500).json({ message: "Failed to update order" });
+  }
+});
+
 export const adminRouter = router;
