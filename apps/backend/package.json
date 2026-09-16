@@ -18,9 +18,6 @@
     "@aws-sdk/s3-request-presigner": "^3.824.0",
     "@clerk/clerk-sdk-node": "^4.13.23",
     "@fal-ai/client": "^1.4.0",
-    "@tensorflow/tfjs": "^4.22.0",
-    "@vladmandic/face-api": "^1.7.15",
-    "common": "*",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "db": "*",
@@ -30,7 +27,6 @@
     "helmet": "^7.1.0",
     "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
-    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.15.0",
     "pino": "^9.5.0",
     "pino-http": "^10.3.0",
@@ -38,7 +34,8 @@
     "sharp": "^0.33.5",
     "stripe": "^18.2.1",
     "svix": "^1.65.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "common": "*"
   },
   "devDependencies": {
     "@types/cors": "^2.8.18",
