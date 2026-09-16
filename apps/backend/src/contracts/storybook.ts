@@ -30,7 +30,7 @@ export type TextPosition =
  */
 export type CharacterSide = "left" | "right";
 
-export const STORYBOOK_PAGE_COUNT = 5;
+export const STORYBOOK_PAGE_COUNT = 10;
 
 export const STORYBOOK_IMAGE_ASPECT_RATIO = "16:9";
 
@@ -234,4 +234,5 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
  * Reusable, strongly-worded negative prompt for storybook image generation.
  * Guards identity, anatomy, and the no-AI-text rule.
  */
-export const STORYBOOK_NEGATIVE_PROMPT = "";
+export const STORYBOOK_NEGATIVE_PROMPT =
+  "text, typography, words, letters, font, watermark, signature, subtitles, signs, speech bubbles, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, extra toes, deformed limbs, blurry, distorted";

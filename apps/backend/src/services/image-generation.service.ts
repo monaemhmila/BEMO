@@ -3,6 +3,7 @@ import { logger } from "../lib/logger";
 import { env } from "../config/env";
 import {
   STORYBOOK_IMAGE_ASPECT_RATIO,
+  STORYBOOK_NEGATIVE_PROMPT,
 } from "../contracts/storybook";
 
 interface ImageGenerationRequest {
@@ -187,6 +188,8 @@ export class ImageGenerationService {
     const input: Record<string, unknown> = {
       prompt: this.buildGrokPrompt(request),
 
+      negative_prompt: STORYBOOK_NEGATIVE_PROMPT,
+
       num_images: 1,
 
       // Landscape 16:9 wide cinematic frame; cropped to A4 by the PDF service.
@@ -218,9 +221,7 @@ export class ImageGenerationService {
   }
 
   /**
-   * Build a simple storybook image prompt.
-   * If a child reference is provided, instructs the model to use the kid face
-   * without changing anything in the scene created by the AI.
+   * Build a storybook image prompt with anatomy and textless guarantees.
    */
   buildStorybookImagePrompt(input: {
     sceneDescription: string;
@@ -228,27 +229,30 @@ export class ImageGenerationService {
     childName?: string;
   }): string {
     const scene = input.sceneDescription.trim();
-    const suffix = " (no text, no words, no letters, no typography)";
+    const qualityDirectives = "storybook illustration, correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs";
+
     if (input.hasReference) {
-      return `use the kid face without changing anything in the scene created by the ai. ${scene}${suffix}`;
+      return `use the kid face without changing anything in the scene created by the ai. ${scene}. ${qualityDirectives}`;
     }
-    return `${scene}${suffix}`;
+    return `${scene}. ${qualityDirectives}`;
   }
 
   /**
    * Assemble the final prompt string for the Grok Imagine API.
-   * Short and simple: uses the AI scene, and if a child reference is present,
-   * instructs to use the kid face without changing anything in the scene.
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
     const scene = request.prompt.trim();
-    const suffix = " (no text, no words, no letters, no typography)";
-    const finalScene = scene.includes("no text") ? scene : `${scene}${suffix}`;
-    
-    if (request.imageUrl && !finalScene.includes("use the kid face")) {
-      return `use the kid face without changing anything in the scene created by the ai. ${finalScene}`;
+    const qualityDirectives = "correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs";
+
+    let baseScene = scene;
+    if (!baseScene.includes("completely textless")) {
+      baseScene = `${baseScene}. ${qualityDirectives}`;
     }
-    return finalScene;
+
+    if (request.imageUrl && !baseScene.startsWith("use the kid face")) {
+      return `use the kid face without changing anything in the scene created by the ai. ${baseScene}`;
+    }
+    return baseScene;
   }
 
   private delay(ms: number): Promise<void> {

@@ -40,9 +40,9 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
   try {
     const validation = GenerateStorySchema.safeParse(req.body);
     if (!validation.success) {
-      res.status(400).json({ 
-        message: "Invalid input", 
-        errors: validation.error.flatten() 
+      res.status(400).json({
+        message: "Invalid input",
+        errors: validation.error.flatten()
       });
       return;
     }
@@ -74,14 +74,14 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     // Generate story script
     const script = childName && childAge
       ? await storyService.generatePersonalizedStoryScript(model.name, {
-          childName,
-          childAge,
-          theme,
-          storyLength: storyLength || "short",
-          category: category || "adventure",
-          dedication,
-          language,
-        })
+        childName,
+        childAge,
+        theme,
+        storyLength: storyLength || "short",
+        category: category || "adventure",
+        dedication,
+        language,
+      })
       : await storyService.generateStoryScript(model.name, theme, language);
 
     // Create story and pages in database
@@ -93,7 +93,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       { childName, childAge, storyLength, category, dedication, includeAudio, voiceId }
     );
 
-// Trigger image generation for each page
+    // Trigger image generation for each page
     const generationPromises = pages.map((page) =>
       storyService.triggerPageGeneration(
         page.id,
@@ -203,7 +203,7 @@ router.post("/:id/retry-page", authMiddleware, async (req, res) => {
 
     // Verify ownership
     const page = await prismaClient.storyPage.findFirst({
-      where: { 
+      where: {
         id: pageId,
         story: { userId: req.userId! }
       },
@@ -245,8 +245,8 @@ router.post("/:id/generate-audio", authMiddleware, async (req, res) => {
     // Check if story is complete
     const incompletePage = story.pages.find((p) => p.status !== "Generated");
     if (incompletePage) {
-      res.status(400).json({ 
-        message: "Story images must be complete before generating audio" 
+      res.status(400).json({
+        message: "Story images must be complete before generating audio"
       });
       return;
     }

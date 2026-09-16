@@ -101,8 +101,8 @@ For each page:
 - Write a charming paragraph of 2-4 sentences of story text.
 - Create a clear visual scene.
 - Keep the hero as the main character.
-- Do not include text, words, signs, logos, or speech bubbles
-  in the image description.
+- Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
+- Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
 Return ONLY valid JSON:
 
@@ -189,9 +189,10 @@ Vary the setting from page to page so the scenes each feel fresh and beautiful.
 For each page:
 - Write the story text.
 - Create a clear visual scene description that fills the whole 16:9 landscape frame.
-- Do not include text, letters, signs, logos, or speech bubbles in imageDescription.
+- Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.
+- Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
 Return ONLY valid JSON:
 
