@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { imageGenerationService } from "../services/image-generation.service";
+import {
+  faceCanvasService,
+  FaceReferences,
+  getReferenceForPage,
+} from "../services/face-canvas.service";
 import { PDFService } from "../services/pdf.service";
 import { logger } from "../lib/logger";
 import { z } from "zod";
@@ -37,6 +42,26 @@ router.post("/simple", authMiddleware, async (req, res) => {
   const { title, pages, childImage } = validation.data;
 
   try {
+    // Generate the positioned face references ONCE per storybook from the
+    // uploaded photo (local detection + white-canvas compositing), then upload
+    // each canvas once so page calls reuse the URL instead of re-uploading
+    // the raw child photo on every page.
+    let storyRefs: FaceReferences | null = null;
+    if (childImage) {
+      try {
+        const faceRefs = await faceCanvasService.generateFaceReferences(childImage);
+        const [center, right, left] = await Promise.all([
+          imageGenerationService.uploadReferenceImage(faceRefs.center),
+          imageGenerationService.uploadReferenceImage(faceRefs.right),
+          imageGenerationService.uploadReferenceImage(faceRefs.left),
+        ]);
+        storyRefs = { center, right, left };
+        logger.info("Positioned face references generated and uploaded for storybook");
+      } catch (err) {
+        logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");
+      }
+    }
+
     // Generate images synchronously for each page
     const generatedPages = [] as {
       pageNumber: number;
@@ -49,10 +74,17 @@ router.post("/simple", authMiddleware, async (req, res) => {
       const pageNumber = i + 1;
       let imageUrl: string | null = null;
       if (childImage) {
+        // Cover uses the centered reference; later pages pick the side from
+        // getPageComposition(pageNumber).characterSide so the reference framing
+        // matches the requested character placement.
+        const referenceUrl = storyRefs
+          ? getReferenceForPage(storyRefs, pageNumber)
+          : childImage;
+
         imageUrl = await imageGenerationService.generateImageSync({
           prompt,
           aspectRatio: "16:9",
-          imageUrl: childImage,
+          imageUrl: referenceUrl,
         });
       } else {
         imageUrl = await imageGenerationService.generateImageSync({

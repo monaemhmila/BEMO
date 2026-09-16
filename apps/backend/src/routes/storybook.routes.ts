@@ -7,6 +7,11 @@ import { CreditService } from "../services/credit.service";
 import { ImageGenerationService } from "../services/image-generation.service";
 import { PDFService } from "../services/pdf.service";
 import { storyGenerationLimiter } from "../middleware/rateLimiter";
+import {
+  faceCanvasService,
+  FaceReferences,
+  getReferenceForPage,
+} from "../services/face-canvas.service";
 import { logger } from "../lib/logger";
 import { z } from "zod";
 
@@ -670,6 +675,24 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
   try {
     logger.info({ childName, theme, storyLength }, "Starting no-training PDF storybook generation");
 
+    // Generate the positioned face references ONCE per story from the uploaded
+    // photo: detect + crop locally (no network), place on a white canvas at
+    // center / 75% / 25%, then upload each canvas to fal storage a single time
+    // so page calls reuse the URL instead of re-uploading the raw photo.
+    let storyRefs: FaceReferences | null = null;
+    try {
+      const faceRefs = await faceCanvasService.generateFaceReferences(childImage);
+      const [center, right, left] = await Promise.all([
+        imageService.uploadReferenceImage(faceRefs.center),
+        imageService.uploadReferenceImage(faceRefs.right),
+        imageService.uploadReferenceImage(faceRefs.left),
+      ]);
+      storyRefs = { center, right, left };
+      logger.info("Positioned face references generated and uploaded for story");
+    } catch (err) {
+      logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");
+    }
+
     // Parent-confirmed identity facts are optional; the uploaded portrait is always the authority.
     const identityFacts = [
       hairColor ? `${hairColor} hair` : "",
@@ -708,10 +731,17 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       script.pages.map(async (page) => {
         const scenePrompt = `${childName} ${page.imageDescription}`;
 
+        // Cover uses the centered reference; every other page picks the side
+        // from getPageComposition(pageNumber).characterSide so the reference
+        // framing always matches the requested character placement.
+        const referenceUrl = storyRefs
+          ? getReferenceForPage(storyRefs, page.pageNumber)
+          : childImage;
+
         const imageUrl = await imageService.generateImageSync({
           prompt: scenePrompt,
           aspectRatio: "16:9",
-          imageUrl: childImage,
+          imageUrl: referenceUrl,
           childName,
         }).catch((err) => {
           logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for page, continuing without image");

@@ -10,6 +10,7 @@ import {
   UserX, Eye, Clock,
   BarChart3, Zap, ArrowUpRight, Download,
   X, UserCheck, FileText,
+  PencilLine, ScanFace, Save, Upload,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { handleImageError } from "../../components/ui/image-fallback";
@@ -78,7 +79,19 @@ interface ActivityItem {
   time: string;
 }
 
-type TabType = "overview" | "users" | "stories" | "models" | "activity";
+interface FaceLabDetection {
+  found: boolean;
+  box?: { x: number; y: number; width: number; height: number };
+  score?: number;
+  imageSize?: { width: number; height: number };
+}
+
+interface FaceLabResult {
+  detection: FaceLabDetection;
+  references: { center: string; right: string; left: string };
+}
+
+type TabType = "overview" | "users" | "stories" | "facelab" | "models" | "activity";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -288,6 +301,458 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditCredits }: { user: Admi
   );
 }
 
+// ─── Face Lab (detection test + canvas downloads) ────────────────────────────
+
+/** Downscale an uploaded photo client-side so the admin request stays small. */
+async function fileToDataUrl(file: File, maxSize = 1024, quality = 0.85): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas not supported in this browser");
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+function downloadDataUrl(dataUrl: string, filename: string) {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string, string>> }) {
+  const [sourceImage, setSourceImage] = useState<string | null>(null);
+  const [sourceName, setSourceName] = useState("");
+  const [result, setResult] = useState<FaceLabResult | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      setSourceImage(dataUrl);
+      setSourceName(file.name);
+      setResult(null);
+    } catch (err) {
+      toast.error("Could not read that image file");
+    }
+  };
+
+  const runDetection = async () => {
+    if (!sourceImage) return;
+    setLoading(true);
+    try {
+      const headers = await authHeaders();
+      const res = await axios.post(
+        `${BACKEND_URL}/admin/face-lab`,
+        { image: sourceImage },
+        { headers }
+      );
+      setResult(res.data);
+      toast.success(
+        res.data.detection.found
+          ? "Face detected!"
+          : "No face found — canvases use the full image"
+      );
+    } catch (err) {
+      toast.error("Face lab request failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cards = result
+    ? [
+        { label: "Left (25%)", hint: "pages with the character on the left", dataUrl: result.references.left, filename: "face-left-canvas.jpg", accent: "bg-purple-500/20 text-purple-400" },
+        { label: "Center (50%)", hint: "cover page", dataUrl: result.references.center, filename: "face-center-canvas.jpg", accent: "bg-blue-500/20 text-blue-400" },
+        { label: "Right (75%)", hint: "pages with the character on the right", dataUrl: result.references.right, filename: "face-right-canvas.jpg", accent: "bg-emerald-500/20 text-emerald-400" },
+      ]
+    : [];
+
+  return (
+    <div className="space-y-6">
+      {/* Upload + run */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+        <h3 className="font-semibold text-white mb-1">Test Face Detection</h3>
+        <p className="text-white/40 text-xs mb-4">
+          Upload a child photo — detection runs locally (tiny face detector), then the face is placed on a white
+          canvas at the left (25%), center (50%) and right (75%) positions. No image API is called.
+        </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-semibold transition-colors">
+            <Upload className="w-4 h-4" />
+            {sourceName || "Choose Photo"}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ""; }}
+            />
+          </label>
+          <button
+            onClick={runDetection}
+            disabled={!sourceImage || loading}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-colors"
+          >
+            <ScanFace className={`w-4 h-4 ${loading ? "animate-pulse" : ""}`} />
+            {loading ? "Detecting..." : "Run Detection"}
+          </button>
+          {sourceImage && (
+            <img src={sourceImage} alt="Uploaded source" className="w-14 h-14 rounded-xl object-cover border border-white/10" />
+          )}
+        </div>
+      </div>
+
+      {/* Detection report */}
+      {result && (
+        <div className={`rounded-2xl border p-5 ${result.detection.found ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
+          <div className="flex items-center gap-3">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${result.detection.found ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+              {result.detection.found ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+            </div>
+            <div className="min-w-0">
+              <p className="font-semibold text-white text-sm">
+                {result.detection.found
+                  ? "Face detected"
+                  : "No face detected — canvases use the full image"}
+              </p>
+              {result.detection.found && result.detection.box && result.detection.imageSize && (
+                <p className="text-white/40 text-xs mt-0.5">
+                  score {((result.detection.score ?? 0) * 100).toFixed(1)}% · box
+                  ({Math.round(result.detection.box.x)}, {Math.round(result.detection.box.y)})
+                  {Math.round(result.detection.box.width)}×{Math.round(result.detection.box.height)}px
+                  · source {result.detection.imageSize.width}×{result.detection.imageSize.height}px
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Positioned canvases with downloads */}
+      {result && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {cards.map((card) => (
+            <div key={card.label} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden flex flex-col">
+              <div className="p-4">
+                <p className="font-semibold text-white text-sm flex items-center gap-2">
+                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold ${card.accent}`}>
+                    {card.label[0]}
+                  </span>
+                  {card.label}
+                </p>
+                <p className="text-white/30 text-xs mt-0.5">{card.hint}</p>
+              </div>
+              <img src={card.dataUrl} alt={card.label} className="w-full aspect-video object-contain bg-white" />
+              <div className="p-3 border-t border-white/5 mt-auto">
+                <button
+                  onClick={() => downloadDataUrl(card.dataUrl, card.filename)}
+                  className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 rounded-xl text-xs font-semibold transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download {card.label.split(" ")[0]} Canvas
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Story Editor ─────────────────────────────────────────────────────────────
+
+const STORY_STATUSES = ["Pending", "Generating", "Completed", "Failed", "Processing"];
+const PAGE_STATUSES = ["Pending", "Generated", "Failed"];
+const STORY_CATEGORIES = ["bedtime", "adventure", "friendship", "learning", "animals", "fantasy", "moral", "seasonal", "science", "history", "emotions", "family"];
+const STORY_LENGTHS = ["short", "medium", "long", "extended"];
+
+const adminInputCls = "w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500";
+
+interface EditorStory {
+  id: string;
+  title: string;
+  status: string;
+  category?: string;
+  childName?: string | null;
+  childAge?: number | null;
+  dedication?: string | null;
+  storyLength?: string;
+  isPublic?: boolean;
+  user?: { email?: string | null; name?: string | null } | null;
+}
+
+interface EditorPage {
+  id: string;
+  pageNumber: number;
+  content: string;
+  imagePrompt: string;
+  imageUrl?: string | null;
+  audioUrl?: string | null;
+  status: string;
+}
+
+function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
+  storyId: string;
+  authHeaders: () => Promise<Record<string, string>>;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [story, setStory] = useState<EditorStory | null>(null);
+  const [pages, setPages] = useState<EditorPage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [saving, setSaving] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const headers = await authHeaders();
+        const res = await axios.get(`${BACKEND_URL}/admin/story/${storyId}`, { headers });
+        if (cancelled) return;
+        setStory(res.data.story);
+        setPages(res.data.story?.pages ?? []);
+      } catch (err) {
+        if (!cancelled) setFailed(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [storyId, authHeaders]);
+
+  const patchPage = (id: string, patch: Partial<EditorPage>) =>
+    setPages((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+
+  const saveMeta = async () => {
+    if (!story) return;
+    setSaving("meta");
+    try {
+      const headers = await authHeaders();
+      await axios.put(
+        `${BACKEND_URL}/admin/story/${story.id}`,
+        {
+          title: story.title,
+          childName: story.childName || undefined,
+          childAge: story.childAge ?? undefined,
+          category: story.category,
+          status: story.status,
+          dedication: story.dedication || undefined,
+          storyLength: story.storyLength,
+          isPublic: !!story.isPublic,
+        },
+        { headers }
+      );
+      toast.success("Story details saved");
+      onChanged();
+    } catch (err) {
+      toast.error("Failed to save story details");
+    } finally {
+      setSaving("");
+    }
+  };
+
+  const savePage = async (page: EditorPage) => {
+    setSaving(page.id);
+    try {
+      const headers = await authHeaders();
+      await axios.put(
+        `${BACKEND_URL}/admin/page/${page.id}`,
+        {
+          content: page.content,
+          imagePrompt: page.imagePrompt,
+          imageUrl: page.imageUrl || null,
+          audioUrl: page.audioUrl || null,
+          status: page.status,
+          pageNumber: page.pageNumber,
+        },
+        { headers }
+      );
+      toast.success(`Page ${page.pageNumber} saved`);
+      onChanged();
+    } catch (err) {
+      toast.error(`Failed to save page ${page.pageNumber}`);
+    } finally {
+      setSaving("");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#17171a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#0f0f11]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 bg-purple-500/20 text-purple-400 rounded-lg flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-white text-base">Story Editor</h3>
+              <p className="text-white/40 text-xs truncate">
+                {story ? `${story.title} · ${story.user?.email ?? "unknown user"}` : "Loading..."}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl">
+            <X className="w-5 h-5 text-white/50" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {loading && <p className="text-white/40 text-sm">Loading story…</p>}
+          {failed && <p className="text-red-400 text-sm">Failed to load this story. It may have been deleted.</p>}
+
+          {story && !loading && (
+            <>
+              {/* Story details */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-white text-sm">Story Details</h4>
+                  <button
+                    onClick={saveMeta}
+                    disabled={saving === "meta"}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    <Save className={`w-3.5 h-3.5 ${saving === "meta" ? "animate-pulse" : ""}`} />
+                    {saving === "meta" ? "Saving..." : "Save Details"}
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Title</label>
+                    <input className={adminInputCls} value={story.title} onChange={(e) => setStory({ ...story, title: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Child Name</label>
+                    <input className={adminInputCls} value={story.childName ?? ""} onChange={(e) => setStory({ ...story, childName: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Child Age</label>
+                    <input
+                      type="number" min={0} max={21} className={adminInputCls}
+                      value={story.childAge ?? ""}
+                      onChange={(e) => setStory({ ...story, childAge: e.target.value === "" ? null : parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Category</label>
+                    <select className={adminInputCls} value={story.category ?? "adventure"} onChange={(e) => setStory({ ...story, category: e.target.value })}>
+                      {STORY_CATEGORIES.map((c) => <option key={c} value={c} className="bg-[#17171a]">{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Status</label>
+                    <select className={adminInputCls} value={story.status} onChange={(e) => setStory({ ...story, status: e.target.value })}>
+                      {STORY_STATUSES.map((s) => <option key={s} value={s} className="bg-[#17171a]">{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/40 mb-1 block">Story Length</label>
+                    <select className={adminInputCls} value={story.storyLength ?? "medium"} onChange={(e) => setStory({ ...story, storyLength: e.target.value })}>
+                      {STORY_LENGTHS.map((l) => <option key={l} value={l} className="bg-[#17171a]">{l}</option>)}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-xs text-white/40 mb-1 block">Dedication</label>
+                    <textarea rows={2} className={adminInputCls} value={story.dedication ?? ""} onChange={(e) => setStory({ ...story, dedication: e.target.value })} />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-white/60">
+                    <input
+                      type="checkbox"
+                      checked={!!story.isPublic}
+                      onChange={(e) => setStory({ ...story, isPublic: e.target.checked })}
+                      className="w-4 h-4 accent-purple-500"
+                    />
+                    Public / shared story
+                  </label>
+                </div>
+              </div>
+
+              {/* Pages */}
+              <div className="space-y-4">
+                <h4 className="font-semibold text-white/60 text-xs uppercase tracking-wider">Pages ({pages.length})</h4>
+                {pages.map((page) => (
+                  <div key={page.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-white text-sm font-bold shrink-0">
+                          {page.pageNumber}
+                        </div>
+                        <select
+                          className="px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          value={page.status}
+                          onChange={(e) => patchPage(page.id, { status: e.target.value })}
+                        >
+                          {PAGE_STATUSES.map((s) => <option key={s} value={s} className="bg-[#17171a]">{s}</option>)}
+                        </select>
+                        <input
+                          type="number" min={1} max={64}
+                          value={page.pageNumber}
+                          onChange={(e) => patchPage(page.id, { pageNumber: parseInt(e.target.value) || 1 })}
+                          className="w-16 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          title="Page number"
+                        />
+                      </div>
+                      <button
+                        onClick={() => savePage(page)}
+                        disabled={saving === page.id}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600/20 text-purple-300 hover:bg-purple-600/30 disabled:opacity-40 rounded-lg text-xs font-semibold transition-colors"
+                      >
+                        <Save className={`w-3.5 h-3.5 ${saving === page.id ? "animate-pulse" : ""}`} />
+                        {saving === page.id ? "Saving..." : "Save Page"}
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-white/40 mb-1 block">Page Text</label>
+                      <textarea rows={3} className={adminInputCls} value={page.content} onChange={(e) => patchPage(page.id, { content: e.target.value })} />
+                    </div>
+
+                    <div>
+                      <label className="text-xs text-white/40 mb-1 block">Image Prompt</label>
+                      <textarea rows={2} className={adminInputCls} value={page.imagePrompt} onChange={(e) => patchPage(page.id, { imagePrompt: e.target.value })} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-white/40 mb-1 block">Image URL</label>
+                        <input className={adminInputCls} value={page.imageUrl ?? ""} onChange={(e) => patchPage(page.id, { imageUrl: e.target.value })} placeholder="/assets/..." />
+                      </div>
+                      <div>
+                        <label className="text-xs text-white/40 mb-1 block">Audio URL</label>
+                        <input className={adminInputCls} value={page.audioUrl ?? ""} onChange={(e) => patchPage(page.id, { audioUrl: e.target.value })} />
+                      </div>
+                    </div>
+
+                    {page.imageUrl && (
+                      <img
+                        src={page.imageUrl.startsWith("/") ? `${BACKEND_URL}${page.imageUrl}` : page.imageUrl}
+                        alt={`Page ${page.pageNumber}`}
+                        onError={handleImageError}
+                        className="w-40 rounded-xl border border-white/10"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -310,6 +775,7 @@ export default function AdminPage() {
   const [grantAmount, setGrantAmount] = useState(1000);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+  const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
 
   const authHeaders = useCallback(async () => {
     const token = await getToken();
@@ -473,6 +939,7 @@ export default function AdminPage() {
     { id: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
     { id: "users", label: "Users", icon: <Users className="w-4 h-4" />, count: users.length },
     { id: "stories", label: "Stories", icon: <BookOpen className="w-4 h-4" />, count: stories.length },
+    { id: "facelab", label: "Face Lab", icon: <ScanFace className="w-4 h-4" /> },
     { id: "models", label: "AI Models", icon: <Sparkles className="w-4 h-4" />, count: models.length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
   ];
@@ -495,6 +962,14 @@ export default function AdminPage() {
           onClose={() => setSelectedUser(null)}
           onDeleteUser={handleDeleteUser}
           onEditCredits={(u) => { setSelectedUser(null); setCreditEditorUser(u); }}
+        />
+      )}
+      {editingStoryId && (
+        <StoryEditor
+          storyId={editingStoryId}
+          authHeaders={authHeaders}
+          onClose={() => setEditingStoryId(null)}
+          onChanged={fetchAll}
         />
       )}
       {pdfPreviewUrl && (
@@ -607,7 +1082,13 @@ export default function AdminPage() {
           {/* Top bar */}
           <div className="sticky top-0 bg-[#0f0f11]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between z-30">
             <div>
-              <h1 className="font-bold text-white text-xl capitalize">{activeTab === "overview" ? "Dashboard Overview" : activeTab}</h1>
+              <h1 className="font-bold text-white text-xl capitalize">
+                {activeTab === "overview"
+                  ? "Dashboard Overview"
+                  : activeTab === "facelab"
+                    ? "Face Detection Lab"
+                    : activeTab}
+              </h1>
               <p className="text-white/40 text-xs mt-0.5">StoryBook AI · Super Admin</p>
             </div>
             <div className="flex items-center gap-3">
@@ -875,6 +1356,9 @@ export default function AdminPage() {
                             <td className="py-3.5 px-4 text-white/40 text-xs">{timeAgo(s.createdAt)}</td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center justify-end gap-2">
+                                <button onClick={() => setEditingStoryId(s.id)} className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors" title="Edit Story">
+                                  <PencilLine className="w-3.5 h-3.5" />
+                                </button>
                                 <a href={`/stories/${s.id}`} target="_blank" className="p-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors" title="View Story" rel="noreferrer">
                                   <Eye className="w-3.5 h-3.5" />
                                 </a>
@@ -894,6 +1378,9 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+
+            {/* ── FACE LAB TAB ─────────────────────────────────────────────── */}
+            {activeTab === "facelab" && <FaceLabTab authHeaders={authHeaders} />}
 
             {/* ── MODELS TAB ───────────────────────────────────────────────── */}
             {activeTab === "models" && (

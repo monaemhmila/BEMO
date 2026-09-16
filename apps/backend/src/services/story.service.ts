@@ -3,12 +3,14 @@ import { prismaClient } from "../lib/prisma";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { FaceConsistencyService } from "./face-consistency.service";
+import { PositionOnCanvas } from "./face-canvas.service";
 import { StoryCompletionService } from "./story-completion.service";
 import { GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
 import { saveRemoteImageLocally, saveJsonLocally } from "../lib/storage";
 import {
   STORYBOOK_PAGE_COUNT,
   getPageType,
+  getPageComposition,
   PageType,
 } from "../contracts/storybook";
 
@@ -88,19 +90,20 @@ export class StoryService {
     language?: string
   ): Promise<StoryScript> {
     const prompt = `
-Write a ${STORYBOOK_PAGE_COUNT}-page children's story about a hero named "${characterName}".
+Write a ${STORYBOOK_PAGE_COUNT}-page magical Disney-style children's story about a hero named "${characterName}".
 
 Theme: "${theme}".
 ${language ? `Language: ${language}` : ""}
 
-Create a playful, kid-friendly title.
-Make one continuous story with a beginning, adventure, problem,
-resolution, and warm ending.
+Tone & Style:
+- Disney fairy-tale storytelling: magical, heartwarming, filled with wonder, adventure, and warmth.
+- Create a playful, kid-friendly title.
+- Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
 
 For each page:
-- Write a charming paragraph of 2-4 sentences of story text.
-- Create a clear visual scene.
-- Keep the hero as the main character.
+- Write a charming paragraph of 2-4 sentences of story text with Disney-style heart and whimsy.
+- Create a visual scene description where the ENVIRONMENT and any SIDE CHARACTERS/CREATURES are in a magical Disney/Pixar animated fairy-tale style (vibrant colors, glowing magical lighting, enchanting fairy-tale scenery, cute expressive side characters).
+- The hero child remains natural and relatable exploring this magical Disney world.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
@@ -112,7 +115,7 @@ Return ONLY valid JSON:
     {
       "pageNumber": 1,
       "text": "Story text",
-      "imageDescription": "Clear visual scene description",
+      "imageDescription": "Visual scene with magical Disney-style environment and creatures, natural child hero",
       "emotion": "happy"
     }
   ]
@@ -162,10 +165,11 @@ Return ONLY valid JSON:
     const pageCount = this.getPageCount(input.storyLength);
 
     const prompt = `
-Create a personalized children's story for a ${input.childAge}-year-old named "${input.childName}".
+Create a personalized magical Disney-style children's story for a ${input.childAge}-year-old named "${input.childName}".
 
 Story:
 - Exactly ${pageCount} pages (pageNumber 1 through ${pageCount})
+- Tone & Style: Disney fairy-tale storytelling — heartwarming, full of wonder, magical adventure, gentle humor, and emotional depth.
 - Theme: ${input.theme}
 - Category: ${input.category}
 - ${guidance.language}
@@ -178,17 +182,18 @@ ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
 
 ${characterProfile?.appearance
         ? `Character appearance: ${characterProfile.appearance}`
-        : "The uploaded reference image defines the character's appearance."
+        : "The uploaded reference image defines the character's real face and appearance."
       }
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
 Keep the story continuous and keep characters, clothing, locations, and important objects consistent.
-Vary the setting from page to page so the scenes each feel fresh and beautiful.
+Vary the setting from page to page so the scenes each feel fresh, vibrant, and enchanting.
 
 For each page:
-- Write the story text.
-- Create a clear visual scene description that fills the whole 16:9 landscape frame.
+- Write the story text with Disney-style warmth and charm.
+- Create a visual scene description where the ENVIRONMENT and any SIDE CHARACTERS/CREATURES are in a magical Disney/Pixar animated fairy-tale style (vibrant colors, glowing whimsical lighting, enchanting scenery, charming side characters).
+- The hero child retains their natural real appearance from their photo.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.
@@ -202,7 +207,7 @@ Return ONLY valid JSON:
     {
       "pageNumber": 1,
       "text": "Story text",
-      "imageDescription": "Clear visual scene description without the child's name",
+      "imageDescription": "Visual scene with magical Disney-style environment and creatures, natural child hero",
       "emotion": "happy"
     }
   ]
@@ -294,9 +299,24 @@ Return ONLY valid JSON:
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string }
+    options?: { childName?: string; position?: PositionOnCanvas }
   ) {
     try {
+      const page = await prismaClient.storyPage.findUnique({
+        where: { id: pageId },
+        select: { pageNumber: true },
+      });
+
+      let position: PositionOnCanvas = options?.position || "center";
+      if (!options?.position && page?.pageNumber) {
+        if (page.pageNumber === 1) {
+          position = "center";
+        } else {
+          const comp = getPageComposition(page.pageNumber);
+          position = comp.characterSide === "left" ? "left" : "right";
+        }
+      }
+
       const scenePrompt = options?.childName
         ? `${options.childName} ${prompt.trim()}`
         : prompt;
@@ -308,6 +328,7 @@ Return ONLY valid JSON:
             referenceImageUrl: referenceImageUrl || undefined,
             aspectRatio: "16:9",
             childName: options?.childName,
+            position,
           },
           STORY_WEBHOOK
         );

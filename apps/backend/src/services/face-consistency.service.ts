@@ -3,12 +3,18 @@ import {
   imageGenerationService,
   STORYBOOK_IMAGE_CONFIG,
 } from "./image-generation.service";
+import {
+  faceCanvasService,
+  FaceReferences,
+  PositionOnCanvas,
+} from "./face-canvas.service";
 
 interface FaceConsistentImageRequest {
   prompt: string;
   referenceImageUrl?: string;
   aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3";
   childName?: string;
+  position?: PositionOnCanvas;
 }
 
 /**
@@ -18,6 +24,7 @@ interface FaceConsistentImageRequest {
  */
 export class FaceConsistencyService {
   private static instance: FaceConsistencyService;
+  private referenceCache: Map<string, FaceReferences> = new Map();
 
   static getInstance(): FaceConsistencyService {
     if (!FaceConsistencyService.instance) {
@@ -26,11 +33,38 @@ export class FaceConsistencyService {
     return FaceConsistencyService.instance;
   }
 
-  async generateFaceConsistentImage(request: FaceConsistentImageRequest, webhookUrl?: string): Promise<{ requestId: string; responseUrl: string }> {
+  /**
+   * Detect face and generate center, left, right white canvas references (cached per URL).
+   */
+  async getOrGenerateReferences(referenceImageUrl: string): Promise<FaceReferences> {
+    if (this.referenceCache.has(referenceImageUrl)) {
+      return this.referenceCache.get(referenceImageUrl)!;
+    }
+    const refs = await faceCanvasService.generateFaceReferences(referenceImageUrl);
+    this.referenceCache.set(referenceImageUrl, refs);
+    return refs;
+  }
+
+  async generateFaceConsistentImage(
+    request: FaceConsistentImageRequest,
+    webhookUrl?: string
+  ): Promise<{ requestId: string; responseUrl: string }> {
+    let processedReferenceUrl = request.referenceImageUrl;
+
+    if (request.referenceImageUrl) {
+      try {
+        const refs = await this.getOrGenerateReferences(request.referenceImageUrl);
+        const pos = request.position || "center";
+        processedReferenceUrl = pos === "left" ? refs.left : pos === "right" ? refs.right : refs.center;
+      } catch (err) {
+        processedReferenceUrl = request.referenceImageUrl;
+      }
+    }
+
     const result = await imageGenerationService.generateStorybookImage(
       {
         prompt: request.prompt,
-        imageUrl: request.referenceImageUrl,
+        imageUrl: processedReferenceUrl,
         aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
         childName: request.childName,
       },
@@ -42,10 +76,24 @@ export class FaceConsistencyService {
     return { requestId: result.requestId, responseUrl: "" };
   }
 
-  async generateFaceConsistentImageSync(request: FaceConsistentImageRequest): Promise<string> {
+  async generateFaceConsistentImageSync(
+    request: FaceConsistentImageRequest
+  ): Promise<string> {
+    let processedReferenceUrl = request.referenceImageUrl;
+
+    if (request.referenceImageUrl) {
+      try {
+        const refs = await this.getOrGenerateReferences(request.referenceImageUrl);
+        const pos = request.position || "center";
+        processedReferenceUrl = pos === "left" ? refs.left : pos === "right" ? refs.right : refs.center;
+      } catch (err) {
+        processedReferenceUrl = request.referenceImageUrl;
+      }
+    }
+
     return imageGenerationService.generateImageSync({
       prompt: request.prompt,
-      imageUrl: request.referenceImageUrl,
+      imageUrl: processedReferenceUrl,
       aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
       childName: request.childName,
     });

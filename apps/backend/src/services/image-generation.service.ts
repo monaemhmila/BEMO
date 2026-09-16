@@ -85,6 +85,15 @@ export class ImageGenerationService {
   }
 
   /**
+   * Upload a positioned face-reference canvas to Fal storage ONCE per story so
+   * every page call can reuse the same public URL instead of re-uploading the
+   * client's raw photo. Non-data URLs are returned unchanged.
+   */
+  async uploadReferenceImage(url: string): Promise<string> {
+    return this.ensurePublicImageUrl(url);
+  }
+
+  /**
    * Queue storybook image generation.
    */
   async generateStorybookImage(
@@ -229,12 +238,12 @@ export class ImageGenerationService {
     childName?: string;
   }): string {
     const scene = input.sceneDescription.trim();
-    const qualityDirectives = "storybook illustration, correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs";
+    const styleDirectives = "magical Disney animation style environment and side characters, vibrant fairy-tale lighting, correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs";
 
     if (input.hasReference) {
-      return `use the kid face without changing anything in the scene created by the ai. ${scene}. ${qualityDirectives}`;
+      return `use the kid face without changing anything in the kid from the photo. The environment and side characters are in a magical Disney style. ${scene}. ${styleDirectives}`;
     }
-    return `${scene}. ${qualityDirectives}`;
+    return `${scene}. ${styleDirectives}`;
   }
 
   /**
@@ -242,7 +251,7 @@ export class ImageGenerationService {
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
     const scene = request.prompt.trim();
-    const qualityDirectives = "correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs";
+    const qualityDirectives = "magical Disney animation style environment and side characters, vibrant fairy-tale lighting, correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs";
 
     let baseScene = scene;
     if (!baseScene.includes("completely textless")) {
@@ -250,7 +259,7 @@ export class ImageGenerationService {
     }
 
     if (request.imageUrl && !baseScene.startsWith("use the kid face")) {
-      return `use the kid face without changing anything in the scene created by the ai. ${baseScene}`;
+      return `use the kid face without changing anything in the kid from the photo. The environment and side characters are in a magical Disney style. ${baseScene}`;
     }
     return baseScene;
   }

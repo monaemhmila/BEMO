@@ -4,6 +4,8 @@ import { authMiddleware } from "../middleware/auth";
 import { adminAuthMiddleware } from "../middleware/adminAuth";
 import { logger } from "../lib/logger";
 import { PDFService } from "../services/pdf.service";
+import { faceCanvasService } from "../services/face-canvas.service";
+import { z } from "zod";
 
 const router = Router();
 
@@ -517,6 +519,142 @@ router.get("/activity", async (_req, res) => {
   } catch (error) {
     logger.error({ error }, "Failed to fetch activity");
     res.status(500).json({ message: "Failed to fetch activity" });
+  }
+});
+
+// ─────────────────────────────────────────
+// STORY EDITOR
+// ─────────────────────────────────────────
+
+const STORY_STATUS_VALUES = ["Pending", "Generating", "Completed", "Failed", "Processing"] as const;
+const PAGE_STATUS_VALUES = ["Pending", "Generated", "Failed"] as const;
+const CATEGORY_VALUES = [
+  "bedtime", "adventure", "friendship", "learning", "animals", "fantasy",
+  "moral", "seasonal", "science", "history", "emotions", "family",
+] as const;
+const LENGTH_VALUES = ["short", "medium", "long", "extended"] as const;
+
+const UpdateStorySchema = z.object({
+  title: z.string().trim().min(1).max(200).optional(),
+  childName: z.string().trim().max(80).optional(),
+  childAge: z.number().int().min(0).max(21).nullable().optional(),
+  category: z.enum(CATEGORY_VALUES).optional(),
+  status: z.enum(STORY_STATUS_VALUES).optional(),
+  dedication: z.string().max(500).nullable().optional(),
+  storyLength: z.enum(LENGTH_VALUES).optional(),
+  isPublic: z.boolean().optional(),
+});
+
+const UpdatePageSchema = z.object({
+  content: z.string().max(5000).optional(),
+  imagePrompt: z.string().max(4000).optional(),
+  imageUrl: z.string().nullable().optional(),
+  audioUrl: z.string().nullable().optional(),
+  status: z.enum(PAGE_STATUS_VALUES).optional(),
+  pageNumber: z.number().int().min(1).max(64).optional(),
+});
+
+/**
+ * GET /admin/story/:id
+ * Full story with every editable field — used by the admin story editor.
+ */
+router.get("/story/:id", async (req, res) => {
+  try {
+    const story = await prismaClient.story.findUnique({
+      where: { id: req.params.id },
+      include: {
+        user: { select: { id: true, email: true, name: true } },
+        model: { select: { id: true, name: true, thumbnail: true } },
+        pages: { orderBy: { pageNumber: "asc" } },
+      },
+    });
+
+    if (!story) {
+      res.status(404).json({ message: "Story not found" });
+      return;
+    }
+
+    res.json({ story });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch story for admin editor");
+    res.status(500).json({ message: "Failed to fetch story" });
+  }
+});
+
+/**
+ * PUT /admin/story/:id
+ * Update story-level fields from the admin editor.
+ */
+router.put("/story/:id", async (req, res) => {
+  const parsed = UpdateStorySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const story = await prismaClient.story.update({
+      where: { id: req.params.id },
+      data: parsed.data,
+    });
+    logger.info({ storyId: story.id }, "Story updated from admin editor");
+    res.json({ success: true, story });
+  } catch (error) {
+    logger.error({ error }, "Failed to update story from admin editor");
+    res.status(500).json({ message: "Failed to update story" });
+  }
+});
+
+/**
+ * PUT /admin/page/:pageId
+ * Update a single story page (content, image prompt, image/audio URLs, status, order).
+ */
+router.put("/page/:pageId", async (req, res) => {
+  const parsed = UpdatePageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const page = await prismaClient.storyPage.update({
+      where: { id: req.params.pageId },
+      data: parsed.data,
+    });
+    res.json({ success: true, page });
+  } catch (error) {
+    logger.error({ error }, "Failed to update page from admin editor");
+    res.status(500).json({ message: "Failed to update page" });
+  }
+});
+
+// ─────────────────────────────────────────
+// FACE LAB (detection test + canvas references)
+// ─────────────────────────────────────────
+
+const FaceLabSchema = z.object({
+  image: z.string().min(1, "Image data URL is required"),
+});
+
+/**
+ * POST /admin/face-lab
+ * Run local face detection on an uploaded photo (base64 data URL) and build
+ * the three positioned white-canvas references (center 50% / right 75% /
+ * left 25%). Fully local: no image API is called.
+ */
+router.post("/face-lab", async (req, res) => {
+  const parsed = FaceLabSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+    return;
+  }
+
+  try {
+    const result = await faceCanvasService.generateFaceLab(parsed.data.image);
+    res.json(result);
+  } catch (error) {
+    logger.error({ error }, "Admin face lab failed");
+    res.status(500).json({ message: "Face detection / reference generation failed" });
   }
 });
 
