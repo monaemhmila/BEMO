@@ -3,8 +3,6 @@ import { logger } from "../lib/logger";
 import { env } from "../config/env";
 import {
   STORYBOOK_IMAGE_ASPECT_RATIO,
-  STORYBOOK_NEGATIVE_PROMPT,
-  getPageComposition,
 } from "../contracts/storybook";
 
 interface ImageGenerationRequest {
@@ -13,8 +11,6 @@ interface ImageGenerationRequest {
   seed?: number;
   imageUrl?: string;
   childName?: string;
-  /** Page number in the 16-page storybook, used to derive the text-safe area. */
-  pageNumber?: number;
 }
 
 interface ImageGenerationResult {
@@ -222,84 +218,37 @@ export class ImageGenerationService {
   }
 
   /**
-   * Build a structured storybook image prompt from shared data.
-   *
-   * The same page composition that drives the PDF text layout also reserves
-   * the text-safe area here, so text and art never collide.
+   * Build a simple storybook image prompt.
+   * If a child reference is provided, instructs the model to use the kid face
+   * without changing anything in the scene created by the AI.
    */
   buildStorybookImagePrompt(input: {
     sceneDescription: string;
+    hasReference?: boolean;
     childName?: string;
-    textSafeArea?: string;
-    characterSide?: "left" | "right";
-    sideCharacterArea?: string;
-    negativePrompt: string;
   }): string {
-    const { sceneDescription, childName, textSafeArea, characterSide, sideCharacterArea, negativePrompt } = input;
-
-    const characterPlacement =
-      characterSide === "left"
-        ? `The child stands at the FAR LEFT EDGE of the frame, clearly on the left side and never in the middle, opposite the story text. ${sideCharacterArea || ""}.`
-        : characterSide === "right"
-          ? `The child stands at the FAR RIGHT EDGE of the frame, clearly on the right side and never in the middle, opposite the story text. ${sideCharacterArea || ""}.`
-          : "";
-
-    return `
-CHARACTER: ${childName || "The child"} is the main character and hero of the story. Keep the child natural, age-appropriate, and recognizable throughout every page.
-
-SCENE: ${sceneDescription.trim()}
-
-SETTING & DETAILS: Design an EPIC, very large and expansive storybook environment that dominates the entire 16:9 landscape frame. The scenery must feel huge and sweeping - towering enchanted forests with gigantic trees, vast rolling hills reaching to the horizon, towering snowy mountains, enormous crystal caves, a wide starry sky, a mighty castle on a cliff, or a vast ocean. Everything is oversized and breathtaking, filling far more of the image than the child. Add small, delightful background details that make every scene feel alive and hand-crafted: lush plants and colorful flowers, softly glowing fairy lights or hanging lanterns, floating petals and sparkles, tiny playful animals, gentle light beams, drifting clouds, and soft weather particles. Layer the scenery for depth - large foreground elements, the vast main environment in the middle, and a dreamy softly-blurred backdrop behind. The environment is the star of the image; the child stands within it as a small hero.
-${textSafeArea ? `
-TEXT SAFE AREA: Reserve the text-safe area for the story text: ${textSafeArea.trim()}. This area must blend perfectly into the rest of the illustration - same colors, same lighting, same background - so it looks like one continuous painted scene and never like a separate strip.
-` : ""}
-${characterPlacement ? `
-CHARACTER PLACEMENT: ${characterPlacement}
-` : ""}
-NO BANDING: The whole image is ONE continuous scene from top to bottom. Sky, land and background all blend naturally into each other with the same color palette everywhere. Never split the image into a top zone and a bottom zone, never add a dark or brown patch at the bottom, never add a vignette, a hard edge, an out-of-place color block or a horizontal strip.
-ART STYLE: Premium 3D children's storybook illustration with a polished animated-film aesthetic. Natural human child proportions, realistic facial features, detailed hair and clothing, soft realistic skin shading, subtle glossy materials, warm cinematic sunlight, gentle shadows, vibrant but natural colors, and beautiful atmospheric depth. The child should look like a real child beautifully translated into high-quality 3D storybook CGI.
-
-COMPOSITION: Wide 16:9 landscape composition designed for a horizontal A4 page. The scenery is VERY BIG and fills the whole frame; the child is relatively small within it, ${STORYBOOK_IMAGE_CONFIG.childFramePercent}, placed at the far left or far right edge of the frame as instructed in CHARACTER PLACEMENT and NEVER in the middle or center of the image. Keep the face clearly visible and unobstructed even at that size. Natural pose and anatomy. Cinematic depth of field with large foreground elements and a vast, softly blurred background that still shows off the scenic details.
-
-EXPRESSION & POSE: Give the child a natural, lively facial expression that matches the action and emotion of the scene (happy, surprised, curious, excited, proud, thoughtful, worried, gentle, or calm). Change the child's body posture naturally for each scene (standing, sitting, leaning, running, reaching, kneeling, holding, or hugging) so every page feels expressive and alive. Keep the face recognizable, pleasant, and age-appropriate.
-
-QUALITY: High-end polished 3D CGI, natural expression, realistic facial proportions, clean anatomy, natural hands and fingers, detailed clothing and hair, warm lighting, beautiful depth and professional children's book quality.
-
-NO TEXT anywhere in the image: ${negativePrompt.trim()}
-`;
+    const scene = input.sceneDescription.trim();
+    const suffix = " (no text, no words, no letters, no typography)";
+    if (input.hasReference) {
+      return `use the kid face without changing anything in the scene created by the ai. ${scene}${suffix}`;
+    }
+    return `${scene}${suffix}`;
   }
 
   /**
-   * Assemble the final prompt string and JSON-stringify it as
-   * `{ "prompt": "..." }` for the Grok Imagine API.
+   * Assemble the final prompt string for the Grok Imagine API.
+   * Short and simple: uses the AI scene, and if a child reference is present,
+   * instructs to use the kid face without changing anything in the scene.
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
-    const identity = request.imageUrl
-      ? `
-IDENTITY: Use the uploaded child reference image as the primary identity reference. Preserve the exact same child and recognizable facial identity. Keep the child's face shape, facial structure, eyes, eye color, nose, mouth, cheeks, ears, skin tone, skin color, hair color, hair texture, hairstyle, age, and natural body proportions. Do not change the child's ethnicity, skin color, facial structure, or age. Do not replace the child with a generic child.
-`
-      : "";
-
-    const textSafeArea =
-      request.pageNumber !== undefined
-        ? getPageComposition(request.pageNumber).textSafeArea
-        : undefined;
-
-    const composition =
-      request.pageNumber !== undefined
-        ? getPageComposition(request.pageNumber)
-        : undefined;
-
-    const innerPrompt = this.buildStorybookImagePrompt({
-      sceneDescription: `${identity.trim()}\n${request.prompt.trim()}`,
-      childName: request.childName,
-      textSafeArea,
-      characterSide: composition?.characterSide,
-      sideCharacterArea: composition?.sideCharacterArea,
-      negativePrompt: STORYBOOK_NEGATIVE_PROMPT,
-    });
-
-    return JSON.stringify({ prompt: innerPrompt });
+    const scene = request.prompt.trim();
+    const suffix = " (no text, no words, no letters, no typography)";
+    const finalScene = scene.includes("no text") ? scene : `${scene}${suffix}`;
+    
+    if (request.imageUrl && !finalScene.includes("use the kid face")) {
+      return `use the kid face without changing anything in the scene created by the ai. ${finalScene}`;
+    }
+    return finalScene;
   }
 
   private delay(ms: number): Promise<void> {

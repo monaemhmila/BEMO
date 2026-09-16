@@ -9,7 +9,6 @@ interface FaceConsistentImageRequest {
   referenceImageUrl?: string;
   aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3";
   childName?: string;
-  pageNumber?: number;
 }
 
 /**
@@ -34,7 +33,6 @@ export class FaceConsistencyService {
         imageUrl: request.referenceImageUrl,
         aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
         childName: request.childName,
-        pageNumber: request.pageNumber,
       },
       webhookUrl
     );
@@ -50,7 +48,6 @@ export class FaceConsistencyService {
       imageUrl: request.referenceImageUrl,
       aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
       childName: request.childName,
-      pageNumber: request.pageNumber,
     });
   }
 

@@ -30,7 +30,7 @@ export type TextPosition =
  */
 export type CharacterSide = "left" | "right";
 
-export const STORYBOOK_PAGE_COUNT = 16;
+export const STORYBOOK_PAGE_COUNT = 5;
 
 export const STORYBOOK_IMAGE_ASPECT_RATIO = "16:9";
 
@@ -107,36 +107,16 @@ export function getTextPosition(pageNumber: number): TextPosition {
   return TEXT_POSITION_BY_PAGE[pageNumber] || "bottom-center";
 }
 
-const SAFE_AREA_BY_POSITION: Record<TextPosition, string> = {
-  "top-center":
-    "the top-center band of the image (about 60% of the width) must blend seamlessly with the rest of the scene - open sky, soft light or a smooth natural area using exactly the same colors and lighting as the whole image, without busy objects, so the printed title can sit there. No hard edge, no dark band and no change of background color at the top",
-  "bottom-left":
-    "the bottom-left corner of the image (about 50% of the width and 30% of the height) must be a smooth, calm area - grass, sand, water, soft ground or gentle light - that blends seamlessly with the rest of the scene using exactly the same colors and lighting, with NO dark or brown patch, no band and no hard edge at the bottom. It must NOT contain the child, an important character, a face, or important action",
-  "bottom-right":
-    "the bottom-right corner of the image (about 50% of the width and 30% of the height) must be a smooth, calm area - grass, sand, water, soft ground or gentle light - that blends seamlessly with the rest of the scene using exactly the same colors and lighting, with NO dark or brown patch, no band and no hard edge at the bottom. It must NOT contain the child, an important character, a face, or important action",
-  "bottom-center":
-    "the bottom-center band of the image (about 60% of the width) must be a smooth, calm area - grass, sand, water or soft ground - that blends seamlessly with the rest of the scene using exactly the same colors and lighting, with NO dark or brown patch, no band and no hard edge at the bottom. It must NOT contain the child, an important character, a face, or important action",
-  center:
-    "the lower-middle area of the image must be a smooth, calm area that blends seamlessly with the rest of the scene using exactly the same colors and lighting, so the closing sentence can sit there. No dark patch, no band and no hard edge",
-};
 
 export function getPageComposition(pageNumber: number): PageComposition {
   const textPosition = getTextPosition(pageNumber);
   const isCover = pageNumber === 1;
   const isWide = textPosition === "bottom-center" || textPosition === "center";
 
-  // The child is always at the far edge and never in the middle. Bottom-right
-  // and bottom-center text push the child to the far left; everything else
-  // (cover, bottom-left text, closing) pushes the child to the far right.
   const characterSide: CharacterSide =
     textPosition === "bottom-right" || textPosition === "bottom-center"
       ? "left"
       : "right";
-
-  const sideCharacterArea =
-    characterSide === "right"
-      ? "the left side of the frame (the side where the text sits) shows an elegant, spacious view of the background place or the side character from the story"
-      : "the right side of the frame (the side where the text sits) shows an elegant, spacious view of the background place or the side character from the story";
 
   return {
     pageNumber,
@@ -144,9 +124,9 @@ export function getPageComposition(pageNumber: number): PageComposition {
     textPosition,
     alignment: textPosition === "top-center" || textPosition === "bottom-center" || textPosition === "center" ? "center" : "left",
     imageAspectRatio: STORYBOOK_IMAGE_ASPECT_RATIO,
-    textSafeArea: SAFE_AREA_BY_POSITION[textPosition],
+    textSafeArea: "",
     characterSide,
-    sideCharacterArea,
+    sideCharacterArea: "",
     textWidthPercent: isCover ? 0.88 : isWide ? 0.6 : 0.5,
     textMaxWords: textPosition === "center" ? 14 : isCover ? 4 : 60,
   };
@@ -254,48 +234,4 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
  * Reusable, strongly-worded negative prompt for storybook image generation.
  * Guards identity, anatomy, and the no-AI-text rule.
  */
-export const STORYBOOK_NEGATIVE_PROMPT = `
-text,
-letters,
-words,
-numbers,
-captions,
-subtitles,
-typography,
-logo,
-watermark,
-sign,
-speech bubble,
-pseudo-text,
-random writing,
-duplicate child,
-multiple versions of child,
-different child,
-generic child,
-wrong identity,
-changed face,
-different facial structure,
-different skin tone,
-different hair,
-adult face,
-baby face,
-deformed face,
-distorted face,
-asymmetrical eyes,
-extra limbs,
-extra fingers,
-missing fingers,
-deformed hands,
-duplicate body,
-bad anatomy,
-oversized head,
-tiny body,
-exaggerated eyes,
-anime,
-manga,
-chibi,
-flat cartoon,
-plastic toy,
-claymation,
-photographic realism
-`;
+export const STORYBOOK_NEGATIVE_PROMPT = "";

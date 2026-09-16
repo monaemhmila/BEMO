@@ -249,7 +249,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     // Step 5: Trigger every page with the model's reference portrait through Grok Imagine.
     const generationResults = await Promise.allSettled(
       pages.map((page) =>
-        storyService.triggerPageGeneration(page.id, page.imagePrompt, model.thumbnail, { childName, pageNumber: page.pageNumber })
+        storyService.triggerPageGeneration(page.id, page.imagePrompt, model.thumbnail, { childName })
       )
     );
 
@@ -623,7 +623,7 @@ router.post("/:id/retry-failed", authMiddleware, async (req, res) => {
           page.id,
           page.imagePrompt,
           story.model!.thumbnail,
-          { childName: story.childName || undefined, pageNumber: page.pageNumber }
+          { childName: story.childName || undefined }
         )
       )
     );
@@ -713,7 +713,6 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
           aspectRatio: "16:9",
           imageUrl: childImage,
           childName,
-          pageNumber: page.pageNumber,
         }).catch((err) => {
           logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for page, continuing without image");
           return null;

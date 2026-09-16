@@ -8,10 +8,8 @@ import { GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.
 import { saveRemoteImageLocally, saveJsonLocally } from "../lib/storage";
 import {
   STORYBOOK_PAGE_COUNT,
-  getPageComposition,
-  getTextPosition,
+  getPageType,
   PageType,
-  TextPosition,
 } from "../contracts/storybook";
 
 interface PersonalizedStoryInput {
@@ -30,7 +28,6 @@ interface StoryPageInput {
   imageDescription: string;
   emotion?: string;
   pageType?: PageType;
-  textPosition?: TextPosition;
   imageAspectRatio?: "16:9";
 }
 
@@ -91,7 +88,7 @@ export class StoryService {
     language?: string
   ): Promise<StoryScript> {
     const prompt = `
-Write a 16-page children's story about a hero named "${characterName}".
+Write a ${STORYBOOK_PAGE_COUNT}-page children's story about a hero named "${characterName}".
 
 Theme: "${theme}".
 ${language ? `Language: ${language}` : ""}
@@ -141,8 +138,7 @@ Return ONLY valid JSON:
         return {
           ...page,
           pageNumber,
-          pageType: getPageComposition(pageNumber).pageType,
-          textPosition: getTextPosition(pageNumber),
+          pageType: getPageType(pageNumber),
           imageAspectRatio: "16:9" as const,
         };
       });
@@ -165,21 +161,6 @@ Return ONLY valid JSON:
     const guidance = AGE_GUIDANCE[ageRange];
     const pageCount = this.getPageCount(input.storyLength);
 
-    const pageBlueprint = Array.from({ length: pageCount }, (_, index) => {
-      const pageNumber = index + 1;
-      const composition = getPageComposition(pageNumber);
-      const characterPlacement =
-        composition.characterSide === "right"
-          ? `the child must be drawn at the FAR RIGHT edge of the page (never in the middle), and ${composition.sideCharacterArea}`
-          : `the child must be drawn at the FAR LEFT edge of the page (never in the middle), and ${composition.sideCharacterArea}`;
-      return `page ${pageNumber}: type "${composition.pageType}", text placed ${composition.textPosition} -> ${characterPlacement}`;
-    }).join("\n");
-
-    const safeAreaBlueprint = Array.from({ length: pageCount }, (_, index) => {
-      const pageNumber = index + 1;
-      return `- page ${pageNumber}: imageDescription must reserve the text-safe area: ${getPageComposition(pageNumber).textSafeArea}`;
-    }).join("\n");
-
     const prompt = `
 Create a personalized children's story for a ${input.childAge}-year-old named "${input.childName}".
 
@@ -189,8 +170,8 @@ Story:
 - Category: ${input.category}
 - ${guidance.language}
 - ${guidance.textLength}
-- Word budget: write rich, engaging story text of 45 to 60 words per page. Page 1 is a cover: give it only a short one-line hook (it is never printed). Page 16 is the closing page: give it a single warm closing sentence of at most 14 words.
-- HEART & LESSON: weave into every page, naturally and never preachy, a gentle moral, a warm sentimental feeling, or a simple educational observation (kindness, honesty, courage, gratitude, friendship, curiosity, sharing, patience, the names of animals or plants, how the world works, and so on). The child should grow and learn a little on each page.
+- Word budget: write rich, engaging story text of 45 to 60 words per page. Page 1 is a cover: give it only a short one-line hook.
+- HEART & LESSON: weave into every page, naturally and never preachy, a gentle moral, a warm sentimental feeling, or a simple educational observation (kindness, honesty, courage, gratitude, friendship, curiosity, sharing, patience, how the world works, and so on).
 - Themes: ${guidance.themes}
 ${input.language ? `- Language: ${input.language}` : ""}
 ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
@@ -202,27 +183,12 @@ ${characterProfile?.appearance
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
-The book layout is fixed. Use exactly this page blueprint:
-${pageBlueprint}
-
-Keep the story continuous and keep characters, clothing,
-locations, and important objects consistent.
-Vary the setting from page to page so the scenes each feel
-fresh and beautiful: use a different, richly detailed environment
-every time (forest, beach, cozy home, city, garden, mountains,
-undersea world, night sky, and so on).
-
-Full-page cinematic landscape illustrations:
-- The scenery is VERY BIG and dominates the frame; the child is relatively small within it, a small hero in a grand world.
-- Full-body or three-quarter body preferred; the face must stay visible even at that size.
-- Follow the page blueprint above: the child is placed opposite the text, and the text side of the image shows an elegant, spacious view of the background place or the side character from the story.
-- Each imageDescription must reserve the correct text-safe area:
-
-${safeAreaBlueprint}
+Keep the story continuous and keep characters, clothing, locations, and important objects consistent.
+Vary the setting from page to page so the scenes each feel fresh and beautiful.
 
 For each page:
 - Write the story text.
-- Create a clear visual scene that fills the whole 16:9 landscape frame.
+- Create a clear visual scene description that fills the whole 16:9 landscape frame.
 - Do not include text, letters, signs, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.
@@ -327,7 +293,7 @@ Return ONLY valid JSON:
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; pageNumber?: number }
+    options?: { childName?: string }
   ) {
     try {
       const scenePrompt = options?.childName
@@ -341,7 +307,6 @@ Return ONLY valid JSON:
             referenceImageUrl: referenceImageUrl || undefined,
             aspectRatio: "16:9",
             childName: options?.childName,
-            pageNumber: options?.pageNumber,
           },
           STORY_WEBHOOK
         );
@@ -732,8 +697,7 @@ Return ONLY valid JSON:
           text: (page?.text ?? "").trim(),
           emotion:
             page.emotion?.trim() || "curious",
-          pageType: getPageComposition(pageNumber).pageType,
-          textPosition: getTextPosition(pageNumber),
+          pageType: getPageType(pageNumber),
           imageAspectRatio: "16:9" as const,
         };
       });
