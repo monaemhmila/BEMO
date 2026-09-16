@@ -1,0 +1,52 @@
+{
+  "name": "portrait-ai",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "start:web": "cd ./apps/web && npm run start",
+    "start:backend": "cd ./apps/backend && npm run start",
+    "generate:db": "cd ./packages/db && npx prisma generate && cd ../.."
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "prettier": "^3.5.0",
+    "ts-node": "^10.9.2",
+    "turbo": "^2.4.1",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=22.11.0"
+  },
+  "packageManager": "npm@10.8.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@prisma/client": "^6.19.0",
+    "@sentry/node": "^10.26.0",
+    "@sentry/profiling-node": "^10.26.0",
+    "@types/bull": "^3.15.9",
+    "@types/ioredis": "^4.28.10",
+    "bull": "^4.16.5",
+    "class-variance-authority": "^0.7.1",
+    "express-rate-limit": "^8.2.1",
+    "express-slow-down": "^3.0.1",
+    "ioredis": "^5.8.2",
+    "lucide-react": "^0.554.0",
+    "motion": "^12.23.24",
+    "next": "^15.5.6",
+    "puppeteer": "^24.31.0",
+    "redis": "^5.10.0",
+    "sharp": "^0.34.5",
+    "winston": "^3.18.3",
+    "winston-daily-rotate-file": "^5.0.0"
+  }
+}

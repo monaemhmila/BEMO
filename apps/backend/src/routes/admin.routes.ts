@@ -1,0 +1,523 @@
+import { Router } from "express";
+import { prismaClient } from "../lib/prisma";
+import { authMiddleware } from "../middleware/auth";
+import { adminAuthMiddleware } from "../middleware/adminAuth";
+import { logger } from "../lib/logger";
+import { PDFService } from "../services/pdf.service";
+
+const router = Router();
+
+// Protect ALL admin routes
+router.use(authMiddleware);
+router.use(adminAuthMiddleware);
+
+// ─────────────────────────────────────────
+// STATS
+// ─────────────────────────────────────────
+
+/**
+ * GET /admin/stats
+ * Comprehensive SaaS overview stats
+ */
+router.get("/stats", async (_req, res) => {
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - 7);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const [
+      totalUsers,
+      totalStories,
+      totalModels,
+      totalCredits,
+      newUsersToday,
+      newUsersThisWeek,
+      newUsersThisMonth,
+      storiesThisWeek,
+      modelsThisWeek,
+      pendingModels,
+      completedStories,
+      generatingStories,
+    ] = await Promise.all([
+      prismaClient.user.count(),
+      prismaClient.story.count(),
+      prismaClient.model.count(),
+      prismaClient.userCredit.aggregate({ _sum: { amount: true } }),
+      prismaClient.user.count({ where: { createdAt: { gte: startOfDay } } }),
+      prismaClient.user.count({ where: { createdAt: { gte: startOfWeek } } }),
+      prismaClient.user.count({ where: { createdAt: { gte: startOfMonth } } }),
+      prismaClient.story.count({ where: { createdAt: { gte: startOfWeek } } }),
+      prismaClient.model.count({ where: { createdAt: { gte: startOfWeek } } }),
+      prismaClient.model.count({ where: { trainingStatus: "Pending" } }),
+      prismaClient.story.count({ where: { status: "Completed" } }),
+      prismaClient.story.count({ where: { status: "Generating" } }),
+    ]);
+
+    res.json({
+      totalUsers,
+      totalStories,
+      totalModels,
+      totalCreditsIssued: totalCredits._sum.amount ?? 0,
+      newUsersToday,
+      newUsersThisWeek,
+      newUsersThisMonth,
+      storiesThisWeek,
+      modelsThisWeek,
+      pendingModels,
+      completedStories,
+      generatingStories,
+    });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch admin stats");
+    res.status(500).json({ message: "Failed to fetch admin stats" });
+  }
+});
+
+// ─────────────────────────────────────────
+// USERS
+// ─────────────────────────────────────────
+
+/**
+ * GET /admin/users
+ * All users with full details, credits, model & story counts
+ */
+router.get("/users", async (req, res) => {
+  try {
+    const { search, sortBy = "createdAt", order = "desc", limit = "100", offset = "0" } = req.query as Record<string, string>;
+
+    const where = search
+      ? {
+          OR: [
+            { email: { contains: search, mode: "insensitive" as const } },
+            { name: { contains: search, mode: "insensitive" as const } },
+            { clerkId: { contains: search } },
+          ],
+        }
+      : {};
+
+    const users = await prismaClient.user.findMany({
+      where,
+      orderBy: { [sortBy]: order as "asc" | "desc" },
+      take: parseInt(limit),
+      skip: parseInt(offset),
+      include: {
+        userCredit: true,
+        models: {
+          select: { id: true, name: true, trainingStatus: true, createdAt: true, thumbnail: true },
+          orderBy: { createdAt: "desc" },
+        },
+        stories: {
+          select: { id: true, title: true, status: true, createdAt: true, category: true },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    const formatted = users.map((u) => ({
+      id: u.id,
+      clerkId: u.clerkId,
+      email: u.email,
+      name: u.name || "Anonymous",
+      credits: u.userCredit?.amount ?? 0,
+      modelCount: u.models.length,
+      storyCount: u.stories.length,
+      models: u.models,
+      stories: u.stories,
+      createdAt: u.createdAt,
+    }));
+
+    const total = await prismaClient.user.count({ where });
+
+    res.json({ users: formatted, total });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch admin users");
+    res.status(500).json({ message: "Failed to fetch users" });
+  }
+});
+
+/**
+ * GET /admin/users/:id
+ * Single user full profile
+ */
+router.get("/users/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await prismaClient.user.findUnique({
+      where: { id },
+      include: {
+        userCredit: true,
+        models: { orderBy: { createdAt: "desc" } },
+        stories: {
+          orderBy: { createdAt: "desc" },
+          include: { pages: { select: { id: true, pageNumber: true, status: true, imageUrl: true } } },
+        },
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
+
+    res.json({
+      ...user,
+      credits: user.userCredit?.amount ?? 0,
+    });
+  } catch (error) {
+    logger.error({ error, id }, "Failed to fetch user profile");
+    res.status(500).json({ message: "Failed to fetch user" });
+  }
+});
+
+/**
+ * DELETE /admin/users/:id
+ * Delete a user and all their data
+ */
+router.delete("/users/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Delete in order to respect FK constraints
+    const userStories = await prismaClient.story.findMany({ where: { userId: id }, select: { id: true } });
+    for (const story of userStories) {
+      await prismaClient.storyPage.deleteMany({ where: { storyId: story.id } });
+    }
+    await prismaClient.story.deleteMany({ where: { userId: id } });
+    await prismaClient.model.deleteMany({ where: { userId: id } });
+    await prismaClient.userCredit.deleteMany({ where: { userId: id } });
+    await prismaClient.user.delete({ where: { id } });
+
+    logger.info({ userId: id }, "Admin deleted user and all their data");
+    res.json({ success: true, message: "User and all associated data deleted" });
+  } catch (error) {
+    logger.error({ error, id }, "Failed to delete user");
+    res.status(500).json({ message: "Failed to delete user" });
+  }
+});
+
+// ─────────────────────────────────────────
+// CREDITS
+// ─────────────────────────────────────────
+
+/**
+ * POST /admin/credits
+ * Add, subtract, or set credits for a user
+ */
+router.post("/credits", async (req, res) => {
+  const { userId, amount, action } = req.body;
+
+  if (!userId || typeof amount !== "number") {
+    res.status(400).json({ message: "userId and numeric amount are required" });
+    return;
+  }
+
+  try {
+    let updated;
+    if (action === "subtract") {
+      const current = await prismaClient.userCredit.findUnique({ where: { userId } });
+      const newBalance = Math.max(0, (current?.amount ?? 0) - amount);
+      updated = await prismaClient.userCredit.upsert({
+        where: { userId },
+        update: { amount: newBalance },
+        create: { userId, amount: newBalance },
+      });
+    } else if (action === "add") {
+      updated = await prismaClient.userCredit.upsert({
+        where: { userId },
+        update: { amount: { increment: amount } },
+        create: { userId, amount },
+      });
+    } else {
+      // set exact
+      updated = await prismaClient.userCredit.upsert({
+        where: { userId },
+        update: { amount },
+        create: { userId, amount },
+      });
+    }
+
+    logger.info({ userId, newAmount: updated.amount, action }, "Admin updated credits");
+    res.json({ success: true, credits: updated.amount });
+  } catch (error) {
+    logger.error({ error, userId }, "Failed to update credits");
+    res.status(500).json({ message: "Failed to update credits" });
+  }
+});
+
+/**
+ * POST /admin/grant-free-all
+ * Grant credits to all users
+ */
+router.post("/grant-free-all", async (req, res) => {
+  const { amount = 1000 } = req.body;
+  try {
+    const users = await prismaClient.user.findMany({ select: { id: true } });
+
+    await Promise.all(
+      users.map((u) =>
+        prismaClient.userCredit.upsert({
+          where: { userId: u.id },
+          update: { amount: { increment: amount } },
+          create: { userId: u.id, amount },
+        })
+      )
+    );
+
+    logger.info({ totalUsers: users.length, amount }, "Granted credits to all users");
+    res.json({ success: true, message: `Granted ${amount} credits to all ${users.length} users` });
+  } catch (error) {
+    logger.error({ error }, "Failed to grant credits to all");
+    res.status(500).json({ message: "Failed to grant credits" });
+  }
+});
+
+/**
+ * POST /admin/reset-credits/:id
+ * Reset a user's credits to 0
+ */
+router.post("/reset-credits/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const updated = await prismaClient.userCredit.upsert({
+      where: { userId: id },
+      update: { amount: 0 },
+      create: { userId: id, amount: 0 },
+    });
+    logger.info({ userId: id }, "Admin reset user credits to 0");
+    res.json({ success: true, credits: updated.amount });
+  } catch (error) {
+    logger.error({ error, id }, "Failed to reset credits");
+    res.status(500).json({ message: "Failed to reset credits" });
+  }
+});
+
+// ─────────────────────────────────────────
+// STORIES
+// ─────────────────────────────────────────
+
+/**
+ * GET /admin/stories
+ * All stories with user info and page counts
+ */
+router.get("/stories", async (req, res) => {
+  try {
+    const { status, limit = "100", offset = "0", search } = req.query as Record<string, string>;
+
+    const where: any = {};
+    if (status && status !== "all") where.status = status;
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { childName: { contains: search, mode: "insensitive" } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    const stories = await prismaClient.story.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: parseInt(limit),
+      skip: parseInt(offset),
+      include: {
+        user: { select: { email: true, name: true, id: true } },
+        pages: { select: { id: true, pageNumber: true, status: true, imageUrl: true } },
+        model: { select: { name: true, thumbnail: true } },
+      },
+    });
+
+    const total = await prismaClient.story.count({ where });
+    res.json({ stories, total });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch admin stories");
+    res.status(500).json({ message: "Failed to fetch stories" });
+  }
+});
+
+/**
+ * DELETE /admin/story/:id
+ */
+router.delete("/story/:id", async (req, res) => {
+  const storyId = req.params.id;
+  try {
+    await prismaClient.storyPage.deleteMany({ where: { storyId } });
+    await prismaClient.story.delete({ where: { id: storyId } });
+    logger.info({ storyId }, "Admin deleted story");
+    res.json({ success: true });
+  } catch (error) {
+    logger.error({ error, storyId }, "Failed to delete story");
+    res.status(500).json({ message: "Failed to delete story" });
+  }
+});
+
+// ─────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────
+
+/**
+ * GET /admin/models
+ * All AI models with user info
+ */
+router.get("/models", async (req, res) => {
+  try {
+    const { status, limit = "100", offset = "0", search } = req.query as Record<string, string>;
+
+    const where: any = {};
+    if (status && status !== "all") where.trainingStatus = status;
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { user: { email: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    const models = await prismaClient.model.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      take: parseInt(limit),
+      skip: parseInt(offset),
+      include: {
+        user: { select: { email: true, name: true, id: true } },
+        stories: { select: { id: true } },
+      },
+    });
+
+    const total = await prismaClient.model.count({ where });
+    res.json({ models, total });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch admin models");
+    res.status(500).json({ message: "Failed to fetch models" });
+  }
+});
+
+/**
+ * DELETE /admin/model/:id
+ */
+router.delete("/model/:id", async (req, res) => {
+  const modelId = req.params.id;
+  try {
+    await prismaClient.model.delete({ where: { id: modelId } });
+    logger.info({ modelId }, "Admin deleted model");
+    res.json({ success: true });
+  } catch (error) {
+    logger.error({ error, modelId }, "Failed to delete model");
+    res.status(500).json({ message: "Failed to delete model" });
+  }
+});
+
+// ─────────────────────────────────────────
+// QUICK ACTIONS
+// ─────────────────────────────────────────
+
+/**
+ * POST /admin/quick-story
+ * Create a sample story for testing
+ */
+router.post("/quick-story", async (req, res) => {
+  const userId = req.userId!;
+  try {
+    let model = await prismaClient.model.findFirst({ where: { userId } });
+    if (!model) {
+      model = await prismaClient.model.create({
+        data: {
+          name: "Sample Hero",
+          type: "Others" as const,
+          age: 6,
+          ethinicity: "White",
+          eyeColor: "Brown",
+          bald: false,
+          zipUrl: "sample.zip",
+          userId,
+          trainingStatus: "Generated",
+          tensorPath: "sample/path.safetensors",
+        },
+      });
+    }
+
+    const story = await prismaClient.story.create({
+      data: {
+        title: "The Magic Forest Adventure",
+        userId,
+        modelId: model.id,
+        status: "Completed",
+        childName: "Alex",
+        childAge: 6,
+        storyLength: "short",
+        category: "adventure",
+      },
+    });
+
+    const pagesData = [
+      { storyId: story.id, pageNumber: 1, content: "Once upon a time, Alex found a sparkling golden key near the ancient oak tree.", imagePrompt: "Children's storybook illustration of Alex finding a golden key", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 2, content: "Alex unlocked a hidden door in the tree trunk and stepped into a glowing fairy woods.", imagePrompt: "Children's storybook illustration of Alex stepping into magical woods", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 3, content: "A friendly little dragon named Sparky flew down to guide Alex to the Crystal Lake.", imagePrompt: "Children's storybook illustration of Alex with a friendly dragon", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 4, content: "Together, Alex and Sparky solved the ancient riddle of the whispering trees.", imagePrompt: "Children's storybook illustration of Alex and dragon solving a puzzle", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 5, content: "Alex waved goodbye to Sparky and returned home with unforgettable magical memories.", imagePrompt: "Children's storybook illustration of Alex waving goodbye at sunset", status: "Generated" as const },
+    ];
+
+    await prismaClient.storyPage.createMany({ data: pagesData });
+    logger.info({ storyId: story.id }, "Quick sample story created");
+    res.json({ success: true, storyId: story.id });
+  } catch (error) {
+    logger.error({ error }, "Failed to create quick story");
+    res.status(500).json({ message: "Failed to create sample story" });
+  }
+});
+
+/**
+ * GET /admin/preview-pdf
+ * Generate and stream an empty/sample storybook PDF layout preview
+ */
+router.get("/preview-pdf", async (req, res) => {
+  try {
+    const pdfService = new PDFService();
+    const title = (req.query.title as string) || "Empty Storybook Layout Preview";
+    const pdfBuffer = await pdfService.generateEmptyPreviewPdf(title);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'inline; filename="empty-storybook-preview.pdf"');
+    res.send(pdfBuffer);
+  } catch (error) {
+    logger.error({ error }, "Failed to generate empty preview PDF");
+    res.status(500).json({ message: "Failed to generate empty preview PDF" });
+  }
+});
+
+/**
+ * GET /admin/activity
+ * Recent activity across the platform
+ */
+router.get("/activity", async (_req, res) => {
+  try {
+    const [recentUsers, recentStories, recentModels] = await Promise.all([
+      prismaClient.user.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, email: true, name: true, createdAt: true },
+      }),
+      prismaClient.story.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, title: true, status: true, createdAt: true, user: { select: { email: true } } },
+      }),
+      prismaClient.model.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: { id: true, name: true, trainingStatus: true, createdAt: true, user: { select: { email: true } } },
+      }),
+    ]);
+
+    const activity = [
+      ...recentUsers.map((u) => ({ type: "user_joined", id: u.id, label: u.email, time: u.createdAt })),
+      ...recentStories.map((s) => ({ type: "story_created", id: s.id, label: s.title, userEmail: s.user?.email, status: s.status, time: s.createdAt })),
+      ...recentModels.map((m) => ({ type: "model_trained", id: m.id, label: m.name, userEmail: m.user?.email, status: m.trainingStatus, time: m.createdAt })),
+    ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+    res.json({ activity: activity.slice(0, 15) });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch activity");
+    res.status(500).json({ message: "Failed to fetch activity" });
+  }
+});
+
+export const adminRouter = router;

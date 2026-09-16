@@ -1,0 +1,19 @@
+
+  {
+    "name": "common",
+    "module": "index.ts",
+    "exports": {
+      "./types": "./types.ts",
+      "./inferred": "./inferred-types.ts"
+    },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "engines": {
+    "node": ">=22.11.0"
+  },
+  "description": "",
+  "dependencies": {
+    "zod": "^3.24.4"
+  }
+}

@@ -1,0 +1,606 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(uuid())
+  clerkId           String   @unique
+  email             String   @unique
+  name              String?
+  profilePicture    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Business features
+  subscription      Subscription?
+  referralsGiven    ReferralProgram[] @relation("Referrer")
+  referralsReceived ReferralProgram[] @relation("Referred")
+  educationalDiscount EducationalDiscount?
+  supportTickets    SupportTicket[]
+  giftSubscriptionsSent GiftSubscription[] @relation("GiftSender")
+  giftSubscriptionsReceived GiftSubscription[] @relation("GiftRecipient")
+  
+  // Existing relations...
+  models            Model[]
+  outputImages      OutputImages[]
+  stories           Story[]
+  transactions      Transaction[]
+  userCredit        UserCredit?
+  orders            Order[]
+  
+  @@index([clerkId])
+  @@index([email])
+}
+
+enum ModelTrainingStatusEnum {
+  Pending
+  Generated
+  Failed
+}
+
+model Model {
+  id              String      @id @default(uuid())
+  name            String
+  type            ModelTypeEnum
+  age             Int
+  ethinicity      EthenecityEnum  
+  eyeColor        EyeColorEnum
+  bald            Boolean
+  userId          String
+  user            User        @relation(fields: [userId], references: [id])
+  triggerWord     String?
+  tensorPath      String?
+  thumbnail       String?
+  trainingStatus  ModelTrainingStatusEnum @default(Pending)
+  outputImages    OutputImages[]
+  stories         Story[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  falAiRequestId  String?
+  zipUrl          String
+  open            Boolean    @default(false)
+  
+  @@index([falAiRequestId])
+  @@index([userId, trainingStatus])
+  @@index([open, trainingStatus])
+}
+
+enum OutputImageStatusEnum {
+  Pending
+  Generated
+  Failed
+}
+
+model OutputImages {
+  id        String  @id @default(uuid())
+  imageUrl  String  @default("")
+  modelId   String
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  prompt    String
+  falAiRequestId    String?
+  status    OutputImageStatusEnum   @default(Pending)
+  model     Model   @relation(fields: [modelId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([falAiRequestId])
+  @@index([userId, status])
+  @@index([modelId, status])
+}
+
+model Packs {
+  id        String   @id @default(uuid())
+  name      String
+  description String @default("")
+  imageUrl1    String @default("")
+  imageUrl2    String @default("")
+  prompts   PackPrompts[]
+}
+
+model PackPrompts {
+  id        String    @id @default(uuid())
+  prompt    String
+  packId    String
+  pack      Packs    @relation(fields: [packId], references: [id])
+}
+
+// Subscription Tiers
+enum SubscriptionTier {
+  FREE
+  STARTER
+  PREMIUM
+  FAMILY
+}
+
+// Subscription Status
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  UNPAID
+  TRIALING
+}
+
+// Payment Providers
+enum PaymentProvider {
+  STRIPE
+  RAZORPAY
+  PAYPAL
+}
+
+// Referral Status
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
+
+// Support Ticket Status
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+// Educational Verification Status
+enum EducationalStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+model Subscription {
+  id                String            @id @default(cuid())
+  userId            String            @unique
+  tier              SubscriptionTier  @default(FREE)
+  status            SubscriptionStatus @default(TRIALING)
+  stripeCustomerId  String?           @unique
+  stripeSubscriptionId String?        @unique
+  razorpayCustomerId String?         @unique
+  razorpaySubscriptionId String?     @unique
+  currentPeriodStart  DateTime?
+  currentPeriodEnd    DateTime?
+  trialEnd            DateTime?
+  cancelAtPeriodEnd   Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  
+  user                User            @relation(fields: [userId], references: [id])
+  invoices            Invoice[]
+  usage               UsageRecord[]
+  
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@index([razorpayCustomerId])
+}
+
+model Invoice {
+  id                String          @id @default(cuid())
+  subscriptionId    String
+  provider          PaymentProvider
+  providerInvoiceId String         @unique
+  amount            Int            // in cents
+  currency          String         @default("usd")
+  status            String         // paid, open, void, uncollectible
+  hostedUrl         String?
+  pdfUrl            String?
+  createdAt         DateTime       @default(now())
+  paidAt            DateTime?
+  
+  subscription      Subscription   @relation(fields: [subscriptionId], references: [id])
+  
+  @@index([subscriptionId])
+  @@index([providerInvoiceId])
+}
+
+model UsageRecord {
+  id                String    @id @default(cuid())
+  userId            String
+  subscriptionId    String
+  feature           String    // stories, audio, pdf, storage
+  usage             Int       // count
+  limit             Int       // max allowed
+  period            String    // daily, monthly
+  createdAt         DateTime  @default(now())
+  
+  subscription      Subscription @relation(fields: [subscriptionId], references: [id])
+  
+  @@index([userId, feature])
+  @@index([subscriptionId])
+}
+
+model ReferralProgram {
+  id                String        @id @default(cuid())
+  referrerId        String
+  referredUserId    String        @unique
+  referralCode      String        @unique
+  commissionRate    Float         @default(0.2) // 20%
+  totalCommission   Int           @default(0) // in cents
+  status            ReferralStatus @default(PENDING)
+  expiresAt         DateTime
+  createdAt         DateTime      @default(now())
+  completedAt       DateTime?
+  
+  referrer          User          @relation("Referrer", fields: [referrerId], references: [id])
+  referredUser      User          @relation("Referred", fields: [referredUserId], references: [id])
+  
+  @@index([referrerId])
+  @@index([referralCode])
+}
+
+model EducationalDiscount {
+  id                String            @id @default(cuid())
+  userId            String            @unique
+  email             String            @unique
+  institution       String
+  role              String            // teacher, parent, librarian
+  verificationCode  String            @unique
+  discountPercent   Float             @default(0.5) // 50% off
+  status            EducationalStatus @default(PENDING)
+  documents         Json?             // verification documents
+  verifiedAt        DateTime?
+  expiresAt         DateTime
+  createdAt         DateTime          @default(now())
+  
+  user              User              @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([email])
+}
+
+model SupportTicket {
+  id                String      @id @default(cuid())
+  userId            String
+  subject           String
+  description       String      @db.Text
+  category          String      // billing, technical, feature-request
+  priority          String      // low, medium, high, urgent
+  status            TicketStatus @default(OPEN)
+  assignedTo        String?     // admin user ID
+  resolution        String?     @db.Text
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  resolvedAt        DateTime?
+  
+  user              User        @relation(fields: [userId], references: [id])
+  messages          TicketMessage[]
+  
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+}
+
+model TicketMessage {
+  id            String   @id @default(cuid())
+  ticketId      String
+  senderId      String   // user or admin
+  message       String   @db.Text
+  isAdmin       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  
+  ticket        SupportTicket @relation(fields: [ticketId], references: [id])
+  
+  @@index([ticketId])
+}
+
+model GiftSubscription {
+  id                String    @id @default(cuid())
+  senderId          String
+  recipientEmail    String
+  recipientName     String
+  tier              SubscriptionTier
+  message           String?   @db.Text
+  code              String    @unique
+  isRedeemed        Boolean   @default(false)
+  recipientId       String?   // user ID who redeemed
+  expiresAt         DateTime
+  createdAt         DateTime  @default(now())
+  redeemedAt        DateTime?
+  
+  sender            User      @relation("GiftSender", fields: [senderId], references: [id])
+  recipient         User?     @relation("GiftRecipient", fields: [recipientId], references: [id])
+  
+  @@index([code])
+  @@index([recipientId])
+  @@index([senderId])
+  @@index([recipientEmail])
+}
+
+model BusinessAnalytics {
+  id                String    @id @default(cuid())
+  date              DateTime  @unique
+  mrr               Int       // monthly recurring revenue
+  newSubscriptions  Int
+  cancelledSubscriptions Int
+  churnRate         Float
+  ltv               Int       // lifetime value
+  arpu              Int       // average revenue per user
+  totalUsers        Int
+  activeUsers       Int
+  storiesGenerated  Int
+  audioGenerated    Int
+  pdfsGenerated     Int
+  supportTickets    Int
+  createdAt         DateTime  @default(now())
+  
+  @@index([date])
+}
+
+enum PlanType {
+  basic
+  premium
+  family
+}
+
+enum ModelTypeEnum {
+  Man
+  Woman
+  Others
+}
+
+enum EthenecityEnum {
+  White
+  Black
+  Asian_American    @map("Asian American")
+  East_Asian        @map("East Asian")
+  South_East_Asian  @map("South East Asian")
+  South_Asian       @map("South Asian")
+  Middle_Eastern    @map("Middle Eastern")
+  Pacific
+  Hispanic
+}
+
+enum EyeColorEnum {
+  Brown
+  Blue
+  Hazel
+  Gray
+}
+
+model UserCredit {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int      @default(20)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Transaction {
+  id          String           @id @default(cuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  amount      Int
+  currency    String
+  paymentId   String
+  orderId     String
+  plan        PlanType
+  status      TransactionStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+// Enhanced Story Features
+model Story {
+  id          String   @id @default(uuid())
+  title       String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  modelId     String
+  model       Model    @relation(fields: [modelId], references: [id])
+  status      StoryStatusEnum @default(Pending)
+  pages       StoryPage[]
+  analytics   StoryAnalytics?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Enhanced personalization fields
+  childName   String?
+  childAge    Int?
+  storyLength StoryLengthEnum @default(medium)
+  category    StoryCategoryEnum @default(adventure)
+  dedication  String?
+  templateId  String?
+  template    StoryTemplate? @relation(fields: [templateId], references: [id])
+  
+  // Audio narration settings
+  includeAudio Boolean @default(false)
+  voiceId      String? // ElevenLabs voice ID
+  
+  // Sharing & visibility
+  isPublic    Boolean @default(false)
+  shareToken  String? @unique
+  readCount   Int @default(0)
+  
+  // Metadata
+  tags        String[]
+  language    String @default("en")
+  readingTime Int? // in minutes
+  
+  // Completion tracking
+  completedAt DateTime?
+  pdfUrl      String?
+  
+  orders      Order[]
+  
+  @@index([userId, status])
+  @@index([createdAt])
+  @@index([isPublic, status])
+  @@index([shareToken])
+}
+
+model StoryTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  ageRange    String
+  category    StoryCategoryEnum
+  prompts     Json
+  sampleImage String?
+  coverImage  String?
+  isActive    Boolean @default(true)
+  difficulty  Int @default(1)
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  stories     Story[]
+  
+  @@index([category, ageRange])
+  @@index([isActive])
+  @@index([difficulty])
+}
+
+model UserPreferences {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  defaultAge        Int @default(5)
+  autoDedication    Boolean @default(true)
+  preferredLength   StoryLengthEnum @default(medium)
+  preferredCategory StoryCategoryEnum @default(adventure)
+  language          String @default("en")
+  emailNotifications Boolean @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model StoryAnalytics {
+  id          String   @id @default(uuid())
+  storyId     String   @unique
+  story       Story    @relation(fields: [storyId], references: [id])
+  views       Int @default(0)
+  shares      Int @default(0)
+  downloads   Int @default(0)
+  avgReadTime Int? // in seconds
+  lastReadAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([storyId])
+  @@index([lastReadAt])
+}
+
+// Enhanced enums
+enum StoryStatusEnum {
+  Pending
+  Generating
+  Completed
+  Failed
+  Processing
+}
+
+enum StoryLengthEnum {
+  short    // 5 pages
+  medium   // 8 pages  
+  long     // 12 pages
+  extended // 16 pages
+}
+
+enum StoryCategoryEnum {
+  bedtime
+  adventure
+  friendship
+  learning
+  animals
+  fantasy
+  moral
+  seasonal
+  science
+  history
+  emotions
+  family
+}
+
+model StoryPage {
+  id             String   @id @default(uuid())
+  storyId        String
+  story          Story    @relation(fields: [storyId], references: [id])
+  pageNumber     Int
+  content        String   @db.Text
+  imageUrl       String?
+  audioUrl       String?
+  imagePrompt    String
+  falAiRequestId String?
+  status         OutputImageStatusEnum @default(Pending)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@index([falAiRequestId])
+  @@index([storyId, pageNumber])
+  @@index([storyId, status])
+}
+
+// Physical book orders (Cash on Delivery)
+enum OrderStatusEnum {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentMethodEnum {
+  CASH_ON_DELIVERY
+}
+
+enum PaymentStatusEnum {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Order {
+  id            String             @id @default(uuid())
+  orderNumber   String             @unique
+  userId        String
+  user          User               @relation(fields: [userId], references: [id])
+  storyId       String
+  story         Story              @relation(fields: [storyId], references: [id])
+
+  // Customer delivery details
+  customerName  String
+  phone         String
+  address       String             @db.Text
+  city          String
+  postalCode    String?
+
+  // Price
+  totalAmount   Decimal            @db.Decimal(10, 2)
+  currency      String             @default("USD")
+
+  // Payment
+  paymentMethod PaymentMethodEnum  @default(CASH_ON_DELIVERY)
+  paymentStatus PaymentStatusEnum  @default(PENDING)
+
+  // Fulfillment
+  status        OrderStatusEnum    @default(PENDING)
+
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([storyId])
+  @@index([status])
+  @@index([orderNumber])
+}

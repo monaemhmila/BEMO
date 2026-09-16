@@ -1,0 +1,9 @@
+   ▲ Next.js 15.5.6
+   - Local:        http://localhost:3001
+   - Network:      http://192.168.100.93:3001
+
+ ✓ Starting...
+ ✓ Ready in 812ms
+Unable to fetch templates Error: Failed to fetch templates
+    at l (C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\.next\server\app\storybook\templates\page.js:2:7986)
+    at async m (C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\.next\server\app\storybook\templates\page.js:2:8148)

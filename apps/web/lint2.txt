@@ -1,0 +1,215 @@
+﻿
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\admin\page.tsx
+   10:10  warning  'ChevronDown' is defined but never used                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+   10:23  warning  'ChevronRight' is defined but never used                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   10:42  warning  'AlertTriangle' is defined but never used                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+   10:64  warning  'Star' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   11:33  warning  'ArrowDownRight' is defined but never used                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+   11:49  warning  'Filter' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   12:3   warning  'Plus' is defined but never used                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   12:9   warning  'Minus' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   12:16  warning  'MoreVertical' is defined but never used                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   12:33  warning  'Check' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  940:35  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\debug-auth\page.tsx
+   18:46  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   19:59  warning  Unexpected any. Specify a different type                                                                       @typescript-eslint/no-explicit-any
+   23:6   warning  React Hook useEffect has a missing dependency: 'checkToken'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  153:48  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                react/no-unescaped-entities
+  153:67  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\layout.tsx
+   6:10  warning  'Footer' is defined but never used        @typescript-eslint/no-unused-vars
+  10:3   warning  'SignInButton' is defined but never used  @typescript-eslint/no-unused-vars
+  11:3   warning  'SignUpButton' is defined but never used  @typescript-eslint/no-unused-vars
+  12:3   warning  'SignedIn' is defined but never used      @typescript-eslint/no-unused-vars
+  13:3   warning  'SignedOut' is defined but never used     @typescript-eslint/no-unused-vars
+  14:3   warning  'UserButton' is defined but never used    @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\stories\new\page.tsx
+  123:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  156:71  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\stories\templates\[slug]\page.tsx
+   79:15  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  220:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\storybook\create\page.tsx
+  26:28  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  29:46  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\storybook\page.tsx
+  12:3   warning  'CheckCircle2' is defined but never used                         @typescript-eslint/no-unused-vars
+  90:34  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\app\test-api\page.tsx
+   39:21  warning  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+   70:21  warning  Unexpected any. Specify a different type                         @typescript-eslint/no-explicit-any
+  105:30  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  107:23  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  107:37  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  107:42  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  107:55  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\Camera.tsx
+  61:6  warning  React Hook useEffect has a missing dependency: 'fetchImages'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\GenerateImage.tsx
+  22:9   warning  'router' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  43:14  warning  'error' is defined but never used            @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\GlowEffect.tsx
+  142:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\Models.tsx
+    2:31  warning  'useCallback' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+   93:14  warning  'err' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+  118:6   warning  React Hook useEffect has a missing dependency: 'fetchModels'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  244:72  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                 react/no-unescaped-entities
+  244:82  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                 react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\PacksClient.tsx
+   7:19  warning  'Search' is defined but never used                  @typescript-eslint/no-unused-vars
+   7:27  warning  'Sparkles' is defined but never used                @typescript-eslint/no-unused-vars
+   7:37  warning  'Filter' is defined but never used                  @typescript-eslint/no-unused-vars
+   8:10  warning  'Input' is defined but never used                   @typescript-eslint/no-unused-vars
+  10:10  warning  'Badge' is defined but never used                   @typescript-eslint/no-unused-vars
+  17:9   warning  'filteredPacks' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  70:30  warning  'index' is defined but never used                   @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\Benefits.tsx
+  3:58  warning  'Layers' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\BentoGrid.tsx
+   39:57  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+  106:74  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\Hero.tsx
+    3:8    warning  'Image' is defined but never used                                @typescript-eslint/no-unused-vars
+    5:52   warning  'ShieldCheck' is defined but never used                          @typescript-eslint/no-unused-vars
+    5:65   warning  'MousePointer2' is defined but never used                        @typescript-eslint/no-unused-vars
+   11:9    warning  'router' is assigned a value but never used                      @typescript-eslint/no-unused-vars
+  137:36   warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+  137:229  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\HeroHeader.tsx
+   7:22  warning  'BookOpen' is defined but never used                     @typescript-eslint/no-unused-vars
+   7:32  warning  'Sparkles' is defined but never used                     @typescript-eslint/no-unused-vars
+   9:7   warning  'wordAnimation' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  14:7   warning  'characterAnimation' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\HowItWorks.tsx
+  4:10  warning  'Upload' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\StoryGallery.tsx
+  87:27  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\StoryShowcase.tsx
+   5:8   warning  'Image' is defined but never used                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+  57:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  99:17  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  99:41  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  99:68  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\home\TrustedBy.tsx
+  82:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\ui\accordion.tsx
+   21:27  warning  'type' is defined but never used                  @typescript-eslint/no-unused-vars
+   21:33  warning  'collapsible' is defined but never used           @typescript-eslint/no-unused-vars
+   45:6   warning  'className' is missing in props validation        react/prop-types
+   59:18  warning  'onClick' is missing in props validation          react/prop-types
+   80:11  warning  'expanded' is assigned a value but never used     @typescript-eslint/no-unused-vars
+   81:9   warning  'internalRef' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  111:6   warning  'className' is missing in props validation        react/prop-types
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\ui\testimonials-columns.tsx
+  34:71  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  34:78  warning  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  36:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\components\ui\upload.tsx
+   3:8   warning  'JSZip' is defined but never used        @typescript-eslint/no-unused-vars
+   6:3   warning  'Card' is defined but never used         @typescript-eslint/no-unused-vars
+   7:3   warning  'CardContent' is defined but never used  @typescript-eslint/no-unused-vars
+  12:32  warning  'ImageIcon' is defined but never used    @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\generator\components\GenerationProgress.tsx
+  223:73  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\generator\components\StoryGenerator.tsx
+  152:19  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  301:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  317:40  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  338:30  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  371:82  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                          react/no-unescaped-entities
+  408:89  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  484:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\payments\components\PaymentSuccessContent.tsx
+   16:18  warning  'AnimatePresence' is defined but never used                      @typescript-eslint/no-unused-vars
+  125:15  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\payments\components\PurchasesPage.tsx
+   24:11  warning  'error' is assigned a value but never used                       @typescript-eslint/no-unused-vars
+  184:67  warning  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\payments\components\VerifyContent.tsx
+  13:3   warning  'ArrowRight' is defined but never used    @typescript-eslint/no-unused-vars
+  89:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\storybook\components\OrderBookModal.tsx
+  11:3  warning  'ShoppingCart' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\storybook\components\StoryLibrary.tsx
+  177:56  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  254:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\storybook\components\StoryViewer.tsx
+   18:3   warning  'Share2' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   20:3   warning  'RefreshCw' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   77:9   warning  'intervalId' is never reassigned. Use 'const' instead                                                                                                                                                                                                                                    prefer-const
+  116:6   warning  React Hook useEffect has a missing dependency: 'currentPage?.audioUrl'. Either include it or remove the dependency array                                                                                                                                                                 react-hooks/exhaustive-deps
+  132:6   warning  React Hook useEffect has a missing dependency: 'isLastPage'. Either include it or remove the dependency array                                                                                                                                                                            react-hooks/exhaustive-deps
+  323:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\features\train\components\Train.tsx
+    6:3   warning  'CardContent' is defined but never used                @typescript-eslint/no-unused-vars
+    7:3   warning  'CardFooter' is defined but never used                 @typescript-eslint/no-unused-vars
+   18:10  warning  'Switch' is defined but never used                     @typescript-eslint/no-unused-vars
+   20:21  warning  'useMemo' is defined but never used                    @typescript-eslint/no-unused-vars
+   27:10  warning  'X' is defined but never used                          @typescript-eslint/no-unused-vars
+   47:10  warning  'zipKey' is assigned a value but never used            @typescript-eslint/no-unused-vars
+   52:16  warning  'setBald' is assigned a value but never used           @typescript-eslint/no-unused-vars
+   63:10  warning  'trainingStatus' is assigned a value but never used    @typescript-eslint/no-unused-vars
+  159:19  warning  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  166:9   warning  'handleRemoveFile' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  250:21  warning  Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+  279:9   warning  'isFormValid' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\hooks\use-credits.ts
+   2:31  warning  'useCallback' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+  56:14  warning  'err' is defined but never used                                                                                  @typescript-eslint/no-unused-vars
+  97:6   warning  React Hook useEffect has a missing dependency: 'fetchCredits'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\hooks\use-toast.ts
+  21:7  warning  'actionTypes' is assigned a value but only used as a type  @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\hooks\usePayment.ts
+   8:7   warning  'stripePromise' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  19:59  warning  'p0' is defined but never used                      @typescript-eslint/no-unused-vars
+  19:72  warning  'p1' is defined but never used                      @typescript-eslint/no-unused-vars
+  67:39  warning  Unexpected any. Specify a different type            @typescript-eslint/no-explicit-any
+  69:14  warning  'error' is defined but never used                   @typescript-eslint/no-unused-vars
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\hooks\useTransactions.ts
+  28:21  warning  Unexpected any. Specify a different type                                                                              @typescript-eslint/no-explicit-any
+  41:6   warning  React Hook useEffect has a missing dependency: 'fetchTransactions'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\monem\OneDrive\Desktop\BEMO\StoryBook-AI\apps\web\lib\i18n-context.tsx
+  34:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:22  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 136 problems (0 errors, 136 warnings)
+
