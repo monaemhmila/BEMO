@@ -237,31 +237,7 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
 export const STORYBOOK_NEGATIVE_PROMPT =
   "text, typography, words, letters, font, watermark, signature, subtitles, signs, speech bubbles, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, extra toes, deformed limbs, blurry, distorted, white space, white borders, blank margins, shorts, bare legs, partial crop, truncated frame";
 
-const VALID_STORY_CATEGORIES = new Set([
-  "bedtime",
-  "adventure",
-  "friendship",
-  "learning",
-  "animals",
-  "fantasy",
-  "moral",
-  "seasonal",
-  "science",
-  "history",
-  "emotions",
-  "family",
-]);
-
-const CATEGORY_MAP: Record<string, string> = {
-  ocean: "adventure",
-  space: "science",
-  superhero: "fantasy",
-};
-
-export function normalizeStoryCategory(rawCategory?: string | null): any {
-  if (!rawCategory) return "adventure";
-  const lower = rawCategory.toLowerCase().trim();
-  if (VALID_STORY_CATEGORIES.has(lower)) return lower;
-  if (CATEGORY_MAP[lower]) return CATEGORY_MAP[lower];
-  return "adventure";
+export function normalizeStoryCategory(rawCategory?: string | null): string {
+  if (!rawCategory || !rawCategory.trim()) return "adventure";
+  return rawCategory.trim();
 }

@@ -417,7 +417,7 @@ model Story {
   childName   String?
   childAge    Int?
   storyLength StoryLengthEnum @default(medium)
-  category    StoryCategoryEnum @default(adventure)
+  category    String @default("adventure")
   dedication  String?
   templateId  String?
   template    StoryTemplate? @relation(fields: [templateId], references: [id])
@@ -453,7 +453,7 @@ model StoryTemplate {
   name        String
   description String
   ageRange    String
-  category    StoryCategoryEnum
+  category    String @default("adventure")
   prompts     Json
   sampleImage String?
   coverImage  String?
@@ -475,7 +475,7 @@ model UserPreferences {
   defaultAge        Int @default(5)
   autoDedication    Boolean @default(true)
   preferredLength   StoryLengthEnum @default(medium)
-  preferredCategory StoryCategoryEnum @default(adventure)
+  preferredCategory String @default("adventure")
   language          String @default("en")
   emailNotifications Boolean @default(true)
   createdAt         DateTime @default(now())
