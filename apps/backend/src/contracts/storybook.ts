@@ -235,4 +235,4 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
  * Guards identity, anatomy, and the no-AI-text rule.
  */
 export const STORYBOOK_NEGATIVE_PROMPT =
-  "text, typography, words, letters, font, watermark, signature, subtitles, signs, speech bubbles, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, extra toes, deformed limbs, blurry, distorted";
+  "text, typography, words, letters, font, watermark, signature, subtitles, signs, speech bubbles, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, extra toes, deformed limbs, blurry, distorted, white space, white borders, blank margins, shorts, bare legs, partial crop, truncated frame";

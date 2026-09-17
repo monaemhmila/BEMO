@@ -113,6 +113,8 @@ For each page:
 - Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES (vibrant colors, beautiful lighting, engaging scenery, cute side characters).
 - Keep the hero as the main character.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
+- Ensure the hero child is always fully clothed wearing long trousers and pants (never shorts).
+- Ensure the illustration is full bleed edge-to-edge covering the entire frame with zero white space or blank margins.
 - Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
 Return ONLY valid JSON:
@@ -205,6 +207,8 @@ For each page:
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.
+- Ensure the hero child is always fully clothed wearing long trousers and pants (never wearing shorts or short clothing).
+- Ensure the illustration is full bleed edge-to-edge covering the entire frame with zero white space or blank margins.
 - Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
 Return ONLY valid JSON:
