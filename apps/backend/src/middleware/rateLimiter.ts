@@ -4,6 +4,7 @@ import type { Request } from "express";
 const baseConfig = {
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req: Request) => req.method === "OPTIONS",
 };
 
 const buildMessage = (reason: string, retryAfterMinutes: number) => ({

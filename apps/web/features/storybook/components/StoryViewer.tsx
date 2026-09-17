@@ -262,19 +262,7 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
           >
             <Maximize2 className="w-5 h-5" />
           </Button>
-          <Button
-            variant="ghost"
-            className="text-white/80 hover:text-white hover:bg-white/10"
-            onClick={handleExportPdf}
-            disabled={exporting}
-          >
-            {exporting ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Download className="w-4 h-4 mr-2" />
-            )}
-            Export PDF
-          </Button>
+
           {story.status === "Completed" && (
             <Button
               variant="gradient"

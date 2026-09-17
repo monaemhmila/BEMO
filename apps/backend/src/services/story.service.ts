@@ -114,7 +114,7 @@ For each page:
 - Keep the hero as the main character.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never shorts).
-- Ensure the illustration is full bleed edge-to-edge covering the entire frame with zero white space or blank margins.
+- Ensure there is no white space , no blank margins.
 - Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
 Return ONLY valid JSON:
@@ -208,7 +208,7 @@ For each page:
 - Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never wearing shorts or short clothing).
-- Ensure the illustration is full bleed edge-to-edge covering the entire frame with zero white space or blank margins.
+- Ensure there is no white space , no blank margins.
 - Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
 Return ONLY valid JSON:
@@ -676,12 +676,12 @@ Return ONLY valid JSON:
     return "9-12";
   }
 
-/**
-   * Every story is a fixed landscape book with exactly 16 pages: page 1 is
-   * the cover, pages 2-14 carry the story, page 15 the emotional ending and
-   * page 16 the closing. The selected story length no longer affects the
-   * number of pages.
-   */
+  /**
+     * Every story is a fixed landscape book with exactly 16 pages: page 1 is
+     * the cover, pages 2-14 carry the story, page 15 the emotional ending and
+     * page 16 the closing. The selected story length no longer affects the
+     * number of pages.
+     */
   private getPageCount(
     _length: PersonalizedStoryInput["storyLength"]
   ): number {
@@ -720,7 +720,7 @@ Return ONLY valid JSON:
         if (isCover) {
           if (!page?.imageDescription?.trim()) {
             throw new Error(
-              `Story page 1 is missing illustration direction`
+              `Story page 1 is missing  direction`
             );
           }
         } else if (
@@ -728,7 +728,7 @@ Return ONLY valid JSON:
           !page?.imageDescription?.trim()
         ) {
           throw new Error(
-            `Story page ${pageNumber} is missing text or illustration direction`
+            `Story page ${pageNumber} is missing text or  direction`
           );
         }
 

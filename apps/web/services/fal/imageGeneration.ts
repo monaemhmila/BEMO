@@ -31,10 +31,10 @@ export function buildImagePrompt(params: {
   artStyle?: string;
 }): string {
   const { characterName, sceneDescription, emotion, artStyle } = params;
-  
-  const baseStyle = artStyle || "Comic-style children's storybook illustration";
+
+  const baseStyle = artStyle || "Comic-style children's storybook ";
   const emotionContext = emotion ? `, character emotion: ${emotion}` : "";
-  
+
   return `${baseStyle}. 
 Character: ${characterName} (match face reference exactly)${emotionContext}.
 Scene: ${sceneDescription}.

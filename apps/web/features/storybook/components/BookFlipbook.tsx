@@ -397,16 +397,7 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
         </Button>
         <p className="hidden md:block font-serif text-white/90 truncate px-4">{story.title}</p>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={exporting}
-            className="text-white/70 hover:text-white hover:bg-white/10 rounded-full"
-            onClick={handleExportPdf}
-          >
-            <Download className={`w-4 h-4 mr-2 ${exporting ? "animate-bounce" : ""}`} />
-            {exporting ? "Preparing…" : "PDF"}
-          </Button>
+
           <Button
             size="sm"
             className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-lg shadow-amber-900/30"

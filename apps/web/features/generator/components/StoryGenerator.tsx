@@ -337,16 +337,6 @@ export function StoryGenerator() {
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Order Printed Book Now
               </Button>
-              <a
-                href={pdfDownloadUrl}
-                download={`${generatedStory.title || "storybook"}.pdf`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl font-semibold text-sm transition-all"
-              >
-                <Download className="w-4 h-4" />
-                Download Full PDF
-              </a>
             </div>
           </div>
 
@@ -361,7 +351,7 @@ export function StoryGenerator() {
             >
               ← Create Another Story
             </button>
-            <span>Full story includes all {generatedStory.pages.length} AI-illustrated pages & PDF export</span>
+            <span>Previewing first 2 generated pages</span>
           </div>
         </Card>
 

@@ -55,7 +55,7 @@ export class FalAIModel {
       const response = await fal.subscribe("", {
         input: {
           prompt:
-            "A professional portrait photo of the person, centered, clean white background, high quality, studio lighting, 4k resolution, looking at camera, friendly expression",
+            "A professional portrait photo of the person, centered, high quality, studio lighting, 4k resolution, looking at camera, friendly expression",
           loras: [{ path: tensorPath, scale: 1 }],
           num_inference_steps: 28,
           guidance_scale: 1.5,

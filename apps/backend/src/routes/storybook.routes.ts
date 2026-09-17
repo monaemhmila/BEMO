@@ -747,14 +747,14 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       }
     );
 
-    // Step 2: Generate images in parallel with consistent character identity from the uploaded child photo.
-    const generatedPages = await Promise.all(
-      script.pages.map(async (page) => {
+    // Step 2: Generate first 2 images (pages 1 & 2) synchronously for instant preview trigger
+    const firstTwoPages = script.pages.slice(0, 2);
+    const remainingPages = script.pages.slice(2);
+
+    const previewPages = await Promise.all(
+      firstTwoPages.map(async (page) => {
         const scenePrompt = `${childName} ${page.imageDescription}`;
 
-        // Cover uses the centered reference; every other page picks the side
-        // from getPageComposition(pageNumber).characterSide so the reference
-        // framing always matches the requested character placement.
         const referenceUrl = storyRefs
           ? getReferenceForPage(storyRefs, page.pageNumber)
           : childImage;
@@ -765,7 +765,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
           imageUrl: referenceUrl,
           childName,
         }).catch((err) => {
-          logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for page, continuing without image");
+          logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for preview page");
           return null;
         });
 
@@ -796,13 +796,13 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       });
     }
 
-    // Step 3: Save story in database for user and admin
+    // Step 3: Save story in database (initially with pages 1 & 2 ready)
     const story = await prismaClient.story.create({
       data: {
         title: script.title,
         userId: req.userId!,
         modelId: userModel.id,
-        status: "Completed",
+        status: remainingPages.length === 0 ? "Completed" : "Generating",
         childName,
         childAge,
         storyLength,
@@ -812,54 +812,125 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
     });
 
     await prismaClient.storyPage.createMany({
-      data: generatedPages.map((p) => ({
-        storyId: story.id,
-        pageNumber: p.pageNumber,
-        content: p.content,
-        imagePrompt: p.imagePrompt,
-        imageUrl: p.imageUrl,
-        status: p.imageUrl ? "Generated" : "Failed",
-      })),
+      data: [
+        ...previewPages.map((p) => ({
+          storyId: story.id,
+          pageNumber: p.pageNumber,
+          content: p.content,
+          imagePrompt: p.imagePrompt,
+          imageUrl: p.imageUrl,
+          status: (p.imageUrl ? "Generated" : "Failed") as "Generated" | "Failed",
+        })),
+        ...remainingPages.map((p) => ({
+          storyId: story.id,
+          pageNumber: p.pageNumber,
+          content: p.text,
+          imagePrompt: p.imageDescription || p.text,
+          imageUrl: null,
+          status: "Pending" as "Pending",
+        })),
+      ],
     });
 
-    // Step 4: Build PDF and persist to assets/pdfs for permanent link access
-    const pdfService = new PDFService();
-    const pdfBuffer = await pdfService.generateStorybookPdf(
-      { title: script.title, dedication, childName },
-      generatedPages
-    );
+    // Step 4: Background task to generate remaining pages and compile final PDF for Admin Dashboard
+    if (remainingPages.length > 0) {
+      (async () => {
+        try {
+          await Promise.all(
+            remainingPages.map(async (page) => {
+              const scenePrompt = `${childName} ${page.imageDescription}`;
+              const referenceUrl = storyRefs
+                ? getReferenceForPage(storyRefs, page.pageNumber)
+                : childImage;
 
-    const pdfDir = path.join(process.cwd(), "assets", "pdfs");
-    if (!existsSync(pdfDir)) {
-      fs.mkdirSync(pdfDir, { recursive: true });
+              const imageUrl = await imageService.generateImageSync({
+                prompt: scenePrompt,
+                aspectRatio: "16:9",
+                imageUrl: referenceUrl,
+                childName,
+              }).catch((err) => {
+                logger.error({ err, pageNumber: page.pageNumber }, "Failed background image generation for page");
+                return null;
+              });
+
+              await prismaClient.storyPage.updateMany({
+                where: { storyId: story.id, pageNumber: page.pageNumber },
+                data: {
+                  imageUrl: imageUrl || null,
+                  status: imageUrl ? "Generated" : "Failed",
+                },
+              });
+            })
+          );
+
+          const allStoryPages = await prismaClient.storyPage.findMany({
+            where: { storyId: story.id },
+            orderBy: { pageNumber: "asc" },
+          });
+
+          const allPagesFormatted = allStoryPages.map((p) => ({
+            pageNumber: p.pageNumber,
+            content: p.content,
+            imagePrompt: p.imagePrompt,
+            imageUrl: p.imageUrl,
+          }));
+
+          const pdfService = new PDFService();
+          const pdfBuffer = await pdfService.generateStorybookPdf(
+            { title: script.title, dedication, childName },
+            allPagesFormatted
+          );
+
+          const pdfDir = path.join(process.cwd(), "assets", "pdfs");
+          if (!existsSync(pdfDir)) {
+            fs.mkdirSync(pdfDir, { recursive: true });
+          }
+          const pdfFilePath = path.join(pdfDir, `${story.id}.pdf`);
+          fs.writeFileSync(pdfFilePath, pdfBuffer);
+
+          const pdfUrl = `/assets/pdfs/${story.id}.pdf`;
+
+          await prismaClient.story.update({
+            where: { id: story.id },
+            data: {
+              status: "Completed",
+              completedAt: new Date(),
+              pdfUrl,
+            },
+          });
+
+          logger.info({ storyId: story.id }, "Full story generation & PDF compilation complete in background");
+        } catch (bgError) {
+          logger.error({ bgError, storyId: story.id }, "Background page generation/PDF creation error");
+        }
+      })();
+    } else {
+      // If story only has 2 pages total, build PDF immediately
+      const pdfService = new PDFService();
+      const pdfBuffer = await pdfService.generateStorybookPdf(
+        { title: script.title, dedication, childName },
+        previewPages
+      );
+      const pdfDir = path.join(process.cwd(), "assets", "pdfs");
+      if (!existsSync(pdfDir)) {
+        fs.mkdirSync(pdfDir, { recursive: true });
+      }
+      const pdfFilePath = path.join(pdfDir, `${story.id}.pdf`);
+      fs.writeFileSync(pdfFilePath, pdfBuffer);
+      const pdfUrl = `/assets/pdfs/${story.id}.pdf`;
+      await prismaClient.story.update({
+        where: { id: story.id },
+        data: { status: "Completed", completedAt: new Date(), pdfUrl },
+      });
     }
-    const pdfFilePath = path.join(pdfDir, `${story.id}.pdf`);
-    fs.writeFileSync(pdfFilePath, pdfBuffer);
 
-    const pdfUrl = `/assets/pdfs/${story.id}.pdf`;
-
-    await prismaClient.story.update({
-      where: { id: story.id },
-      data: { pdfUrl },
-    });
-
-    // Check if client explicitly requests a raw binary stream
-    const wantsRawBlob = req.query.format === "pdf" || req.headers.accept === "application/pdf";
-    if (wantsRawBlob) {
-      res.setHeader("Content-Type", "application/pdf");
-      const safeFilename = script.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
-      res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
-      res.send(pdfBuffer);
-      return;
-    }
-
+    // Immediately trigger & return first 2 preview images to the user
     res.json({
       success: true,
       storyId: story.id,
       title: script.title,
       childName,
-      pdfUrl,
-      pages: generatedPages,
+      pages: previewPages,
     });
     return;
   } catch (error) {

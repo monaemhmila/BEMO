@@ -351,9 +351,7 @@ export function StoryLibrary() {
                         >
                           <Play className="w-4 h-4 mr-2" /> Open
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Download className="w-4 h-4 mr-2" /> Export PDF
-                        </DropdownMenuItem>
+
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => handleDelete(story.id)}

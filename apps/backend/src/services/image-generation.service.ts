@@ -238,7 +238,7 @@ export class ImageGenerationService {
     childName?: string;
   }): string {
     const scene = input.sceneDescription.trim();
-    const styleDirectives = "correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, full bleed edge-to-edge illustration filling the entire canvas with zero white space or blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
+    const styleDirectives = "correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
 
     if (input.hasReference) {
       return `use the kid face without changing anything in the kid from the photo. ${scene}. ${styleDirectives}`;
@@ -251,13 +251,13 @@ export class ImageGenerationService {
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
     const scene = request.prompt.trim();
-    const qualityDirectives = "correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs, full bleed edge-to-edge illustration filling the entire canvas with zero white space or blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
+    const qualityDirectives = "correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs,  no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
 
     let baseScene = scene;
     if (!baseScene.includes("completely textless")) {
       baseScene = `${baseScene}. ${qualityDirectives}`;
-    } else if (!baseScene.includes("zero white space")) {
-      baseScene = `${baseScene}. full bleed edge-to-edge illustration filling the entire canvas with zero white space or blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)`;
+    } else if (!baseScene.includes("no white space")) {
+      baseScene = `${baseScene}. no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)`;
     }
 
     if (request.imageUrl && !baseScene.startsWith("use the kid face")) {

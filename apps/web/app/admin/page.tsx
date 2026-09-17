@@ -109,7 +109,7 @@ interface AdminOrder {
   createdAt: string;
   updatedAt: string;
   user: { id: string; email: string; name?: string | null };
-  story: { id: string; title: string; childName?: string | null };
+  story: { id: string; title: string; childName?: string | null; pdfUrl?: string | null };
 }
 
 interface OrdersSummary {
@@ -923,9 +923,21 @@ function OrdersTab({ orders, summary, authHeaders, onChanged }: {
                     <p className="text-white/30 text-xs mt-0.5">{timeAgo(o.createdAt)}</p>
                   </td>
                   <td className="py-3.5 px-4">
-                    <a href={`/stories/${o.story.id}`} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white text-xs font-medium underline-offset-2 hover:underline">
-                      {o.story.title}
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <a href={`/stories/${o.story.id}`} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white text-xs font-medium underline-offset-2 hover:underline">
+                        {o.story.title}
+                      </a>
+                      <a
+                        href={o.story.pdfUrl ? (o.story.pdfUrl.startsWith("http") ? o.story.pdfUrl : `${BACKEND_URL}${o.story.pdfUrl}`) : `${BACKEND_URL}/admin/story/${o.story.id}/pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                        download
+                        className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded text-[10px] font-bold flex items-center gap-1 transition-colors"
+                        title="Download Order PDF"
+                      >
+                        <Download className="w-3 h-3" /> PDF
+                      </a>
+                    </div>
                     {o.story.childName && <p className="text-white/30 text-xs">For: {o.story.childName}</p>}
                   </td>
                   <td className="py-3.5 px-4">

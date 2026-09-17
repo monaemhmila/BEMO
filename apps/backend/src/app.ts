@@ -46,8 +46,29 @@ export function createApp() {
 
     next();
   });
-  app.use(cors({ origin: true, credentials: true }));
-  app.use(helmet());
+  const corsOptions: cors.CorsOptions = {
+    origin: true,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    allowedHeaders: [
+      "Origin",
+      "X-Requested-With",
+      "Content-Type",
+      "Accept",
+      "Authorization",
+      "Cache-Control",
+      "Pragma",
+    ],
+    optionsSuccessStatus: 200,
+  };
+
+  app.use(cors(corsOptions));
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      crossOriginOpenerPolicy: false,
+    })
+  );
   app.use(compression());
   app.use(express.json({ limit: "5mb" }));
   app.use(express.urlencoded({ extended: true }));
@@ -57,15 +78,15 @@ export function createApp() {
     try {
       // Test database connection
       await prismaClient.$queryRaw`SELECT 1`;
-      res.json({ 
-        status: "ok", 
+      res.json({
+        status: "ok",
         env: env.NODE_ENV,
         database: "connected"
       });
     } catch (error) {
       logger.error({ error }, "Health check failed - database not connected");
-      res.status(503).json({ 
-        status: "error", 
+      res.status(503).json({
+        status: "error",
         env: env.NODE_ENV,
         database: "disconnected",
         error: error instanceof Error ? error.message : "Unknown error"
@@ -82,9 +103,9 @@ export function createApp() {
   app.use("/admin", adminRouter);
   app.use("/orders", orderRouter);
 
-// Simple storybook generation (no model training)
-// simpleStorybookRouter import moved to top (see imports above)
-app.use("/simple-storybook", simpleStorybookRouter);
+  // Simple storybook generation (no model training)
+  // simpleStorybookRouter import moved to top (see imports above)
+  app.use("/simple-storybook", simpleStorybookRouter);
 
   // Serve locally uploaded files (model zips, etc.) via /assets
   // eslint-disable-next-line @typescript-eslint/no-var-requires

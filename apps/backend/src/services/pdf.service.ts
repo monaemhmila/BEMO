@@ -199,7 +199,7 @@ export class PDFService {
     const samplePages: StoryPagePayload[] = [
       {
         pageNumber: 1,
-        content: "Cover - full-bleed illustration with a PDF-rendered title at the top center.",
+        content: "Cover - full-bleed  with a PDF-rendered title at the top center.",
         imageUrl: null,
       },
       {
@@ -312,7 +312,7 @@ export class PDFService {
     }
 
     this.font(doc, "BodyRegular", "Helvetica").fontSize(16).fillColor(STORY_TEXT_COLOR).text(
-      "Illustration on its way!",
+      " on its way!",
       0,
       height / 2 - 8,
       { width, align: "center" }
