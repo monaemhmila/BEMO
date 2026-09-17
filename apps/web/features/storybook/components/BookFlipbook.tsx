@@ -104,6 +104,7 @@ function PageSheet({
           src={page.imageUrl}
           alt={`Page ${page.pageNumber}`}
           onError={handleImageError}
+          decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
         />
       ) : page && isCover ? (
@@ -294,8 +295,12 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
       audio.pause();
       setAudioPlaying(false);
     } else {
-      audio.play();
-      setAudioPlaying(true);
+      // play() rejects when autoplay is blocked — keep the UI in sync instead
+      // of leaving an unhandled promise rejection in the console.
+      audio.play().then(
+        () => setAudioPlaying(true),
+        () => setAudioPlaying(false)
+      );
     }
   };
 
@@ -533,6 +538,21 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
       </div>
 
       {currentAudioUrl && <audio ref={audioRef} src={currentAudioUrl} muted={muted} />}
+
+      {/* Preload the neighbouring spreads so page turns feel instant */}
+      {[spreads[spreadIndex + 1], spreads[spreadIndex - 1]].map((neighbour, i) =>
+        [neighbour?.left?.imageUrl, neighbour?.right?.imageUrl]
+          .filter((url): url is string => !!url)
+          .map((url) => (
+            <img
+              key={`${i}-${url}`}
+              src={url}
+              alt=""
+              aria-hidden="true"
+              className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"
+            />
+          ))
+      )}
 
       {story.status === "Completed" && (
         <OrderBookModal

@@ -17,6 +17,8 @@ import {
   AlertCircle,
   Upload,
   Download,
+  ShoppingBag,
+  Package,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { handleImageError } from "@/components/ui/image-fallback";
 import { Card } from "@/components/ui/card";
+import { OrderBookModal } from "../../storybook/components/OrderBookModal";
 import {
   Select,
   SelectContent,
@@ -65,6 +68,20 @@ const STEPS = [
   { title: "Generate", description: "Create your story", icon: Sparkles },
 ];
 
+interface StoryPageData {
+  pageNumber: number;
+  content: string;
+  imageUrl?: string | null;
+}
+
+interface GeneratedStoryResult {
+  storyId: string;
+  title: string;
+  childName: string;
+  pdfUrl: string;
+  pages: StoryPageData[];
+}
+
 export function StoryGenerator() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -74,6 +91,8 @@ export function StoryGenerator() {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedStory, setGeneratedStory] = useState<GeneratedStoryResult | null>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfTitle, setPdfTitle] = useState<string>("");
 
@@ -102,7 +121,6 @@ export function StoryGenerator() {
       setError("Please use a JPG, PNG, or WebP photo.");
       return;
     }
-    // The backend accepts a 5 MB JSON request; leave room for the rest after base64 encoding.
     if (file.size > 3 * 1024 * 1024) {
       setError("Please choose a photo smaller than 3 MB.");
       return;
@@ -126,6 +144,7 @@ export function StoryGenerator() {
     setLoading(true);
     setError(null);
     setPdfUrl(null);
+    setGeneratedStory(null);
 
     try {
       const token = await getToken?.();
@@ -143,23 +162,38 @@ export function StoryGenerator() {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
-          responseType: "blob",
         }
       );
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      setPdfUrl(url);
-      setPdfTitle(`${childName}'s Storybook`);
+      if (response.data?.storyId && response.data?.pages) {
+        setGeneratedStory({
+          storyId: response.data.storyId,
+          title: response.data.title || `${childName}'s Storybook`,
+          childName: response.data.childName || childName,
+          pdfUrl: response.data.pdfUrl,
+          pages: response.data.pages,
+        });
+      } else if (response.data instanceof Blob) {
+        const blob = new Blob([response.data], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        setPdfUrl(url);
+        setPdfTitle(`${childName}'s Storybook`);
+      }
     } catch (err) {
       console.error("Generation failed", err);
       const errorResponse = err instanceof AxiosError ? err.response : undefined;
-      const msg =
-        errorResponse?.data instanceof Blob
-          ? await errorResponse.data.text().then((t: string) => {
-              try { return JSON.parse(t).message; } catch { return t; }
-            })
-          : (errorResponse?.data?.message as string | undefined) || "Failed to generate storybook";
+      let msg = "Failed to generate storybook";
+      if (errorResponse?.data) {
+        if (typeof errorResponse.data === "string") {
+          msg = errorResponse.data;
+        } else if (errorResponse.data.message) {
+          msg = errorResponse.data.message;
+        } else if (errorResponse.data instanceof Blob) {
+          msg = await errorResponse.data.text().then((t: string) => {
+            try { return JSON.parse(t).message || t; } catch { return t; }
+          });
+        }
+      }
       setError(msg);
     } finally {
       setLoading(false);
@@ -202,7 +236,150 @@ export function StoryGenerator() {
     );
   }
 
-  // Show PDF download screen after generation
+  // Show 2-page preview UI after generation
+  if (generatedStory) {
+    const previewPages = generatedStory.pages.slice(0, 2);
+    const pdfDownloadUrl = generatedStory.pdfUrl.startsWith("http")
+      ? generatedStory.pdfUrl
+      : `${BACKEND_URL}${generatedStory.pdfUrl}`;
+
+    return (
+      <div className="max-w-5xl mx-auto space-y-8 pb-12">
+        {/* Celebration Header */}
+        <Card className="p-8 text-center bg-gradient-to-b from-amber-50/80 via-white to-orange-50/50 shadow-xl border-amber-100/60 rounded-3xl">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200">
+            <Sparkles className="w-8 h-8" />
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 mb-2">
+            {generatedStory.title} is Ready! 🎉
+          </h2>
+          <p className="text-stone-600 max-w-xl mx-auto text-sm sm:text-base">
+            Here is an exclusive preview of the first 2 pages of <strong>{generatedStory.childName}&apos;s</strong> adventure book.
+          </p>
+        </Card>
+
+        {/* 2-Page Preview Spread */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-xl font-serif font-bold text-stone-900 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-amber-500" /> Story Preview (First 2 Pages)
+            </h3>
+            <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-800 rounded-full">
+              Pages 1 & 2 of {generatedStory.pages.length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {previewPages.map((page, idx) => (
+              <div
+                key={page.pageNumber || idx}
+                className="bg-white rounded-3xl border border-stone-200 shadow-xl overflow-hidden flex flex-col transition-all hover:shadow-2xl hover:-translate-y-1 duration-300"
+              >
+                {/* Page Header */}
+                <div className="bg-stone-900 px-4 py-2.5 flex items-center justify-between text-white">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                    Page {page.pageNumber || idx + 1}
+                  </span>
+                  <span className="text-[10px] text-stone-400 font-mono">
+                    {generatedStory.childName}&apos;s Adventure
+                  </span>
+                </div>
+
+                {/* Illustration Frame */}
+                <div className="relative aspect-video bg-stone-100 overflow-hidden group">
+                  {page.imageUrl ? (
+                    <img
+                      src={page.imageUrl}
+                      alt={`Illustration for page ${page.pageNumber}`}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={handleImageError}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-amber-50/50 p-6 text-center">
+                      <Sparkles className="w-8 h-8 text-amber-400 mb-2 animate-pulse" />
+                      <p className="text-xs text-stone-500 font-serif">Illustration Preview</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+
+                {/* Story Text Content */}
+                <div className="p-6 bg-gradient-to-b from-amber-50/30 to-stone-50/50 flex-1 flex flex-col justify-between border-t border-stone-100">
+                  <p className="text-stone-800 font-serif text-base leading-relaxed italic">
+                    &ldquo;{page.content}&rdquo;
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action CTA Banner */}
+        <Card className="p-8 bg-gradient-to-r from-stone-900 via-purple-950 to-stone-900 text-white rounded-3xl shadow-2xl border-purple-500/20">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2 text-center md:text-left">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/20 text-amber-300 rounded-full text-xs font-semibold border border-amber-400/30">
+                <Package className="w-3.5 h-3.5" /> Hardcover Printed Edition Available
+              </div>
+              <h4 className="text-2xl font-serif font-bold text-white">
+                Get the Full Printed Storybook Delivered!
+              </h4>
+              <p className="text-stone-300 text-sm max-w-lg">
+                Order a high-quality hardcover print of {generatedStory.title} with all {generatedStory.pages.length} illustrated pages delivered directly to your doorstep.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
+              <Button
+                onClick={() => setIsOrderModalOpen(true)}
+                className="px-8 py-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-base rounded-2xl shadow-xl shadow-amber-500/20 transition-all hover:scale-105"
+              >
+                <ShoppingBag className="w-5 h-5 mr-2" />
+                Order Printed Book Now
+              </Button>
+              <a
+                href={pdfDownloadUrl}
+                download={`${generatedStory.title || "storybook"}.pdf`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white rounded-2xl font-semibold text-sm transition-all"
+              >
+                <Download className="w-4 h-4" />
+                Download Full PDF
+              </a>
+            </div>
+          </div>
+
+          <div className="pt-6 mt-6 border-t border-white/10 flex flex-wrap justify-between items-center gap-4 text-xs text-white/50">
+            <button
+              onClick={() => {
+                setGeneratedStory(null);
+                setPdfUrl(null);
+                setStep(0);
+              }}
+              className="hover:text-amber-300 transition-colors underline"
+            >
+              ← Create Another Story
+            </button>
+            <span>Full story includes all {generatedStory.pages.length} AI-illustrated pages & PDF export</span>
+          </div>
+        </Card>
+
+        {/* Order Modal */}
+        <OrderBookModal
+          open={isOrderModalOpen}
+          onOpenChange={setIsOrderModalOpen}
+          story={{
+            id: generatedStory.storyId,
+            title: generatedStory.title,
+            childName: generatedStory.childName,
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Fallback PDF view
   if (pdfUrl) {
     return (
       <div className="max-w-4xl mx-auto">

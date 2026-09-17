@@ -42,7 +42,7 @@ interface AdminUser {
   modelCount: number;
   storyCount: number;
   models: { id: string; name: string; trainingStatus: string; createdAt: string; thumbnail?: string }[];
-  stories: { id: string; title: string; status: string; createdAt: string; category?: string }[];
+  stories: { id: string; title: string; status: string; pdfUrl?: string | null; createdAt: string; category?: string }[];
   createdAt: string;
 }
 
@@ -52,6 +52,7 @@ interface AdminStory {
   status: string;
   category?: string;
   childName?: string;
+  pdfUrl?: string | null;
   createdAt: string;
   user?: { id: string; email: string; name: string };
   pages: { id: string; pageNumber: number; status: string; imageUrl?: string }[];
@@ -301,15 +302,32 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditCredits }: { user: Admi
                 <BookOpen className="w-4 h-4 text-blue-500" /> Stories ({user.stories.length})
               </h4>
               <div className="space-y-2">
-                {user.stories.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
-                    <div>
-                      <p className="font-medium text-stone-900 text-sm">{s.title}</p>
-                      <p className="text-xs text-stone-400">{timeAgo(s.createdAt)}</p>
+                {user.stories.map((s) => {
+                  const pdfLink = s.pdfUrl
+                    ? (s.pdfUrl.startsWith("http") ? s.pdfUrl : `${BACKEND_URL}${s.pdfUrl}`)
+                    : `${BACKEND_URL}/admin/story/${s.id}/pdf`;
+                  return (
+                    <div key={s.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
+                      <div>
+                        <p className="font-medium text-stone-900 text-sm">{s.title}</p>
+                        <p className="text-xs text-stone-400">{timeAgo(s.createdAt)}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={s.status} />
+                        <a
+                          href={pdfLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          download
+                          className="px-2 py-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
+                          title="Download Full Story PDF"
+                        >
+                          <Download className="w-3 h-3" /> PDF
+                        </a>
+                      </div>
                     </div>
-                    <StatusBadge status={s.status} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1057,21 +1075,29 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const headers = await authHeaders();
-      const [statsRes, usersRes, storiesRes, modelsRes, activityRes, ordersRes] = await Promise.all([
-        axios.get(`${BACKEND_URL}/admin/stats`, { headers }),
-        axios.get(`${BACKEND_URL}/admin/users`, { headers }),
-        axios.get(`${BACKEND_URL}/admin/stories`, { headers }),
-        axios.get(`${BACKEND_URL}/admin/models`, { headers }),
-        axios.get(`${BACKEND_URL}/admin/activity`, { headers }),
-        axios.get(`${BACKEND_URL}/admin/orders`, { headers }),
-      ]);
-      setStats(statsRes.data);
-      setUsers(usersRes.data.users || []);
-      setStories(storiesRes.data.stories || []);
-      setModels(modelsRes.data.models || []);
-      setActivity(activityRes.data.activity || []);
-      setOrders(ordersRes.data.orders || []);
-      setOrderSummary(ordersRes.data.summary || null);
+      const [statsRes, usersRes, storiesRes, modelsRes, activityRes, ordersRes] =
+        await Promise.allSettled([
+          axios.get(`${BACKEND_URL}/admin/stats`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/users`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/stories`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/models`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/activity`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/orders`, { headers }),
+        ]);
+
+      // Tolerate individual endpoint failures so one bad request can't blank
+      // the whole dashboard.
+      if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
+      if (usersRes.status === "fulfilled") setUsers(usersRes.value.data.users || []);
+      if (storiesRes.status === "fulfilled") setStories(storiesRes.value.data.stories || []);
+      if (modelsRes.status === "fulfilled") setModels(modelsRes.value.data.models || []);
+      if (activityRes.status === "fulfilled") setActivity(activityRes.value.data.activity || []);
+      if (ordersRes.status === "fulfilled") {
+        setOrders(ordersRes.value.data.orders || []);
+        setOrderSummary(ordersRes.value.data.summary || null);
+      } else {
+        console.warn("Admin orders endpoint failed", ordersRes.reason);
+      }
     } catch (err) {
       toast.error("Failed to load admin data");
       console.error(err);
@@ -1613,6 +1639,17 @@ export default function AdminPage() {
                             <td className="py-3.5 px-4 text-white/40 text-xs">{timeAgo(s.createdAt)}</td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center justify-end gap-2">
+                                <a
+                                  href={s.pdfUrl ? (s.pdfUrl.startsWith("http") ? s.pdfUrl : `${BACKEND_URL}${s.pdfUrl}`) : `${BACKEND_URL}/admin/story/${s.id}/pdf`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  download
+                                  className="px-2.5 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                                  title="Download Generated Story PDF"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  PDF
+                                </a>
                                 <button onClick={() => setEditingStoryId(s.id)} className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors" title="Edit Story">
                                   <PencilLine className="w-3.5 h-3.5" />
                                 </button>

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export function Appbar() {
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
   const { user } = useUser();
+  const pathname = usePathname();
 
   const isAdmin = user?.primaryEmailAddress?.emailAddress?.toLowerCase() === "monemehamila@gmail.com";
 
@@ -32,13 +34,24 @@ export function Appbar() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const currentAuthItems = isAdmin
     ? [...AUTH_ITEMS, { label: "Admin ⚡", href: "/admin" }]
     : AUTH_ITEMS;
+
+  // Immersive routes draw their own chrome: /admin (full-screen dashboard) and
+  // /stories/<id> (full-screen book reader). Keeping the marketing bar off them
+  // avoids it overlapping their toolbars.
+  const segments = (pathname ?? "").split("/").filter(Boolean);
+  const isReader = segments[0] === "stories" && segments.length === 2 && segments[1] !== "new";
+  const isImmersive = pathname === "/admin" || !!pathname?.startsWith("/admin/") || isReader;
+
+  if (isImmersive) {
+    return null;
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center transition-all duration-300">

@@ -141,7 +141,7 @@ export default function StorybookDashboardPage() {
         const token = await getToken?.();
         if (!token) return;
 
-        const [{ data }, ordersResponse] = await Promise.all([
+        const [statsResponse, ordersResponse] = await Promise.allSettled([
           axios.get(`${BACKEND_URL}/storybook/dashboard/stats`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -149,8 +149,21 @@ export default function StorybookDashboardPage() {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
-        setStats(data);
-        setOrders(ordersResponse.data.orders || []);
+
+        // Independent handling: a failing orders call shouldn't hide the stats.
+        if (statsResponse.status === "fulfilled") {
+          setStats(statsResponse.value.data);
+        } else {
+          console.warn("Storybook stats failed", statsResponse.reason);
+          setStats(EMPTY_STATS);
+        }
+
+        if (ordersResponse.status === "fulfilled") {
+          setOrders(ordersResponse.value.data.orders || []);
+        } else {
+          console.warn("Orders failed to load", ordersResponse.reason);
+          setOrders([]);
+        }
       } catch (error) {
         console.error("Unable to load storybook stats", error);
         setStats(EMPTY_STATS);
@@ -428,6 +441,8 @@ export default function StorybookDashboardPage() {
                   <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center shrink-0">
                     {story.coverImage ? (
                       <img
+                        loading="lazy"
+                        decoding="async"
                         src={story.coverImage}
                         alt={story.title}
                         className="w-full h-full object-cover"

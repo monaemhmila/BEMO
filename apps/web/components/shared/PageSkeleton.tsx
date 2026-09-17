@@ -1,0 +1,73 @@
+/**
+ * Lightweight route-level skeletons used by `loading.tsx` files so navigation
+ * paints instantly instead of waiting for the server render.
+ */
+
+export function PageSkeleton({
+  variant = "light",
+  rows = 3,
+}: {
+  variant?: "light" | "dark";
+  rows?: number;
+}) {
+  const isDark = variant === "dark";
+  const block = isDark ? "bg-white/5" : "bg-stone-200/70";
+
+  return (
+    <div
+      className={`w-full animate-pulse ${isDark ? "text-white" : "text-stone-900"}`}
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <span className="sr-only">Loading…</span>
+
+      {/* Heading */}
+      <div className="flex items-center gap-3">
+        <div className={`h-9 w-9 rounded-xl ${block}`} />
+        <div className="flex-1 space-y-2">
+          <div className={`h-5 w-1/3 rounded-md ${block}`} />
+          <div className={`h-3 w-1/4 rounded-md ${block}`} />
+        </div>
+      </div>
+
+      {/* Cards */}
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div
+            key={i}
+            className={`overflow-hidden rounded-2xl border ${
+              isDark ? "border-white/10 bg-white/5" : "border-stone-200/70 bg-white"
+            }`}
+          >
+            <div className={`aspect-video w-full ${block}`} />
+            <div className="space-y-2 p-4">
+              <div className={`h-4 w-2/3 rounded-md ${block}`} />
+              <div className={`h-3 w-1/2 rounded-md ${block}`} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function StoryReaderSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900">
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="h-8 w-24 animate-pulse rounded-full bg-white/10" />
+        <div className="h-8 w-32 animate-pulse rounded-full bg-white/10" />
+        <div className="h-8 w-28 animate-pulse rounded-full bg-white/10" />
+      </div>
+      <div className="flex flex-1 items-center justify-center px-4 pb-6">
+        <div className="flex aspect-[2/1.15] w-full max-w-6xl animate-pulse overflow-hidden rounded-xl bg-stone-100/90 shadow-2xl">
+          <div className="flex-1 border-r border-stone-300/60 bg-[#FFF9F0]" />
+          <div className="flex-1 bg-[#FFF9F0]" />
+        </div>
+      </div>
+      <div className="pb-8 text-center text-white/30 text-xs">Opening your book…</div>
+    </div>
+  );
+}
+
+export default PageSkeleton;

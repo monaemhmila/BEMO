@@ -352,6 +352,42 @@ router.delete("/story/:id", async (req, res) => {
   }
 });
 
+/**
+ * GET /admin/story/:id/pdf
+ * Download or generate the full PDF for any client story
+ */
+router.get("/story/:id/pdf", async (req, res) => {
+  const storyId = req.params.id;
+  try {
+    const story = await prismaClient.story.findUnique({
+      where: { id: storyId },
+      include: { pages: { orderBy: { pageNumber: "asc" } } },
+    });
+
+    if (!story) {
+      res.status(404).json({ message: "Story not found" });
+      return;
+    }
+
+    const pdfBuffer = await new PDFService().generateStorybookPdf(
+      { title: story.title, dedication: story.dedication, childName: story.childName },
+      story.pages.map((page) => ({
+        pageNumber: page.pageNumber,
+        content: page.content,
+        imageUrl: page.imageUrl,
+      }))
+    );
+
+    const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    logger.error({ error, storyId }, "Failed to generate admin story PDF");
+    res.status(500).json({ message: "Failed to generate story PDF" });
+  }
+});
+
 // ─────────────────────────────────────────
 // MODELS
 // ─────────────────────────────────────────
@@ -450,11 +486,11 @@ router.post("/quick-story", async (req, res) => {
     });
 
     const pagesData = [
-      { storyId: story.id, pageNumber: 1, content: "Once upon a time, Alex found a sparkling golden key near the ancient oak tree.", imagePrompt: "Children's storybook illustration of Alex finding a golden key", status: "Generated" as const },
-      { storyId: story.id, pageNumber: 2, content: "Alex unlocked a hidden door in the tree trunk and stepped into a glowing fairy woods.", imagePrompt: "Children's storybook illustration of Alex stepping into magical woods", status: "Generated" as const },
-      { storyId: story.id, pageNumber: 3, content: "A friendly little dragon named Sparky flew down to guide Alex to the Crystal Lake.", imagePrompt: "Children's storybook illustration of Alex with a friendly dragon", status: "Generated" as const },
-      { storyId: story.id, pageNumber: 4, content: "Together, Alex and Sparky solved the ancient riddle of the whispering trees.", imagePrompt: "Children's storybook illustration of Alex and dragon solving a puzzle", status: "Generated" as const },
-      { storyId: story.id, pageNumber: 5, content: "Alex waved goodbye to Sparky and returned home with unforgettable magical memories.", imagePrompt: "Children's storybook illustration of Alex waving goodbye at sunset", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 1, content: "Once upon a time, Alex found a sparkling golden key near the ancient oak tree.", imagePrompt: "Alex finding a golden key near an ancient oak tree", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 2, content: "Alex unlocked a hidden door in the tree trunk and stepped into a glowing fairy woods.", imagePrompt: "Alex stepping into glowing magical woods", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 3, content: "A friendly little dragon named Sparky flew down to guide Alex to the Crystal Lake.", imagePrompt: "Alex with a friendly little dragon", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 4, content: "Together, Alex and Sparky solved the ancient riddle of the whispering trees.", imagePrompt: "Alex and dragon solving a puzzle", status: "Generated" as const },
+      { storyId: story.id, pageNumber: 5, content: "Alex waved goodbye to Sparky and returned home with unforgettable magical memories.", imagePrompt: "Alex waving goodbye at sunset", status: "Generated" as const },
     ];
 
     await prismaClient.storyPage.createMany({ data: pagesData });

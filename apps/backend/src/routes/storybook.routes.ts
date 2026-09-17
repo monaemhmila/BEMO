@@ -1,3 +1,5 @@
+import fs, { existsSync } from "fs";
+import path from "path";
 import { Router } from "express";
 import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
@@ -37,17 +39,17 @@ const GenerateStorybookSchema = z.object({
 
 // Simple PDF generation schema (no model training)
 const SimplePDFSchema = z.object({
-  childName: z.string().min(1),
-  childAge: z.coerce.number().min(3).max(12), // coerce handles HTML string inputs
-  hairColor: z.string().trim().max(40).optional(),
-  eyeColor: z.string().trim().max(40).optional(),
-  skinTone: z.string().trim().max(40).optional(),
-  hairDescription: z.string().trim().max(120).optional(),
-  theme: z.string().min(1),
-  category: z.string().optional().default("adventure"),
-  storyLength: z.enum(["short", "medium", "long"]).default("short"),
-  dedication: z.string().optional(),
-  childImage: z.string().min(1, "Child photo is required for face-consistent generation"), // required base64 data URL of child photo
+  childName: z.string().trim().min(1, "Child name is required"),
+  childAge: z.coerce.number().min(1).max(100).default(5),
+  hairColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
+  eyeColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
+  skinTone: z.string().trim().max(40).optional().nullable().or(z.literal("")),
+  hairDescription: z.string().trim().max(120).optional().nullable().or(z.literal("")),
+  theme: z.string().trim().min(1, "Theme is required"),
+  category: z.string().optional().nullable().or(z.literal("")).transform((v) => v || "adventure"),
+  storyLength: z.enum(["short", "medium", "long"]).optional().nullable().transform((v) => v || "short"),
+  dedication: z.string().optional().nullable().or(z.literal("")),
+  childImage: z.string().optional().nullable().or(z.literal("")),
 });
 
 /**
@@ -238,7 +240,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       userId,
       modelId,
       script,
-      artStyle || "comic-style children's storybook illustration",
+      artStyle || "",
       {
         childName,
         childAge,
@@ -664,15 +666,29 @@ router.get("/voices", (_req, res) => {
 router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req, res) => {
   const validation = SimplePDFSchema.safeParse(req.body);
   if (!validation.success) {
-    logger.error({ errors: validation.error.flatten(), body: req.body }, "SimplePDFSchema validation failed");
+    const formattedErrors = validation.error.flatten();
+    logger.error({ errors: formattedErrors, body: req.body }, "SimplePDFSchema validation failed");
+    const errorDetails = Object.entries(formattedErrors.fieldErrors)
+      .map(([field, errs]) => `${field}: ${errs?.join(", ")}`)
+      .join("; ");
     res.status(400).json({
-      message: "Invalid input",
-      errors: validation.error.flatten(),
+      message: errorDetails ? `Invalid input - ${errorDetails}` : "Invalid input parameters",
+      errors: formattedErrors,
     });
     return;
   }
 
-  const { childName, childAge, hairColor, eyeColor, skinTone, hairDescription, theme, category, storyLength, dedication, childImage } = validation.data;
+  const childName = validation.data.childName;
+  const childAge = validation.data.childAge;
+  const hairColor = validation.data.hairColor || undefined;
+  const eyeColor = validation.data.eyeColor || undefined;
+  const skinTone = validation.data.skinTone || undefined;
+  const hairDescription = validation.data.hairDescription || undefined;
+  const theme = validation.data.theme;
+  const category = validation.data.category || undefined;
+  const storyLength = validation.data.storyLength || undefined;
+  const dedication = validation.data.dedication || undefined;
+  const childImage = validation.data.childImage || undefined;
 
   try {
     logger.info({ childName, theme, storyLength }, "Starting no-training PDF storybook generation");
@@ -682,17 +698,20 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
     // center / 75% / 25%, then upload each canvas to fal storage a single time
     // so page calls reuse the URL instead of re-uploading the raw photo.
     let storyRefs: FaceReferences | null = null;
-    try {
-      const faceRefs = await faceCanvasService.generateFaceReferences(childImage);
-      const [center, right, left] = await Promise.all([
-        imageService.uploadReferenceImage(faceRefs.center),
-        imageService.uploadReferenceImage(faceRefs.right),
-        imageService.uploadReferenceImage(faceRefs.left),
-      ]);
-      storyRefs = { center, right, left };
-      logger.info("Positioned face references generated and uploaded for story");
-    } catch (err) {
-      logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");
+    if (childImage) {
+      const inputImage: string = childImage;
+      try {
+        const faceRefs = await faceCanvasService.generateFaceReferences(inputImage);
+        const [center, right, left] = await Promise.all([
+          imageService.uploadReferenceImage(faceRefs.center),
+          imageService.uploadReferenceImage(faceRefs.right),
+          imageService.uploadReferenceImage(faceRefs.left),
+        ]);
+        storyRefs = { center, right, left };
+        logger.info("Positioned face references generated and uploaded for story");
+      } catch (err) {
+        logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");
+      }
     }
 
     // Parent-confirmed identity facts are optional; the uploaded portrait is always the authority.
@@ -753,22 +772,95 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         return {
           pageNumber: page.pageNumber,
           content: page.text,
+          imagePrompt: page.imageDescription || page.text,
           imageUrl: imageUrl || null,
         };
       })
     );
 
-    // Step 3: Build PDF
+    // Fetch or create hero model record for this user
+    let userModel = await prismaClient.model.findFirst({ where: { userId: req.userId! } });
+    if (!userModel) {
+      userModel = await prismaClient.model.create({
+        data: {
+          name: childName || "Hero",
+          type: "Others",
+          age: childAge || 5,
+          ethinicity: "White",
+          eyeColor: "Brown",
+          bald: false,
+          zipUrl: "nobackground.zip",
+          userId: req.userId!,
+          trainingStatus: "Generated",
+        },
+      });
+    }
+
+    // Step 3: Save story in database for user and admin
+    const story = await prismaClient.story.create({
+      data: {
+        title: script.title,
+        userId: req.userId!,
+        modelId: userModel.id,
+        status: "Completed",
+        childName,
+        childAge,
+        storyLength,
+        category: (category || "adventure") as any,
+        dedication,
+      },
+    });
+
+    await prismaClient.storyPage.createMany({
+      data: generatedPages.map((p) => ({
+        storyId: story.id,
+        pageNumber: p.pageNumber,
+        content: p.content,
+        imagePrompt: p.imagePrompt,
+        imageUrl: p.imageUrl,
+        status: p.imageUrl ? "Generated" : "Failed",
+      })),
+    });
+
+    // Step 4: Build PDF and persist to assets/pdfs for permanent link access
     const pdfService = new PDFService();
     const pdfBuffer = await pdfService.generateStorybookPdf(
       { title: script.title, dedication, childName },
       generatedPages
     );
 
-    res.setHeader("Content-Type", "application/pdf");
-    const safeFilename = script.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
-    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
-    res.send(pdfBuffer);
+    const pdfDir = path.join(process.cwd(), "assets", "pdfs");
+    if (!existsSync(pdfDir)) {
+      fs.mkdirSync(pdfDir, { recursive: true });
+    }
+    const pdfFilePath = path.join(pdfDir, `${story.id}.pdf`);
+    fs.writeFileSync(pdfFilePath, pdfBuffer);
+
+    const pdfUrl = `/assets/pdfs/${story.id}.pdf`;
+
+    await prismaClient.story.update({
+      where: { id: story.id },
+      data: { pdfUrl },
+    });
+
+    // Check if client explicitly requests a raw binary stream
+    const wantsRawBlob = req.query.format === "pdf" || req.headers.accept === "application/pdf";
+    if (wantsRawBlob) {
+      res.setHeader("Content-Type", "application/pdf");
+      const safeFilename = script.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
+      res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
+      res.send(pdfBuffer);
+      return;
+    }
+
+    res.json({
+      success: true,
+      storyId: story.id,
+      title: script.title,
+      childName,
+      pdfUrl,
+      pages: generatedPages,
+    });
     return;
   } catch (error) {
     logger.error({ error }, "Failed to generate PDF storybook");

@@ -73,6 +73,14 @@ export class StoryService {
   private faceConsistency = FaceConsistencyService.getInstance();
   private storyCompletion = StoryCompletionService.getInstance();
 
+  /**
+   * Cooldown for the expensive pending-page reconciliation (it calls the fal.ai
+   * queue per pending page). Without this, every 3s poll of GET /story/:id from
+   * a client watching a generating story would hammer the external API.
+   */
+  private static readonly PENDING_CHECK_COOLDOWN_MS = 25_000;
+  private pendingCheckAt = new Map<string, number>();
+
   static getInstance() {
     if (!StoryService.instance) {
       StoryService.instance = new StoryService();
@@ -90,20 +98,20 @@ export class StoryService {
     language?: string
   ): Promise<StoryScript> {
     const prompt = `
-Write a ${STORYBOOK_PAGE_COUNT}-page magical Disney-style children's story about a hero named "${characterName}".
+Write a ${STORYBOOK_PAGE_COUNT}-page children's story about a hero named "${characterName}".
 
 Theme: "${theme}".
 ${language ? `Language: ${language}` : ""}
 
 Tone & Style:
-- Disney fairy-tale storytelling: magical, heartwarming, filled with wonder, adventure, and warmth.
+- Storytelling: engaging, heartwarming, filled with wonder, adventure, and warmth.
 - Create a playful, kid-friendly title.
 - Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
 
 For each page:
-- Write a charming paragraph of 2-4 sentences of story text with Disney-style heart and whimsy.
-- Create a visual scene description where the ENVIRONMENT and any SIDE CHARACTERS/CREATURES are in a magical Disney/Pixar animated fairy-tale style (vibrant colors, glowing magical lighting, enchanting fairy-tale scenery, cute expressive side characters).
-- The hero child remains natural and relatable exploring this magical Disney world.
+- Write a charming paragraph of 2-4 sentences of story text with heart and imagination.
+- Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES (vibrant colors, beautiful lighting, engaging scenery, cute side characters).
+- Keep the hero as the main character.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure natural character postures with normal limbs and feet (e.g. standing, walking, sitting naturally).
 
@@ -115,7 +123,7 @@ Return ONLY valid JSON:
     {
       "pageNumber": 1,
       "text": "Story text",
-      "imageDescription": "Visual scene with magical Disney-style environment and creatures, natural child hero",
+      "imageDescription": "Visual scene description featuring the hero child",
       "emotion": "happy"
     }
   ]
@@ -165,11 +173,11 @@ Return ONLY valid JSON:
     const pageCount = this.getPageCount(input.storyLength);
 
     const prompt = `
-Create a personalized magical Disney-style children's story for a ${input.childAge}-year-old named "${input.childName}".
+Create a personalized children's story for a ${input.childAge}-year-old named "${input.childName}".
 
 Story:
 - Exactly ${pageCount} pages (pageNumber 1 through ${pageCount})
-- Tone & Style: Disney fairy-tale storytelling — heartwarming, full of wonder, magical adventure, gentle humor, and emotional depth.
+- Tone & Style: heartwarming, full of wonder, adventure, gentle humor, and emotional depth.
 - Theme: ${input.theme}
 - Category: ${input.category}
 - ${guidance.language}
@@ -188,11 +196,11 @@ ${characterProfile?.appearance
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
 Keep the story continuous and keep characters, clothing, locations, and important objects consistent.
-Vary the setting from page to page so the scenes each feel fresh, vibrant, and enchanting.
+Vary the setting from page to page so the scenes each feel fresh and beautiful.
 
 For each page:
-- Write the story text with Disney-style warmth and charm.
-- Create a visual scene description where the ENVIRONMENT and any SIDE CHARACTERS/CREATURES are in a magical Disney/Pixar animated fairy-tale style (vibrant colors, glowing whimsical lighting, enchanting scenery, charming side characters).
+- Write the story text with warmth and charm.
+- Create a visual scene description where the ENVIRONMENT and any SIDE CHARACTERS/CREATURES are colorful, imaginative, and detailed.
 - The hero child retains their natural real appearance from their photo.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
@@ -207,7 +215,7 @@ Return ONLY valid JSON:
     {
       "pageNumber": 1,
       "text": "Story text",
-      "imageDescription": "Visual scene with magical Disney-style environment and creatures, natural child hero",
+      "imageDescription": "Visual scene description featuring the hero child",
       "emotion": "happy"
     }
   ]
@@ -453,14 +461,21 @@ Return ONLY valid JSON:
         );
       }
 
-      this.checkPendingPages(story as any).catch(
-        (error) => {
-          logger.error(
-            { error, storyId },
-            "Failed to check pending pages"
-          );
-        }
-      );
+      const lastCheckAt = this.pendingCheckAt.get(storyId) ?? 0;
+      const cooldownElapsed =
+        Date.now() - lastCheckAt >= StoryService.PENDING_CHECK_COOLDOWN_MS;
+
+      if (cooldownElapsed) {
+        this.pendingCheckAt.set(storyId, Date.now());
+        this.checkPendingPages(story as any).catch(
+          (error) => {
+            logger.error(
+              { error, storyId },
+              "Failed to check pending pages"
+            );
+          }
+        );
+      }
     }
 
     return {

@@ -89,7 +89,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       userId,
       modelId,
       script,
-      artStyle || "storybook illustration",
+      artStyle || "",
       { childName, childAge, storyLength, category, dedication, includeAudio, voiceId }
     );
 
@@ -141,7 +141,18 @@ router.get("/mine", authMiddleware, async (req, res) => {
       where: { userId: req.userId! },
       orderBy: { createdAt: "desc" },
       include: {
-        pages: { orderBy: { pageNumber: "asc" } },
+        // The library only needs a cover image + page statuses, so skip the
+        // (large) page text and image prompts to keep this payload small.
+        pages: {
+          orderBy: { pageNumber: "asc" },
+          select: {
+            id: true,
+            pageNumber: true,
+            status: true,
+            imageUrl: true,
+            audioUrl: true,
+          },
+        },
         model: { select: { id: true, name: true, thumbnail: true } },
       },
     });

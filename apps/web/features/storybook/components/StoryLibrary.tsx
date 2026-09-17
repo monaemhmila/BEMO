@@ -249,6 +249,8 @@ export function StoryLibrary() {
                 <div className="aspect-[4/3] bg-stone-100 relative overflow-hidden">
                   {getStoryPreviewImage(story) ? (
                     <img
+                      loading="lazy"
+                      decoding="async"
                       src={getStoryPreviewImage(story)}
                       alt={story.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

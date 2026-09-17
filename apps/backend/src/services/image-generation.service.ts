@@ -238,10 +238,10 @@ export class ImageGenerationService {
     childName?: string;
   }): string {
     const scene = input.sceneDescription.trim();
-    const styleDirectives = "magical Disney animation style environment and side characters, vibrant fairy-tale lighting, correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs";
+    const styleDirectives = "correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs";
 
     if (input.hasReference) {
-      return `use the kid face without changing anything in the kid from the photo. The environment and side characters are in a magical Disney style. ${scene}. ${styleDirectives}`;
+      return `use the kid face without changing anything in the kid from the photo. ${scene}. ${styleDirectives}`;
     }
     return `${scene}. ${styleDirectives}`;
   }
@@ -251,7 +251,7 @@ export class ImageGenerationService {
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
     const scene = request.prompt.trim();
-    const qualityDirectives = "magical Disney animation style environment and side characters, vibrant fairy-tale lighting, correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs";
+    const qualityDirectives = "correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs";
 
     let baseScene = scene;
     if (!baseScene.includes("completely textless")) {
@@ -259,7 +259,7 @@ export class ImageGenerationService {
     }
 
     if (request.imageUrl && !baseScene.startsWith("use the kid face")) {
-      return `use the kid face without changing anything in the kid from the photo. The environment and side characters are in a magical Disney style. ${baseScene}`;
+      return `use the kid face without changing anything in the kid from the photo. ${baseScene}`;
     }
     return baseScene;
   }
