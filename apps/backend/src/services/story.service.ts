@@ -12,6 +12,7 @@ import {
   getPageType,
   getPageComposition,
   PageType,
+  normalizeStoryCategory,
 } from "../contracts/storybook";
 
 interface PersonalizedStoryInput {
@@ -250,7 +251,7 @@ Return ONLY valid JSON:
         childName: personalization?.childName,
         childAge: personalization?.childAge,
         storyLength: personalization?.storyLength as any,
-        category: personalization?.category as any,
+        category: normalizeStoryCategory(personalization?.category),
         dedication: personalization?.dedication,
         includeAudio: personalization?.includeAudio || false,
         voiceId: personalization?.voiceId || "sarah",

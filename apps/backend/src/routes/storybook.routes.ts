@@ -15,6 +15,7 @@ import {
   getReferenceForPage,
 } from "../services/face-canvas.service";
 import { logger } from "../lib/logger";
+import { normalizeStoryCategory } from "../contracts/storybook";
 import { z } from "zod";
 
 const router = Router();
@@ -806,7 +807,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         childName,
         childAge,
         storyLength,
-        category: (category || "adventure") as any,
+        category: normalizeStoryCategory(category),
         dedication,
       },
     });

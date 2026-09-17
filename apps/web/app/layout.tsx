@@ -50,11 +50,11 @@ export default function RootLayout({
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} h-full bg-[#faf9f6]`}>
           <Providers>
-          <Appbar />
-          {/* Removed fixed pt-24 to let Hero handle spacing if needed, or keep minimal */}
-          <main className="min-h-full">
-            {children}
-          </main>
+            <Appbar />
+            {/* Removed fixed pt-24 to let Hero handle spacing if needed, or keep minimal */}
+            <main className="min-h-full">
+              {children}
+            </main>
           </Providers>
         </body>
       </html>
