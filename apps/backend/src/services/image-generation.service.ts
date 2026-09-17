@@ -238,7 +238,7 @@ export class ImageGenerationService {
     childName?: string;
   }): string {
     const scene = input.sceneDescription.trim();
-    const styleDirectives = "correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
+    const styleDirectives = "photo realistic EDGE-TO-EDGE COMPOSITION: The generated artwork must completely fill the entire 16:9 canvas from the extreme left edge to the extreme right edge and from the top edge to the bottom edge. No empty areas, no white space, no blank background, no side margins, no borders, no letterboxing, no pillarboxing. Extend the environment naturally all the way to every image edge. Important subjects may extend close to or beyond the frame edges. The entire canvas must contain continuous. correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
 
     if (input.hasReference) {
       return `use the kid face without changing anything in the kid from the photo. ${scene}. ${styleDirectives}`;
@@ -251,7 +251,7 @@ export class ImageGenerationService {
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
     const scene = request.prompt.trim();
-    const qualityDirectives = "correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs,  no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
+    const qualityDirectives = "photo realistic EDGE-TO-EDGE COMPOSITION: The generated artwork must completely fill the entire 16:9 canvas from the extreme left edge to the extreme right edge and from the top edge to the bottom edge. No empty areas, no white space, no blank background, no side margins, no borders, no letterboxing, no pillarboxing. Extend the environment naturally all the way to every image edge. Important subjects may extend close to or beyond the frame edges. The entire canvas must contain continuous. correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs,  no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
 
     let baseScene = scene;
     if (!baseScene.includes("completely textless")) {

@@ -112,7 +112,7 @@ Tone & Style:
 For each page:
 - Write a charming paragraph of 2-4 sentences of story text with heart and imagination.
 - Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES (vibrant colors, beautiful lighting, engaging scenery, cute side characters).
-- Keep the hero as the main character.
+- Keep the hero as the main character. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never shorts).
 - Ensure there is no white space , no blank margins.
@@ -204,7 +204,7 @@ Vary the setting from page to page so the scenes each feel fresh and beautiful.
 For each page:
 - Write the story text with warmth and charm.
 - Create a visual scene description where the ENVIRONMENT and any SIDE CHARACTERS/CREATURES are colorful, imaginative, and detailed.
-- The hero child retains their natural real appearance from their photo.
+- The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.

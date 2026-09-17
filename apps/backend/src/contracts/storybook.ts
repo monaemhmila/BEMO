@@ -30,7 +30,7 @@ export type TextPosition =
  */
 export type CharacterSide = "left" | "right";
 
-export const STORYBOOK_PAGE_COUNT = 10;
+export const STORYBOOK_PAGE_COUNT = 5;
 
 export const STORYBOOK_IMAGE_ASPECT_RATIO = "16:9";
 
@@ -235,7 +235,7 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
  * Guards identity, anatomy, and the no-AI-text rule.
  */
 export const STORYBOOK_NEGATIVE_PROMPT =
-  "text, typography, words, letters, font, watermark, signature, subtitles, signs, speech bubbles, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, extra toes, deformed limbs, blurry, distorted, white space, white borders, blank margins, shorts, bare legs, partial crop, truncated frame";
+  "cartoon, cartoon character, cartoonized child, anime, manga, illustration, children's book illustration, drawing, painting, comic, stylized character, 3D cartoon, CGI character, toy-like appearance, plastic skin, exaggerated facial features, empty side areas, empty left side, empty right side, white side margins, white side panels, blank areas, blank margins, borders, letterboxing, pillarboxing, vertical bars, unused canvas, isolated central composition, text, typography, words, letters, signs, speech bubbles, logos, watermark, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, shorts, bare legs, partial crop, truncated frame";
 
 export function normalizeStoryCategory(rawCategory?: string | null): string {
   if (!rawCategory || !rawCategory.trim()) return "adventure";
