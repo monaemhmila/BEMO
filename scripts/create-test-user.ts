@@ -39,13 +39,13 @@ async function main() {
     console.log("\nNow you can:");
     console.log("1. View in Prisma Studio: cd packages/db && npx prisma studio");
     console.log("2. Use this user by updating the clerkId to match your actual Clerk user\n");
-    
+
   } catch (error) {
     console.error("❌ Error:", error);
-    
+
     if (error instanceof Error) {
       console.error("\nDetails:", error.message);
-      
+
       if (error.message.includes("Unique constraint")) {
         console.error("\n💡 User might already exist. Check Prisma Studio.");
       } else if (error.message.includes("connect")) {
@@ -56,7 +56,7 @@ async function main() {
         console.error("   Run: cd packages/db && npx prisma db push");
       }
     }
-    
+
     process.exit(1);
   } finally {
     await prisma.$disconnect();
