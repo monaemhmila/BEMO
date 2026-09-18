@@ -34,16 +34,6 @@ export const storyGenerationLimiter = rateLimit({
   skip: (req: Request) => Boolean((req as any).user?.isPremium),
 });
 
-export const modelTrainingLimiter = rateLimit({
-  ...baseConfig,
-  windowMs: 24 * 60 * 60 * 1000,
-  max: 300,
-  message: buildMessage(
-    "Model training limit reached. Please try again tomorrow.",
-    24 * 60
-  ),
-});
-
 export const imageGenerationLimiter = rateLimit({
   ...baseConfig,
   windowMs: 5 * 60 * 1000,

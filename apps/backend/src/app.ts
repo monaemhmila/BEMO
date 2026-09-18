@@ -27,8 +27,7 @@ export function createApp() {
 
   // Concise, clean request logger middleware (silences repetitive background polling)
   app.use((req, res, next) => {
-    const isPolling =
-      req.url.includes("/model/status/") ||
+        const isPolling =
       req.url === "/balance" ||
       req.url === "/healthz";
     const start = Date.now();
@@ -101,15 +100,9 @@ export function createApp() {
   app.use("/storybook", storybookRouter);
   app.use("/payment", paymentRouter);
   app.use("/admin", adminRouter);
-  app.use("/orders", orderRouter);
+    app.use("/orders", orderRouter);
 
-  // Simple storybook generation (no model training)
-  // simpleStorybookRouter import moved to top (see imports above)
   app.use("/simple-storybook", simpleStorybookRouter);
-
-  // Serve locally uploaded files (model zips, etc.) via /assets
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  app.use("/assets", express.static(require("path").join(process.cwd(), "assets")));
 
   app.use(notFoundHandler);
   app.use(sentryErrorHandler());

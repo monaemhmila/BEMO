@@ -2,34 +2,10 @@ import { fal } from "@fal-ai/client";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 
-const TRAINING_WEBHOOK =
-  env.WEBHOOK_BASE_URL?.concat("/fal-ai/webhook/train") ?? "";
-const IMAGE_WEBHOOK =
-  env.WEBHOOK_BASE_URL?.concat("/fal-ai/webhook/image") ?? "";
+const IMAGE_WEBHOOK = env.WEBHOOK_BASE_URL?.concat("/fal-ai/webhook/image") ?? "";
 
 export class FalAIModel {
-  async trainModel(zipUrl: string, triggerWord: string) {
-    logger.info({ triggerWord, webhookUrl: TRAINING_WEBHOOK }, "Submitting model training to fal.ai");
-
-    const { request_id, response_url } = await fal.queue.submit(
-      "",
-      {
-        input: {
-          images_data_url: zipUrl,
-          trigger_word: triggerWord,
-          // Speed optimizations: 2-4 min instead of 20 min
-          steps: 100,
-          rank: 4,
-          multiresolution_training: true,
-        } as any,
-        webhookUrl: TRAINING_WEBHOOK || undefined,
-      }
-    );
-
-    logger.info({ requestId: request_id }, "Model training submitted successfully");
-    return { requestId: request_id, responseUrl: response_url };
-  }
-
+  // Image generation
   async generateImage(prompt: string, tensorPath: string) {
     logger.info({ promptLength: prompt.length, tensorPath }, "Submitting image generation to fal.ai");
 
@@ -50,7 +26,6 @@ export class FalAIModel {
 
   async generateImageSync(tensorPath: string): Promise<string> {
     logger.info({ tensorPath }, "Generating hero preview image synchronously");
-
     try {
       const response = await fal.subscribe("", {
         input: {
@@ -78,9 +53,7 @@ export class FalAIModel {
     }
   }
 
-  /**
-   * Regenerate thumbnail for an existing model
-   */
+  /** Regenerate thumbnail for an existing model */
   async regenerateThumbnail(modelId: string, tensorPath: string): Promise<string> {
     logger.info({ modelId, tensorPath }, "Regenerating model thumbnail");
     return this.generateImageSync(tensorPath);

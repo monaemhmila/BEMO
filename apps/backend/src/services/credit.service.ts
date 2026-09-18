@@ -9,7 +9,6 @@ interface CreditTransactionResult {
 }
 
 interface CreditCost {
-  modelTraining: number;
   storyGeneration: { short: number; medium: number; long: number };
   imageGeneration: number;
   audioGeneration: number;
@@ -24,7 +23,6 @@ export class CreditService {
 
   // Credit costs for different operations
   readonly costs: CreditCost = {
-    modelTraining: 20,
     storyGeneration: { short: 5, medium: 10, long: 15 },
     imageGeneration: 3, // Per image using Nano Banana Pro
     audioGeneration: 5, // Per page using ElevenLabs
@@ -175,13 +173,11 @@ export class CreditService {
    * Get credit cost preview for UI display
    */
   getCostPreview(): {
-    modelTraining: number;
     storybook: { short: number; medium: number; long: number };
     perImage: number;
     perAudioPage: number;
   } {
     return {
-      modelTraining: this.costs.modelTraining,
       storybook: {
         short: this.calculateStorybookCost("short", true, false).total,
         medium: this.calculateStorybookCost("medium", true, false).total,

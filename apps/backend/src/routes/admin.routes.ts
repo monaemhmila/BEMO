@@ -32,27 +32,21 @@ router.get("/stats", async (_req, res) => {
     const [
       totalUsers,
       totalStories,
-      totalModels,
       totalCredits,
       newUsersToday,
       newUsersThisWeek,
       newUsersThisMonth,
       storiesThisWeek,
-      modelsThisWeek,
-      pendingModels,
       completedStories,
       generatingStories,
     ] = await Promise.all([
       prismaClient.user.count(),
       prismaClient.story.count(),
-      prismaClient.model.count(),
       prismaClient.userCredit.aggregate({ _sum: { amount: true } }),
       prismaClient.user.count({ where: { createdAt: { gte: startOfDay } } }),
       prismaClient.user.count({ where: { createdAt: { gte: startOfWeek } } }),
       prismaClient.user.count({ where: { createdAt: { gte: startOfMonth } } }),
       prismaClient.story.count({ where: { createdAt: { gte: startOfWeek } } }),
-      prismaClient.model.count({ where: { createdAt: { gte: startOfWeek } } }),
-      prismaClient.model.count({ where: { trainingStatus: "Pending" } }),
       prismaClient.story.count({ where: { status: "Completed" } }),
       prismaClient.story.count({ where: { status: "Generating" } }),
     ]);
@@ -60,14 +54,11 @@ router.get("/stats", async (_req, res) => {
     res.json({
       totalUsers,
       totalStories,
-      totalModels,
       totalCreditsIssued: totalCredits._sum.amount ?? 0,
       newUsersToday,
       newUsersThisWeek,
       newUsersThisMonth,
       storiesThisWeek,
-      modelsThisWeek,
-      pendingModels,
       completedStories,
       generatingStories,
     });
@@ -83,7 +74,7 @@ router.get("/stats", async (_req, res) => {
 
 /**
  * GET /admin/users
- * All users with full details, credits, model & story counts
+ * All users with full details, credits, and story counts
  */
 router.get("/users", async (req, res) => {
   try {
@@ -104,10 +95,10 @@ router.get("/users", async (req, res) => {
       orderBy: { [sortBy]: order as "asc" | "desc" },
       take: parseInt(limit),
       skip: parseInt(offset),
-      include: {
+            include: {
         userCredit: true,
         models: {
-          select: { id: true, name: true, trainingStatus: true, createdAt: true, thumbnail: true },
+          select: { id: true, name: true, thumbnail: true, createdAt: true },
           orderBy: { createdAt: "desc" },
         },
         stories: {
@@ -805,3 +796,4 @@ router.put("/order/:id", async (req, res) => {
 });
 
 export const adminRouter = router;
+
