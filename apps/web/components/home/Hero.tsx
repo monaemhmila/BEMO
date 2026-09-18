@@ -52,7 +52,7 @@ export function Hero() {
               </h1>
               <p className="text-xl text-stone-600 mb-8 max-w-2xl mx-auto leading-relaxed">
                 Instantly generate magical, illustrated bedtime stories starring your little one. 
-                Endless adventures, one subscription.
+                Your first 3 stories are free - and every printed book unlocks another.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <SignedOut>

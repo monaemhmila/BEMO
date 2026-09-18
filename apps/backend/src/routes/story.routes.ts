@@ -3,6 +3,7 @@ import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { StoryService } from "../services/story.service";
 import { AudioService } from "../services/audio.service";
+import { trialService } from "../services/trial.service";
 import { storyGenerationLimiter } from "../middleware/rateLimiter";
 import { logger } from "../lib/logger";
 import { z } from "zod";
@@ -60,14 +61,15 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
-    // Check credits
-    const credits = await prismaClient.userCredit.findUnique({
-      where: { userId },
-    });
-
-    const requiredCredits = storyLength === "long" ? 15 : storyLength === "medium" ? 10 : 5;
-    if ((credits?.amount ?? 0) < requiredCredits) {
-      res.status(402).json({ message: "Not enough credits", required: requiredCredits });
+    // Check the account still has a free story generation left
+    const trialsLeft = await trialService.getRemaining(userId);
+    if (trialsLeft <= 0) {
+      res.status(402).json({
+        message:
+          "You have used all of your free story generations. Order a printed book to unlock another one!",
+        code: "NO_TRIAL_GENERATIONS_LEFT",
+        trials: 0,
+      });
       return;
     }
 
@@ -108,11 +110,8 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
 
     await Promise.all(generationPromises);
 
-    // Deduct credits
-    await prismaClient.userCredit.update({
-      where: { userId },
-      data: { amount: { decrement: requiredCredits } },
-    });
+    // Consume one free story generation
+    await trialService.consumeGeneration(userId, story.id, "story_generation");
 
     res.json({
       message: "Story generation started",
@@ -120,7 +119,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       title: story.title,
       totalPages: pages.length,
       estimatedTime: `${pages.length * 30} seconds`,
-      creditsUsed: requiredCredits,
+      trialsRemaining: await trialService.getRemaining(userId),
     });
   } catch (error) {
     logger.error({ error }, "Story generation failed");

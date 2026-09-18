@@ -155,7 +155,7 @@ function StoryDetailContent({ story }: { story: StoryTemplate }) {
               Create This Story with My Child
             </Link>
             <p className="text-xs text-stone-400 mt-3">
-              Uses your child&apos;s photo, name & age — free to browse, credit check before generating.
+              Uses your child&apos;s photo, name & age — every account gets 3 free story generations, and each printed book order earns one more.
             </p>
           </div>
         </div>

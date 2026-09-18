@@ -13,7 +13,6 @@ export { Features } from "../home/Features";
 export { HeroHeader } from "../home/HeroHeader";
 export { HowItWorks } from "../home/HowItWorks";
 export { ImageCarousel } from "../home/ImageCarousel";
-export { PricingSection } from "../home/PricingSection";
 export { ScrollIndicator } from "../home/ScrollIndicator";
 export { StatsSection } from "../home/StatsSection";
 export { StoryShowcase } from "../home/StoryShowcase";

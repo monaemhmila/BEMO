@@ -25,7 +25,7 @@ const faqs = [
   },
   {
     question: "Can I try it for free?",
-    answer: "Yes, we offer a free trial that lets you generate one complete story so you can see the magic yourself.",
+    answer: "Yes! Every account starts with 3 free story generations, no card required. And every printed book you order unlocks 1 extra free story.",
   },
 ];
 

@@ -55,7 +55,8 @@ function verifyToken(token: string, publicKey: string): { sub: string } | null {
 }
 
 /**
- * Ensure user exists in database and has credits
+ * Ensure user exists in database.
+ * New accounts automatically get `User.trialGenerations` (3 free stories).
  * Handles database connection issues gracefully
  */
 async function ensureUserExists(
@@ -81,16 +82,6 @@ async function ensureUserExists(
           clerkId,
           email: email || `${clerkId}@placeholder.local`,
           name: "",
-        },
-      });
-
-      // Ensure user has credits
-      await prismaClient.userCredit.upsert({
-        where: { userId: dbUser.id },
-        update: {},
-        create: {
-          userId: dbUser.id,
-          amount: 20,
         },
       });
 

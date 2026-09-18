@@ -1,6 +1,6 @@
 /**
  * Database Fix Script
- * Run this to manually create test user and credits
+ * Run this to manually create test user and check free trial data
  * 
  * Usage: npx ts-node scripts/fix-database.ts
  */
@@ -23,11 +23,9 @@ async function main() {
     // Check current state
     console.log("2. Checking current database state...");
     const userCount = await prisma.user.count();
-    const creditCount = await prisma.userCredit.count();
     const modelCount = await prisma.model.count();
 
     console.log(`   Users: ${userCount}`);
-    console.log(`   Credits: ${creditCount}`);
     console.log(`   Models: ${modelCount}\n`);
 
     // Check if there are Clerk users that need to be synced
@@ -109,7 +107,7 @@ async function main() {
       `   ${tableQuery.map((t) => t.table_name).join(", ")}\n`
     );
 
-    const requiredTables = ["User", "UserCredit", "Model"];
+    const requiredTables = ["User", "Model", "Order"];
     const existingTables = tableQuery.map((t) => t.table_name);
     const missingTables = requiredTables.filter(
       (t) => !existingTables.includes(t)

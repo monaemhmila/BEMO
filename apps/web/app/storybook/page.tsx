@@ -198,14 +198,14 @@ export default function StorybookHome() {
                 Start Creating Now
               </Button>
             </Link>
-            <Link href="/train">
+            <Link href="/stories">
               <Button
                 size="lg"
                 variant="outline"
                 className="rounded-full border-stone-600 text-white hover:bg-stone-700"
               >
-                <Camera className="w-5 h-5 mr-2" />
-                Train Your Hero First
+                <BookOpenText className="w-5 h-5 mr-2" />
+                Browse My Story Library
               </Button>
             </Link>
           </div>

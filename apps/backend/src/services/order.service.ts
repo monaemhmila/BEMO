@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prismaClient } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { env } from "../config/env";
+import { trialService, TRIAL_GENERATIONS_PER_ORDER } from "./trial.service";
 
 export interface CreateOrderInput {
   storyId: string;
@@ -157,6 +158,14 @@ export async function createOrder(
   }
 
   logger.info({ orderId: created.id, orderNumber: created.orderNumber }, "Order created");
+
+  // Every printed book order unlocks one extra free story generation.
+  await trialService.grantGenerations(
+    userId,
+    TRIAL_GENERATIONS_PER_ORDER,
+    `book_order:${created.orderNumber}`
+  );
+
   return { order: serializeOrder(created), alreadyExists: false };
 }
 

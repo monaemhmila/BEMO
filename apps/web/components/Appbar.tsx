@@ -18,8 +18,7 @@ const NAV_ITEMS = [
 const AUTH_ITEMS = [
   { label: "Dashboard", href: "/storybook/dashboard" },
   { label: "Library", href: "/stories" },
-  { label: "Storybook", href: "/storybook/dashboard" },
-  { label: "Pricing", href: "/pricing" },
+  { label: "Create Story", href: "/storybook/create" },
 ];
 
 export function Appbar() {

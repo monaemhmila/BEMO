@@ -1,17 +1,22 @@
 import { BACKEND_URL } from "../app/config";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useAuth } from "./useAuth";
-import { creditUpdateEvent } from "@/hooks/usePayment";
 
-export function useCredits() {
+/**
+ * Event bus so any part of the UI can refresh the free-generation counter
+ * (e.g. right after a story is generated or a book order is placed).
+ */
+export const trialUpdateEvent = new EventTarget();
+
+export function useTrials() {
   const { getToken, isSignedIn } = useAuth();
-  const [credits, setCredits] = useState(0);
+  const [trials, setTrials] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMounted = useRef(true);
   const fetchingRef = useRef(false);
 
-  const fetchCredits = useCallback(async () => {
+  const fetchTrials = useCallback(async () => {
     // Prevent concurrent fetches
     if (fetchingRef.current) {
       return;
@@ -27,7 +32,7 @@ export function useCredits() {
       fetchingRef.current = true;
       setError(null);
       const token = await getToken();
-      
+
       if (!token) {
         setError("Authentication required");
         setLoading(false);
@@ -45,13 +50,13 @@ export function useCredits() {
 
       if (response.ok) {
         const data = await response.json();
-        setCredits(data.credits ?? 0);
+        setTrials(data.trials ?? data.generationsLeft ?? 0);
         setError(null);
       } else if (response.status === 401 || response.status === 403) {
         setError("Authentication failed - please sign in again");
       } else {
         const errorData = await response.json().catch(() => ({}));
-        setError(errorData.message || "Failed to fetch credits");
+        setError(errorData.message || "Failed to fetch free story balance");
       }
     } catch {
       if (!isMounted.current) return;
@@ -74,27 +79,27 @@ export function useCredits() {
     }
 
     // Initial fetch
-    fetchCredits();
+    fetchTrials();
 
-    const handleCreditUpdate = (event: Event) => {
+    const handleTrialUpdate = (event: Event) => {
       if (event instanceof CustomEvent && event.detail !== undefined) {
-        setCredits(event.detail);
+        setTrials(event.detail);
       }
       // Refresh from server to ensure accuracy
-      fetchCredits();
+      fetchTrials();
     };
 
-    creditUpdateEvent.addEventListener("creditUpdate", handleCreditUpdate);
+    trialUpdateEvent.addEventListener("trialUpdate", handleTrialUpdate);
 
     // Refresh every 60 seconds
-    const interval = setInterval(fetchCredits, 60 * 1000);
+    const interval = setInterval(fetchTrials, 60 * 1000);
 
     return () => {
       isMounted.current = false;
-      creditUpdateEvent.removeEventListener("creditUpdate", handleCreditUpdate);
+      trialUpdateEvent.removeEventListener("trialUpdate", handleTrialUpdate);
       clearInterval(interval);
     };
-  }, [isSignedIn, fetchCredits]);
+  }, [isSignedIn, fetchTrials]);
 
-  return { credits, loading, error, refetch: fetchCredits };
+  return { trials, loading, error, refetch: fetchTrials };
 }

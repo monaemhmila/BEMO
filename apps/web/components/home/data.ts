@@ -25,21 +25,6 @@ export const carouselImages = [
   },
 ];
 
-export const plans = [
-  {
-    name: "Basic",
-    price: "$9.99/mo",
-    features: ["Feature 1", "Feature 2"],
-    highlighted: false,
-  },
-  {
-    name: "Pro",
-    price: "$19.99/mo",
-    features: ["Feature 1", "Feature 2", "Feature 3"],
-    highlighted: true,
-  },
-];
-
 export const stats = [
   { value: "10K+", label: "Users" },
   { value: "50K+", label: "Stories" },

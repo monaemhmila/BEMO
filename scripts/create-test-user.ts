@@ -33,16 +33,7 @@ async function main() {
     console.log(`   Clerk ID: ${testUser.clerkId}`);
     console.log(`   Email: ${testUser.email}\n`);
 
-    // Create credits for user
-    const credits = await prisma.userCredit.create({
-      data: {
-        userId: testUser.id,
-        amount: 100,
-      },
-    });
-
-    console.log("✅ Created credits:");
-    console.log(`   Amount: ${credits.amount}\n`);
+    console.log(`   Free story generations: ${testUser.trialGenerations}\n`);
 
     console.log("🎉 Test user created successfully!");
     console.log("\nNow you can:");

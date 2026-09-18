@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/select";
 
 import { useAuth } from "@/hooks/useAuth";
+import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
 import { STORY_CATEGORIES, STORY_LENGTH_CONFIG } from "../../../services/fal/storyGeneration";
 import { STORY_STARTERS } from "../../../utils/prompts/storyPrompts";
@@ -173,6 +174,13 @@ export function StoryGenerator() {
           pdfUrl: response.data.pdfUrl,
           pages: response.data.pages,
         });
+
+        // One free generation was consumed server-side - refresh the counter
+        if (typeof response.data.trialsRemaining === "number") {
+          trialUpdateEvent.dispatchEvent(
+            new CustomEvent("trialUpdate", { detail: response.data.trialsRemaining })
+          );
+        }
       } else if (response.data instanceof Blob) {
         const blob = new Blob([response.data], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);

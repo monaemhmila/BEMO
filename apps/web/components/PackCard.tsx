@@ -9,7 +9,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ImageIcon } from "lucide-react";
 import { Tooltip, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
-import { useCredits } from "@/hooks/use-credits";
+import { useTrials } from "@/hooks/use-trials";
 import { useRouter } from "next/navigation";
 import {
   Carousel,
@@ -37,7 +37,7 @@ export interface TPack {
 
 export function PackCard(props: TPack & { selectedModelId: string }) {
   const { getToken } = useAuth();
-  const { credits } = useCredits();
+  const { trials } = useTrials();
   const router = useRouter();
 
   // Collect all image URLs into an array
@@ -49,8 +49,8 @@ export function PackCard(props: TPack & { selectedModelId: string }) {
   ].filter(Boolean); // Remove undefined values
 
   const handleGenerate = async () => {
-    if (credits <= 0) {
-      router.push("/pricing");
+    if (trials <= 0) {
+      router.push("/stories");
       return;
     }
 

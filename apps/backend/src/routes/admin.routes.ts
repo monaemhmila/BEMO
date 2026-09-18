@@ -32,7 +32,7 @@ router.get("/stats", async (_req, res) => {
     const [
       totalUsers,
       totalStories,
-      totalCredits,
+      totalTrials,
       newUsersToday,
       newUsersThisWeek,
       newUsersThisMonth,
@@ -42,7 +42,7 @@ router.get("/stats", async (_req, res) => {
     ] = await Promise.all([
       prismaClient.user.count(),
       prismaClient.story.count(),
-      prismaClient.userCredit.aggregate({ _sum: { amount: true } }),
+      prismaClient.user.aggregate({ _sum: { trialGenerations: true } }),
       prismaClient.user.count({ where: { createdAt: { gte: startOfDay } } }),
       prismaClient.user.count({ where: { createdAt: { gte: startOfWeek } } }),
       prismaClient.user.count({ where: { createdAt: { gte: startOfMonth } } }),
@@ -54,7 +54,7 @@ router.get("/stats", async (_req, res) => {
     res.json({
       totalUsers,
       totalStories,
-      totalCreditsIssued: totalCredits._sum.amount ?? 0,
+      totalTrialsRemaining: totalTrials._sum.trialGenerations ?? 0,
       newUsersToday,
       newUsersThisWeek,
       newUsersThisMonth,
@@ -74,7 +74,7 @@ router.get("/stats", async (_req, res) => {
 
 /**
  * GET /admin/users
- * All users with full details, credits, and story counts
+ * All users with full details, trial generations, and story counts
  */
 router.get("/users", async (req, res) => {
   try {
@@ -96,7 +96,6 @@ router.get("/users", async (req, res) => {
       take: parseInt(limit),
       skip: parseInt(offset),
             include: {
-        userCredit: true,
         models: {
           select: { id: true, name: true, thumbnail: true, createdAt: true },
           orderBy: { createdAt: "desc" },
@@ -113,7 +112,7 @@ router.get("/users", async (req, res) => {
       clerkId: u.clerkId,
       email: u.email,
       name: u.name || "Anonymous",
-      credits: u.userCredit?.amount ?? 0,
+      trials: u.trialGenerations,
       modelCount: u.models.length,
       storyCount: u.stories.length,
       models: u.models,
@@ -140,7 +139,6 @@ router.get("/users/:id", async (req, res) => {
     const user = await prismaClient.user.findUnique({
       where: { id },
       include: {
-        userCredit: true,
         models: { orderBy: { createdAt: "desc" } },
         stories: {
           orderBy: { createdAt: "desc" },
@@ -156,7 +154,7 @@ router.get("/users/:id", async (req, res) => {
 
     res.json({
       ...user,
-      credits: user.userCredit?.amount ?? 0,
+      trials: user.trialGenerations,
     });
   } catch (error) {
     logger.error({ error, id }, "Failed to fetch user profile");
@@ -178,7 +176,6 @@ router.delete("/users/:id", async (req, res) => {
     }
     await prismaClient.story.deleteMany({ where: { userId: id } });
     await prismaClient.model.deleteMany({ where: { userId: id } });
-    await prismaClient.userCredit.deleteMany({ where: { userId: id } });
     await prismaClient.user.delete({ where: { id } });
 
     logger.info({ userId: id }, "Admin deleted user and all their data");
@@ -190,14 +187,14 @@ router.delete("/users/:id", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-// CREDITS
+// TRIALS
 // ─────────────────────────────────────────
 
 /**
- * POST /admin/credits
- * Add, subtract, or set credits for a user
+ * POST /admin/trials
+ * Add, subtract, or set free story generations for a user
  */
-router.post("/credits", async (req, res) => {
+router.post("/trials", async (req, res) => {
   const { userId, amount, action } = req.body;
 
   if (!userId || typeof amount !== "number") {
@@ -206,82 +203,83 @@ router.post("/credits", async (req, res) => {
   }
 
   try {
-    let updated;
-    if (action === "subtract") {
-      const current = await prismaClient.userCredit.findUnique({ where: { userId } });
-      const newBalance = Math.max(0, (current?.amount ?? 0) - amount);
-      updated = await prismaClient.userCredit.upsert({
-        where: { userId },
-        update: { amount: newBalance },
-        create: { userId, amount: newBalance },
-      });
-    } else if (action === "add") {
-      updated = await prismaClient.userCredit.upsert({
-        where: { userId },
-        update: { amount: { increment: amount } },
-        create: { userId, amount },
-      });
-    } else {
-      // set exact
-      updated = await prismaClient.userCredit.upsert({
-        where: { userId },
-        update: { amount },
-        create: { userId, amount },
-      });
+    const current = await prismaClient.user.findUnique({
+      where: { id: userId },
+      select: { trialGenerations: true },
+    });
+
+    if (!current) {
+      res.status(404).json({ message: "User not found" });
+      return;
     }
 
-    logger.info({ userId, newAmount: updated.amount, action }, "Admin updated credits");
-    res.json({ success: true, credits: updated.amount });
+    let newAmount = current.trialGenerations;
+    if (action === "subtract") {
+      newAmount = Math.max(0, current.trialGenerations - amount);
+    } else if (action === "add") {
+      newAmount = current.trialGenerations + amount;
+    } else {
+      // set exact
+      newAmount = Math.max(0, amount);
+    }
+
+    const updated = await prismaClient.user.update({
+      where: { id: userId },
+      data: { trialGenerations: newAmount },
+      select: { trialGenerations: true },
+    });
+
+    logger.info({ userId, trials: updated.trialGenerations, action }, "Admin updated trials");
+    res.json({ success: true, trials: updated.trialGenerations });
   } catch (error) {
-    logger.error({ error, userId }, "Failed to update credits");
-    res.status(500).json({ message: "Failed to update credits" });
+    logger.error({ error, userId }, "Failed to update trials");
+    res.status(500).json({ message: "Failed to update trials" });
   }
 });
 
 /**
- * POST /admin/grant-free-all
- * Grant credits to all users
+ * POST /admin/grant-trials-all
+ * Grant free story generations to all users
  */
-router.post("/grant-free-all", async (req, res) => {
-  const { amount = 1000 } = req.body;
+router.post("/grant-trials-all", async (req, res) => {
+  const { amount = 3 } = req.body;
   try {
     const users = await prismaClient.user.findMany({ select: { id: true } });
 
     await Promise.all(
       users.map((u) =>
-        prismaClient.userCredit.upsert({
-          where: { userId: u.id },
-          update: { amount: { increment: amount } },
-          create: { userId: u.id, amount },
+        prismaClient.user.update({
+          where: { id: u.id },
+          data: { trialGenerations: { increment: amount } },
         })
       )
     );
 
-    logger.info({ totalUsers: users.length, amount }, "Granted credits to all users");
-    res.json({ success: true, message: `Granted ${amount} credits to all ${users.length} users` });
+    logger.info({ totalUsers: users.length, amount }, "Granted trials to all users");
+    res.json({ success: true, message: `Granted ${amount} free stories to all ${users.length} users` });
   } catch (error) {
-    logger.error({ error }, "Failed to grant credits to all");
-    res.status(500).json({ message: "Failed to grant credits" });
+    logger.error({ error }, "Failed to grant trials to all");
+    res.status(500).json({ message: "Failed to grant trials" });
   }
 });
 
 /**
- * POST /admin/reset-credits/:id
- * Reset a user's credits to 0
+ * POST /admin/reset-trials/:id
+ * Reset a user's free story generations to 0
  */
-router.post("/reset-credits/:id", async (req, res) => {
+router.post("/reset-trials/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const updated = await prismaClient.userCredit.upsert({
-      where: { userId: id },
-      update: { amount: 0 },
-      create: { userId: id, amount: 0 },
+    const updated = await prismaClient.user.update({
+      where: { id },
+      data: { trialGenerations: 0 },
+      select: { trialGenerations: true },
     });
-    logger.info({ userId: id }, "Admin reset user credits to 0");
-    res.json({ success: true, credits: updated.amount });
+    logger.info({ userId: id }, "Admin reset user trials to 0");
+    res.json({ success: true, trials: updated.trialGenerations });
   } catch (error) {
-    logger.error({ error, id }, "Failed to reset credits");
-    res.status(500).json({ message: "Failed to reset credits" });
+    logger.error({ error, id }, "Failed to reset trials");
+    res.status(500).json({ message: "Failed to reset trials" });
   }
 });
 

@@ -98,7 +98,7 @@ The platform includes a professional SaaS dashboard that allows parents to:
 - Generate and view stories
 - Listen to narrated bedtime stories
 - Access story history
-- Manage subscriptions (payment-ready architecture)
+- Get 3 free story generations per account, and each printed book order earns one more
 
 ---
 

@@ -281,29 +281,29 @@ export class AudioService {
   }
 
   /**
-   * Estimate audio duration and cost
+   * Estimate audio duration and generation units
    */
   estimateAudioCost(
     text: string,
-    creditPerPage: number = 5
-  ): { estimatedDuration: number; creditCost: number } {
+    unitsPerPage: number = 5
+  ): { estimatedDuration: number; estimatedCost: number } {
     const words = text.split(/\s+/).length;
     const estimatedDuration = Math.ceil((words / 150) * 60);
 
     return {
       estimatedDuration,
-      creditCost: creditPerPage,
+      estimatedCost: unitsPerPage,
     };
   }
 
   /**
-   * Estimate total audio cost for a story
+   * Estimate total audio generation units for a story
    */
   estimateStoryCost(
     pageCount: number,
-    creditPerPage: number = 5
+    unitsPerPage: number = 5
   ): number {
-    return pageCount * creditPerPage;
+    return pageCount * unitsPerPage;
   }
 
   private delay(ms: number): Promise<void> {

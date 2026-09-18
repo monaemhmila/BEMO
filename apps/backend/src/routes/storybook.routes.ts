@@ -5,7 +5,7 @@ import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { StoryService } from "../services/story.service";
 import { AudioService } from "../services/audio.service";
-import { CreditService } from "../services/credit.service";
+import { trialService } from "../services/trial.service";
 import { ImageGenerationService } from "../services/image-generation.service";
 import { PDFService } from "../services/pdf.service";
 import { storyGenerationLimiter } from "../middleware/rateLimiter";
@@ -21,7 +21,6 @@ import { z } from "zod";
 const router = Router();
 const storyService = StoryService.getInstance();
 const audioService = AudioService.getInstance();
-const creditService = CreditService.getInstance();
 const imageService = ImageGenerationService.getInstance();
 
 // Validation schemas
@@ -54,16 +53,15 @@ const SimplePDFSchema = z.object({
 });
 
 /**
- * GET /storybook/cost-preview
- * Get credit cost preview for storybook generation
+ * GET /storybook/trials
+ * Remaining free story generations for the signed-in user
  */
-router.get("/cost-preview", authMiddleware, async (req, res) => {
-  const costs = creditService.getCostPreview();
-  const balance = await creditService.getBalance(req.userId!);
+router.get("/trials", authMiddleware, async (req, res) => {
+  const trials = await trialService.getRemaining(req.userId!);
 
   res.json({
-    costs,
-    balance,
+    trials,
+    generationsLeft: trials,
     voices: audioService.getVoices(),
   });
 });
@@ -154,7 +152,7 @@ router.get("/templates", async (_req, res) => {
 /**
  * POST /storybook/generate
  * Generate a complete personalized storybook
- * Credits are ONLY deducted on successful completion
+ * A free generation is ONLY consumed on successful completion
  */
 router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res) => {
   const userId = req.userId!;
@@ -183,22 +181,14 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       voiceId,
     } = validation.data;
 
-    // Calculate credit cost
-    const { total: creditCost, breakdown } = creditService.calculateStorybookCost(
-      storyLength,
-      true, // Always include images
-      includeAudio
-    );
-
-    // Step 1: Validate credits (don't deduct yet)
-    const hasCredits = await creditService.hasEnoughCredits(userId, creditCost);
-    if (!hasCredits) {
-      const balance = await creditService.getBalance(userId);
+    // Step 1: Validate the account still has a free story generation left
+    const trialsLeft = await trialService.getRemaining(userId);
+    if (trialsLeft <= 0) {
       res.status(402).json({
-        message: "Not enough credits",
-        required: creditCost,
-        available: balance,
-        breakdown,
+        message:
+          "You have used all of your free story generations. Order a printed book to unlock another one!",
+        code: "NO_TRIAL_GENERATIONS_LEFT",
+        trials: 0,
       });
       return;
     }
@@ -214,7 +204,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     }
 
     logger.info(
-      { userId, modelId, storyLength, creditCost, includeAudio },
+      { userId, modelId, storyLength, includeAudio },
       "Starting storybook generation"
     );
 
@@ -265,25 +255,26 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       (r) => r.status === "fulfilled"
     ).length;
 
-    // Step 6: Deduct credits ONLY after successful queue submission
+    // Step 6: Consume one free generation ONLY after successful queue submission
     if (successCount > 0) {
-      const deductResult = await creditService.deductCredits(
+      const consumeResult = await trialService.consumeGeneration(
         userId,
-        creditCost,
         story.id,
         "storybook_generation"
       );
 
-      if (!deductResult.success) {
+      if (!consumeResult.success) {
         // Rollback: Mark story as failed
         await prismaClient.story.update({
           where: { id: story.id },
           data: { status: "Failed" },
         });
 
-        res.status(500).json({
-          message: "Failed to process credits",
-          error: deductResult.error,
+        res.status(402).json({
+          message:
+            "You have used all of your free story generations. Order a printed book to unlock another one!",
+          code: "NO_TRIAL_GENERATIONS_LEFT",
+          error: consumeResult.error,
         });
         return;
       }
@@ -293,8 +284,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
           storyId: story.id,
           pages: pages.length,
           successful: successCount,
-          creditCost,
-          remainingCredits: deductResult.remainingCredits,
+          trialsRemaining: consumeResult.remaining,
         },
         "Storybook generation started successfully"
       );
@@ -319,8 +309,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       pages: pages.length,
       pagesStarted: successCount,
       estimatedTime: `${pages.length * 30} seconds`,
-      creditsUsed: creditCost,
-      breakdown,
+      trialsRemaining: await trialService.getRemaining(userId),
       includeAudio,
     });
   } catch (error) {
@@ -334,7 +323,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       }).catch(() => { });
     }
 
-    // No credits were deducted, so no refund needed
+    // No generation was consumed, so no refund needed
     res.status(500).json({
       message: "Failed to generate story",
       details: error instanceof Error ? error.message : "Unknown error",
@@ -480,7 +469,7 @@ router.get("/dashboard/stats", authMiddleware, async (req, res) => {
 /**
  * POST /storybook/:id/generate-audio
  * Generate audio narration for a complete story
- * Credits deducted ONLY on success
+ * A free generation is consumed ONLY on success
  */
 router.post("/:id/generate-audio", authMiddleware, async (req, res) => {
   const storyId = req.params.id;
@@ -508,17 +497,14 @@ router.post("/:id/generate-audio", authMiddleware, async (req, res) => {
       return;
     }
 
-    // Calculate audio credit cost
-    const audioCost = audioService.estimateStoryCost(story.pages.length, 5);
-
-    // Check credits
-    const hasCredits = await creditService.hasEnoughCredits(userId, audioCost);
-    if (!hasCredits) {
-      const balance = await creditService.getBalance(userId);
+    // Validate the account still has a free story generation left
+    const trialsLeft = await trialService.getRemaining(userId);
+    if (trialsLeft <= 0) {
       res.status(402).json({
-        message: "Not enough credits for audio generation",
-        required: audioCost,
-        available: balance,
+        message:
+          "You have used all of your free story generations. Order a printed book to unlock another one!",
+        code: "NO_TRIAL_GENERATIONS_LEFT",
+        trials: 0,
       });
       return;
     }
@@ -526,30 +512,26 @@ router.post("/:id/generate-audio", authMiddleware, async (req, res) => {
     // Generate audio
     const result = await audioService.generateStoryAudio(storyId, voiceId);
 
-    // Deduct credits ONLY if audio was generated successfully
+    // Consume one free generation ONLY if audio was generated successfully
+    let trialsRemaining = trialsLeft;
     if (result.successCount > 0) {
-      // Charge proportionally based on success
-      const actualCost = Math.ceil(audioCost * (result.successCount / result.totalPages));
-
-      await creditService.deductCredits(
+      const consumeResult = await trialService.consumeGeneration(
         userId,
-        actualCost,
         storyId,
         "audio_generation"
       );
+      trialsRemaining = consumeResult.remaining;
 
       logger.info(
-        { storyId, successCount: result.successCount, cost: actualCost },
-        "Audio generation completed with credits deducted"
+        { storyId, successCount: result.successCount, trialsRemaining },
+        "Audio generation completed with a free generation consumed"
       );
     }
 
     res.json({
       message: "Audio generation complete",
       ...result,
-      creditsUsed: result.successCount > 0
-        ? Math.ceil(audioCost * (result.successCount / result.totalPages))
-        : 0,
+      trialsRemaining,
     });
   } catch (error) {
     logger.error({ error, storyId }, "Failed to generate story audio");
@@ -626,7 +608,7 @@ router.post("/:id/retry-failed", authMiddleware, async (req, res) => {
       return;
     }
 
-    // Retry failed pages (no additional credit charge for retries)
+    // Retry failed pages (retries never consume extra trial generations)
     const results = await Promise.allSettled(
       story.pages.map((page) =>
         storyService.triggerPageGeneration(
@@ -692,7 +674,22 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
   const childImage = validation.data.childImage || undefined;
 
   try {
-    logger.info({ childName, theme, storyLength }, "Starting no-training PDF storybook generation");
+    // Gate generation behind the free-generation allowance
+    const trialsLeft = await trialService.getRemaining(req.userId!);
+    if (trialsLeft <= 0) {
+      res.status(402).json({
+        message:
+          "You have used all of your free story generations. Order a printed book to unlock another one!",
+        code: "NO_TRIAL_GENERATIONS_LEFT",
+        trials: 0,
+      });
+      return;
+    }
+
+    logger.info(
+      { childName, theme, storyLength, trialsLeft },
+      "Starting no-training PDF storybook generation"
+    );
 
     // Generate the positioned face references ONCE per story from the uploaded
     // photo: detect + crop locally (no network), place on a white canvas at
@@ -811,6 +808,28 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         dedication,
       },
     });
+
+    // Consume one free generation now that the story was successfully created
+    const consumeResult = await trialService.consumeGeneration(
+      req.userId!,
+      story.id,
+      "storybook_generation"
+    );
+
+    if (!consumeResult.success) {
+      await prismaClient.story.update({
+        where: { id: story.id },
+        data: { status: "Failed" },
+      });
+
+      res.status(402).json({
+        message:
+          "You have used all of your free story generations. Order a printed book to unlock another one!",
+        code: "NO_TRIAL_GENERATIONS_LEFT",
+        error: consumeResult.error,
+      });
+      return;
+    }
 
     await prismaClient.storyPage.createMany({
       data: [
@@ -932,6 +951,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       title: script.title,
       childName,
       pages: previewPages,
+      trialsRemaining: await trialService.getRemaining(req.userId!),
     });
     return;
   } catch (error) {

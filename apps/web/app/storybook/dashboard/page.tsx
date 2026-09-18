@@ -12,8 +12,7 @@ import {
   Sparkles,
   Clock,
   ArrowRight,
-  TrendingUp,
-  Coins,
+  Gift,
   Package,
   Truck,
   CheckCircle2,
@@ -23,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { useCredits } from "@/hooks/use-credits";
+import { useTrials } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../config";
 
 interface StorySummary {
@@ -130,7 +129,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function StorybookDashboardPage() {
   const { getToken, user } = useAuth();
-  const { credits, loading: creditsLoading } = useCredits();
+  const { trials, loading: trialsLoading } = useTrials();
   const [stats, setStats] = useState<StorybookStats>(EMPTY_STATS);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -226,13 +225,15 @@ export default function StorybookDashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Credits Badge */}
+            {/* Free story generations badge */}
             <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-full border border-amber-200">
-              <Coins className="w-5 h-5 text-amber-600" />
+              <Gift className="w-5 h-5 text-amber-600" />
               <span className="font-bold text-amber-700">
-                {creditsLoading ? "..." : credits}
+                {trialsLoading ? "..." : trials}
               </span>
-              <span className="text-amber-600 text-sm">credits</span>
+              <span className="text-amber-600 text-sm">
+                free {trials === 1 ? "story" : "stories"} left
+              </span>
             </div>
             <Link href="/storybook/create">
               <Button className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-lg shadow-amber-200 gap-2">
@@ -296,21 +297,22 @@ export default function StorybookDashboardPage() {
         <Card className="p-6 border-stone-100 bg-gradient-to-br from-blue-50 to-indigo-50">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-white rounded-2xl shadow-sm">
-              <TrendingUp className="w-6 h-6 text-blue-600" />
+              <Package className="w-6 h-6 text-blue-600" />
             </div>
             <div className="flex-1">
               <h3 className="font-serif text-xl font-bold text-stone-900">
-                Train a New Hero
+                Order a Printed Book
               </h3>
               <p className="text-stone-600 text-sm mt-1">
-                Upload photos to create a new character model.
+                Turn any finished story into a hardcover book - each order also
+                unlocks 1 extra free story.
               </p>
-              <Link href="/train">
+              <Link href="/stories">
                 <Button
                   variant="outline"
                   className="mt-4 rounded-full border-stone-300"
                 >
-                  Train Model <ArrowRight className="w-4 h-4 ml-2" />
+                  Choose a Book <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             </div>

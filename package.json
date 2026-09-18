@@ -8,9 +8,13 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "start:web": "cd ./apps/web && npm run start",
     "start:backend": "cd ./apps/backend && npm run start",
-    "generate:db": "cd ./packages/db && npx prisma generate && cd ../..",
+    "generate:db": "prisma generate --schema=packages/db/prisma/schema.prisma",
     "seed": "cd ./packages/db && npm run db:seed",
-    "db:push": "cd ./packages/db && npx prisma db push"
+    "db:push": "prisma db push --schema=packages/db/prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=packages/db/prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema=packages/db/prisma/schema.prisma",
+    "db:status": "prisma migrate status --schema=packages/db/prisma/schema.prisma",
+    "db:studio": "prisma studio --schema=packages/db/prisma/schema.prisma"
   },
   "devDependencies": {
     "@types/node": "^24.0.4",

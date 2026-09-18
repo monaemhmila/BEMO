@@ -2,32 +2,32 @@ import { Router } from "express";
 import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { FalAIModel } from "../models/fal-ai.model";
-import { CreditService } from "../services/credit.service";
+import { trialService, DEFAULT_TRIAL_GENERATIONS, TRIAL_GENERATIONS_PER_ORDER } from "../services/trial.service";
 import { logger } from "../lib/logger";
 import { imageGenerationLimiter } from "../middleware/rateLimiter";
 
 const router = Router();
 const falAiModel = new FalAIModel();
 
-// Get user credit balance with cost preview
+/**
+ * GET /balance
+ * Remaining free story generations for the signed-in user.
+ */
 router.get("/balance", authMiddleware, async (req, res) => {
   try {
-    const userCredit = await prismaClient.userCredit.findUnique({
-      where: { userId: req.userId! },
-    });
-
-    const creditService = CreditService.getInstance();
-    const costPreview = creditService.getCostPreview();
+    const trials = await trialService.getRemaining(req.userId!);
 
     res.json({
-      credits: userCredit?.amount ?? 0,
+      trials,
+      generationsLeft: trials,
+      defaultTrials: DEFAULT_TRIAL_GENERATIONS,
+      perOrder: TRIAL_GENERATIONS_PER_ORDER,
       userId: req.userId,
-      costs: costPreview,
     });
   } catch (error) {
-    logger.error({ error }, "Failed to fetch balance");
+    logger.error({ error }, "Failed to fetch generation balance");
     res.status(500).json({
-      message: "Failed to fetch balance",
+      message: "Failed to fetch generation balance",
       error: error instanceof Error ? error.message : "Unknown error",
     });
   }
@@ -80,7 +80,6 @@ router.post(
   async (req, res) => {
     try {
       const { prompt, modelId } = req.body;
-      const userId = req.userId!;
 
       // Look up the model to get its tensor path
       const model = modelId
@@ -88,22 +87,6 @@ router.post(
         : null;
 
       const tensorPath = (model as any)?.tensorPath ?? "";
-
-      const creditService = CreditService.getInstance();
-      const creditResult = await creditService.deductCredits(
-        userId,
-        creditService.costs.imageGeneration,
-        `img-${Date.now()}`,
-        "image_generation",
-      );
-
-      if (!creditResult.success) {
-        res.status(402).json({
-          message: "Insufficient credits",
-          error: creditResult.error,
-        });
-        return;
-      }
 
       const image = await falAiModel.generateImage(prompt, tensorPath);
 

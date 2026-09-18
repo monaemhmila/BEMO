@@ -62,7 +62,7 @@ router.post("/clerk", webhookLimiter, async (req, res) => {
         return;
       }
 
-      const dbUser = await prismaClient.user.upsert({
+      await prismaClient.user.upsert({
         where: { clerkId: id },
         update: {
           name: `${evt.data.first_name ?? ""} ${evt.data.last_name ?? ""}`.trim(),
@@ -77,35 +77,12 @@ router.post("/clerk", webhookLimiter, async (req, res) => {
         },
       });
 
-      // Create initial credits for new users
-      if (!dbUser?.id) {
-        logger.error({ userId: id }, "Failed to resolve internal user id after upsert");
-        res.status(500).json({ success: false, message: "Failed to sync user record" });
-        return;
-      }
-
-      await prismaClient.userCredit.upsert({
-        where: { userId: dbUser.id },
-        update: {},
-        create: {
-          userId: dbUser.id,
-          amount: 20, // Default starting credits
-        },
-      });
-
+      // New accounts automatically get `User.trialGenerations` (3 free stories)
+      // via the Prisma schema default - nothing else to provision here.
       logger.info({ userId: id, eventType }, "User processed");
     }
 
     if (eventType === "user.deleted") {
-      const existingUser = await prismaClient.user.findUnique({
-        where: { clerkId: id },
-        select: { id: true },
-      });
-
-      if (existingUser?.id) {
-        await prismaClient.userCredit.deleteMany({ where: { userId: existingUser.id } });
-      }
-
       await prismaClient.user
         .delete({ where: { clerkId: id } })
         .catch(() => {

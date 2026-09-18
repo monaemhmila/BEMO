@@ -12,7 +12,6 @@ import { notFoundHandler, errorHandler } from "./middleware/error-handler";
 import { aiRouter } from "./routes/ai.routes";
 import { storyRouter } from "./routes/story.routes";
 import { storybookRouter } from "./routes/storybook.routes";
-import { paymentRouter } from "./routes/payment.routes";
 import { webhookRouter } from "./routes/webhook.routes";
 import { falAiWebhookRouter } from "./routes/fal-ai-webhook.routes";
 
@@ -98,7 +97,6 @@ export function createApp() {
   app.use(aiRouter);
   app.use("/story", storyRouter);
   app.use("/storybook", storybookRouter);
-  app.use("/payment", paymentRouter);
   app.use("/admin", adminRouter);
     app.use("/orders", orderRouter);
 

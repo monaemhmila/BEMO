@@ -61,7 +61,7 @@ export function HeroHeader() {
         className="text-xl md:text-2xl text-stone-500 max-w-2xl mx-auto leading-relaxed"
       >
         Instantly generate magical, illustrated bedtime stories starring your little one. 
-        Endless adventures, one subscription.
+        Your first 3 stories are free - and every printed book unlocks another.
       </motion.p>
 
       {/* CTA Buttons */}
@@ -100,7 +100,7 @@ export function HeroHeader() {
         </SignedIn>
 
         <p className="text-sm text-stone-400 mt-4 sm:mt-0 sm:ml-4 animate-pulse">
-            ✨ 20 Free Credits included
+            ✨ 3 Free Stories included
         </p>
       </motion.div>
     </div>

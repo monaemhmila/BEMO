@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
-import { useCredits } from "@/hooks/use-credits";
+import { useTrials } from "@/hooks/use-trials";
 import { useCallback, useEffect, useState } from "react";
 import { BACKEND_URL } from "../config";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ interface ApiTestResult {
 export default function DebugAuthPage() {
   const auth = useAuth();
   const { getToken } = auth;
-  const { credits, loading: creditsLoading, error: creditsError } = useCredits();
+  const { trials, loading: trialsLoading, error: trialsError } = useTrials();
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [apiTests, setApiTests] = useState<Record<string, ApiTestResult>>({});
 
@@ -170,24 +170,24 @@ export default function DebugAuthPage() {
           )}
         </Card>
 
-        {/* Credits Hook */}
+        {/* Trials Hook */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Credits Hook</h2>
+          <h2 className="text-xl font-semibold mb-4">Free Stories Hook</h2>
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>Loading:</span>
-              <Badge variant={creditsLoading ? "secondary" : "default"}>
-                {creditsLoading ? "Yes" : "No"}
+              <Badge variant={trialsLoading ? "secondary" : "default"}>
+                {trialsLoading ? "Yes" : "No"}
               </Badge>
             </div>
             <div className="flex justify-between">
-              <span>Credits:</span>
-              <code className="text-lg font-bold">{credits}</code>
+              <span>Free stories left:</span>
+              <code className="text-lg font-bold">{trials}</code>
             </div>
-            {creditsError && (
+            {trialsError && (
               <div className="p-3 bg-red-50 border border-red-200 rounded">
                 <p className="text-red-600 text-sm font-medium">Error:</p>
-                <p className="text-red-700 text-sm">{creditsError}</p>
+                <p className="text-red-700 text-sm">{trialsError}</p>
               </div>
             )}
           </div>

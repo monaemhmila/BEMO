@@ -29,7 +29,7 @@ When a client triggers a story generation, the application processes the request
   - No-Training On-the-Fly PDF Storybook: `POST /api/storybook/generate-pdf` in [`storybook.routes.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/routes/storybook.routes.ts#L657-L732)
   - Simplified Stream PDF: `POST /api/simple-storybook/simple` in [`simple-storybook.routes.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/routes/simple-storybook.routes.ts#L27-L85)
 - **Input Parameters**: Child's name, age, story theme, story length (`short`: 5 pages, `medium`: 8 pages, `long`: 12 pages), category, dedication, art style, and optional voice ID.
-- **Credit Check**: Validates user credits via [`CreditService`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/services/credit.service.ts) before initiating generation.
+- **Trial Check**: Validates the account's free trial generations via [`TrialService`](file:///c:/Users/monem/Music/BEMO/BEMO/apps/backend/src/services/trial.service.ts) before initiating generation. Every account starts with 3 free generations and earns 1 more for each printed book order.
 
 ### Phase 2: LLM Story Script Generation
 - The request passes to `generatePersonalizedStoryScript()` in [`story.service.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/services/story.service.ts#L104-L154).

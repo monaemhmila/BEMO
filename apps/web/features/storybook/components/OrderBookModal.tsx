@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
+import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
 
 interface OrderSummary {
@@ -204,6 +205,8 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
 
       setOrder(res.data.order);
       setStep("success");
+      // A printed book order grants one extra free story generation
+      trialUpdateEvent.dispatchEvent(new CustomEvent("trialUpdate"));
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
@@ -458,6 +461,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
               </DialogTitle>
               <DialogDescription className="text-center">
                 Your book is on its way to you. Pay cash when it arrives.
+                You also unlocked 1 extra free story generation!
               </DialogDescription>
             </DialogHeader>
 

@@ -5,7 +5,7 @@ import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { useState, useEffect, useCallback } from "react";
 import {
-  Users, BookOpen, Sparkles, Coins, ShieldCheck, RefreshCw, Gift, Search,
+  Users, BookOpen, Sparkles, ShieldCheck, RefreshCw, Gift, Search,
   Trash2, Play, CheckCircle2, HardDrive, Cpu, Key, TrendingUp, Activity,
   UserX, Eye, Clock,
   BarChart3, Zap, ArrowUpRight, Download,
@@ -22,7 +22,7 @@ interface AdminStats {
   totalUsers: number;
   totalStories: number;
   totalModels: number;
-  totalCreditsIssued: number;
+  totalTrialsRemaining: number;
   newUsersToday: number;
   newUsersThisWeek: number;
   newUsersThisMonth: number;
@@ -38,7 +38,7 @@ interface AdminUser {
   clerkId: string;
   email: string;
   name: string;
-  credits: number;
+  trials: number;
   modelCount: number;
   storyCount: number;
   models: { id: string; name: string; trainingStatus: string; createdAt: string; thumbnail?: string }[];
@@ -149,9 +149,9 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-// ─── Credit Editor ───────────────────────────────────────────────────────────
+// ─── Trials Editor ───────────────────────────────────────────────────────────
 
-function CreditEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id: string, amount: number, action: string) => void; onClose: () => void }) {
+function TrialsEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id: string, amount: number, action: string) => void; onClose: () => void }) {
   const [amount, setAmount] = useState(0);
   const [action, setAction] = useState<"add" | "subtract" | "set">("add");
 
@@ -160,17 +160,17 @@ function CreditEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id:
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-stone-900 text-lg">Adjust Credits</h3>
+            <h3 className="font-bold text-stone-900 text-lg">Adjust Free Stories</h3>
             <p className="text-stone-500 text-sm">{user.email}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-xl"><X className="w-5 h-5 text-stone-500" /></button>
         </div>
 
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
-          <Coins className="w-6 h-6 text-amber-600" />
+          <Gift className="w-6 h-6 text-amber-600" />
           <div>
             <p className="text-xs text-amber-600 font-medium uppercase tracking-wide">Current Balance</p>
-            <p className="text-2xl font-bold text-amber-700">{user.credits.toLocaleString()} credits</p>
+            <p className="text-2xl font-bold text-amber-700">{user.trials.toLocaleString()} free stories</p>
           </div>
         </div>
 
@@ -199,7 +199,7 @@ function CreditEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id:
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {[50, 100, 200, 500, 1000].map((v) => (
+            {[1, 3, 5, 10].map((v) => (
               <button key={v} onClick={() => setAmount(v)} className="px-3 py-1 bg-stone-100 hover:bg-purple-100 text-stone-700 hover:text-purple-700 rounded-lg text-xs font-semibold transition-colors">
                 {v.toLocaleString()}
               </button>
@@ -211,7 +211,7 @@ function CreditEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id:
           <div className="bg-stone-50 rounded-xl p-3 text-sm text-stone-600">
             New balance will be:{" "}
             <strong className="text-stone-900">
-              {action === "add" ? user.credits + amount : Math.max(0, user.credits - amount)} credits
+              {action === "add" ? user.trials + amount : Math.max(0, user.trials - amount)} free stories
             </strong>
           </div>
         )}
@@ -235,7 +235,7 @@ function CreditEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id:
 
 // ─── User Detail Drawer ───────────────────────────────────────────────────────
 
-function UserDrawer({ user, onClose, onDeleteUser, onEditCredits }: { user: AdminUser; onClose: () => void; onDeleteUser: (id: string) => void; onEditCredits: (user: AdminUser) => void }) {
+function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: AdminUser; onClose: () => void; onDeleteUser: (id: string) => void; onEditTrials: (user: AdminUser) => void }) {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex justify-end" onClick={onClose}>
       <div className="w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -245,8 +245,8 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditCredits }: { user: Admi
             <p className="text-stone-500 text-sm">{user.email}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => onEditCredits(user)} className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold hover:bg-amber-200 transition-colors">
-              Edit Credits
+            <button onClick={() => onEditTrials(user)} className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold hover:bg-amber-200 transition-colors">
+              Edit Free Stories
             </button>
             <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-xl">
               <X className="w-5 h-5 text-stone-500" />
@@ -258,8 +258,8 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditCredits }: { user: Admi
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-amber-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-amber-700">{user.credits.toLocaleString()}</p>
-              <p className="text-xs text-amber-600 font-medium">Credits</p>
+              <p className="text-2xl font-bold text-amber-700">{user.trials.toLocaleString()}</p>
+              <p className="text-xs text-amber-600 font-medium">Free Stories</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-purple-700">{user.modelCount}</p>
@@ -1050,8 +1050,8 @@ export default function AdminPage() {
   const [storyStatusFilter, setStoryStatusFilter] = useState("all");
   const [modelStatusFilter, setModelStatusFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
-  const [creditEditorUser, setCreditEditorUser] = useState<AdminUser | null>(null);
-  const [grantAmount, setGrantAmount] = useState(1000);
+  const [trialEditorUser, setTrialEditorUser] = useState<AdminUser | null>(null);
+  const [grantAmount, setGrantAmount] = useState(3);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
@@ -1122,26 +1122,26 @@ export default function AdminPage() {
     if (isAdmin) fetchAll();
   }, [isAdmin, fetchAll]);
 
-  const handleUpdateCredits = async (userId: string, amount: number, action: string) => {
+  const handleUpdateTrials = async (userId: string, amount: number, action: string) => {
     try {
       const headers = await authHeaders();
-      const res = await axios.post(`${BACKEND_URL}/admin/credits`, { userId, amount, action }, { headers });
-      toast.success(`Credits updated → ${res.data.credits.toLocaleString()} credits`);
+      const res = await axios.post(`${BACKEND_URL}/admin/trials`, { userId, amount, action }, { headers });
+      toast.success(`Free stories updated → ${res.data.trials.toLocaleString()}`);
       fetchAll();
     } catch {
-      toast.error("Failed to update credits");
+      toast.error("Failed to update free stories");
     }
   };
 
   const handleGrantAll = async () => {
-    if (!confirm(`Grant ${grantAmount.toLocaleString()} credits to ALL users?`)) return;
+    if (!confirm(`Grant ${grantAmount.toLocaleString()} free stories to ALL users?`)) return;
     try {
       const headers = await authHeaders();
-      const res = await axios.post(`${BACKEND_URL}/admin/grant-free-all`, { amount: grantAmount }, { headers });
+      const res = await axios.post(`${BACKEND_URL}/admin/grant-trials-all`, { amount: grantAmount }, { headers });
       toast.success(res.data.message);
       fetchAll();
     } catch {
-      toast.error("Failed to grant credits");
+      toast.error("Failed to grant free stories");
     }
   };
 
@@ -1242,11 +1242,11 @@ export default function AdminPage() {
       <Toaster position="top-right" />
 
       {/* Modals */}
-      {creditEditorUser && (
-        <CreditEditor
-          user={creditEditorUser}
-          onSave={handleUpdateCredits}
-          onClose={() => setCreditEditorUser(null)}
+      {trialEditorUser && (
+        <TrialsEditor
+          user={trialEditorUser}
+          onSave={handleUpdateTrials}
+          onClose={() => setTrialEditorUser(null)}
         />
       )}
       {selectedUser && (
@@ -1254,7 +1254,7 @@ export default function AdminPage() {
           user={selectedUser}
           onClose={() => setSelectedUser(null)}
           onDeleteUser={handleDeleteUser}
-          onEditCredits={(u) => { setSelectedUser(null); setCreditEditorUser(u); }}
+          onEditTrials={(u) => { setSelectedUser(null); setTrialEditorUser(u); }}
         />
       )}
       {editingStoryId && (
@@ -1406,7 +1406,7 @@ export default function AdminPage() {
                     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: <Users className="w-5 h-5" />, sub: `+${stats?.newUsersToday ?? 0} today`, color: "blue" },
                     { label: "Stories Created", value: stats?.totalStories ?? 0, icon: <BookOpen className="w-5 h-5" />, sub: `+${stats?.storiesThisWeek ?? 0} this week`, color: "purple" },
                     { label: "AI Models", value: stats?.totalModels ?? 0, icon: <Sparkles className="w-5 h-5" />, sub: `${stats?.pendingModels ?? 0} training now`, color: "indigo" },
-                    { label: "Credits Issued", value: (stats?.totalCreditsIssued ?? 0).toLocaleString(), icon: <Coins className="w-5 h-5" />, sub: "across all users", color: "amber" },
+                    { label: "Free Stories Left", value: (stats?.totalTrialsRemaining ?? 0).toLocaleString(), icon: <Gift className="w-5 h-5" />, sub: "across all users", color: "amber" },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 transition-all">
                       <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center ${
@@ -1442,12 +1442,12 @@ export default function AdminPage() {
                   ))}
                 </div>
 
-                {/* Grant Credits Panel */}
+                {/* Grant Free Stories Panel */}
                 <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 border border-amber-500/20 rounded-2xl p-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1">
-                      <h3 className="font-bold text-white text-lg flex items-center gap-2"><Gift className="w-5 h-5 text-amber-400" /> Grant Credits to All Users</h3>
-                      <p className="text-white/50 text-sm mt-1">Give a credit bonus to every registered user at once.</p>
+                      <h3 className="font-bold text-white text-lg flex items-center gap-2"><Gift className="w-5 h-5 text-amber-400" /> Grant Free Stories to All Users</h3>
+                      <p className="text-white/50 text-sm mt-1">Give extra free story generations to every registered user at once.</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">
@@ -1458,7 +1458,7 @@ export default function AdminPage() {
                           onChange={(e) => setGrantAmount(Number(e.target.value))}
                           className="w-28 bg-white/10 border border-white/20 text-white px-3 py-2 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
                         />
-                        <span className="text-white/50 text-sm">credits</span>
+                        <span className="text-white/50 text-sm">free stories</span>
                       </div>
                       <button onClick={handleGrantAll} className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-orange-500/20 transition-all">
                         Grant to All
@@ -1539,11 +1539,11 @@ export default function AdminPage() {
                       <thead>
                         <tr className="border-b border-white/10 text-white/40 text-xs uppercase font-semibold tracking-wider">
                           <th className="text-left py-3.5 px-4">User</th>
-                          <th className="text-left py-3.5 px-4">Credits</th>
+                          <th className="text-left py-3.5 px-4">Free Stories</th>
                           <th className="text-left py-3.5 px-4">Models</th>
                           <th className="text-left py-3.5 px-4">Stories</th>
                           <th className="text-left py-3.5 px-4">Joined</th>
-                          <th className="text-left py-3.5 px-4">Quick Credit</th>
+                          <th className="text-left py-3.5 px-4">Quick Add</th>
                           <th className="text-right py-3.5 px-4">Actions</th>
                         </tr>
                       </thead>
@@ -1559,22 +1559,22 @@ export default function AdminPage() {
                               </div>
                             </td>
                             <td className="py-3.5 px-4">
-                              <span className="font-bold text-amber-400">⚡ {u.credits.toLocaleString()}</span>
+                              <span className="font-bold text-amber-400">{u.trials.toLocaleString()}</span>
                             </td>
                             <td className="py-3.5 px-4 text-white/60">{u.modelCount}</td>
                             <td className="py-3.5 px-4 text-white/60">{u.storyCount}</td>
                             <td className="py-3.5 px-4 text-white/40 text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center gap-1">
-                                <button onClick={() => handleUpdateCredits(u.id, 100, "subtract")} className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/20 hover:bg-red-500/30 rounded-lg text-xs font-bold transition-colors">-100</button>
-                                <button onClick={() => handleUpdateCredits(u.id, 100, "add")} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/30 rounded-lg text-xs font-bold transition-colors">+100</button>
-                                <button onClick={() => handleUpdateCredits(u.id, 500, "add")} className="px-2 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/20 hover:bg-amber-500/30 rounded-lg text-xs font-bold transition-colors">+500</button>
+                                <button onClick={() => handleUpdateTrials(u.id, 1, "subtract")} className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/20 hover:bg-red-500/30 rounded-lg text-xs font-bold transition-colors">-1</button>
+                                <button onClick={() => handleUpdateTrials(u.id, 1, "add")} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/30 rounded-lg text-xs font-bold transition-colors">+1</button>
+                                <button onClick={() => handleUpdateTrials(u.id, 3, "add")} className="px-2 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/20 hover:bg-amber-500/30 rounded-lg text-xs font-bold transition-colors">+3</button>
                               </div>
                             </td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center justify-end gap-2">
-                                <button onClick={() => setCreditEditorUser(u)} className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors" title="Edit Credits">
-                                  <Coins className="w-3.5 h-3.5" />
+                                <button onClick={() => setTrialEditorUser(u)} className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors" title="Edit Free Stories">
+                                  <Gift className="w-3.5 h-3.5" />
                                 </button>
                                 <button onClick={() => setSelectedUser(u)} className="p-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors" title="View Profile">
                                   <Eye className="w-3.5 h-3.5" />
