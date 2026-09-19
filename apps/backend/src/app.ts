@@ -18,6 +18,7 @@ import { falAiWebhookRouter } from "./routes/fal-ai-webhook.routes";
 import { adminRouter } from "./routes/admin.routes";
 import { simpleStorybookRouter } from "./routes/simple-storybook.routes";
 import { orderRouter } from "./routes/order.routes";
+import { customStoryRouter } from "./routes/custom-story.routes";
 
 initSentry();
 
@@ -101,6 +102,7 @@ export function createApp() {
     app.use("/orders", orderRouter);
 
   app.use("/simple-storybook", simpleStorybookRouter);
+  app.use("/custom-story", customStoryRouter);
 
   app.use(notFoundHandler);
   app.use(sentryErrorHandler());
