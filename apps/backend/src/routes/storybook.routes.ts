@@ -50,6 +50,7 @@ const SimplePDFSchema = z.object({
   storyLength: z.enum(["short", "medium", "long"]).optional().nullable().transform((v) => v || "short"),
   dedication: z.string().optional().nullable().or(z.literal("")),
   childImage: z.string().optional().nullable().or(z.literal("")),
+  language: z.enum(["english", "french", "arabic"]).optional().default("english"),
 });
 
 /**
@@ -672,6 +673,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
   const storyLength = validation.data.storyLength || undefined;
   const dedication = validation.data.dedication || undefined;
   const childImage = validation.data.childImage || undefined;
+  const language = validation.data.language || undefined;
 
   try {
     // Gate generation behind the free-generation allowance
@@ -737,6 +739,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         category: category || "adventure",
         storyLength,
         dedication,
+        language,
       },
       {
         name: childName,

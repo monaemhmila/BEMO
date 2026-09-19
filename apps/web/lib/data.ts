@@ -271,24 +271,30 @@ export function booksForAge(age: string) {
 export type BookMeta = {
   gender: "boy" | "girl" | "any";
   ages: string[];
-  languages: string[];
+  categories: string[];
 };
 
 export type SearchBook = Book & BookMeta;
 
-export const bookLanguages = [
-  { value: "sq", label: "Albanian" },
-  { value: "ar", label: "Arabic" },
-  { value: "nl", label: "Dutch" },
-  { value: "en", label: "English" },
-  { value: "fr", label: "French" },
-  { value: "de", label: "German" },
-  { value: "it", label: "Italian" },
-  { value: "pt", label: "Portuguese (Brazil)" },
-  { value: "pt-pt", label: "Portuguese (Portugal)" },
-  { value: "es", label: "Spanish" },
-  { value: "tr", label: "Turkish" },
-];
+const bookCategoriesBySlug: Record<string, string[]> = {
+  "girls-sticker-pack": ["Emotional"],
+  "boys-sticker-pack": ["Emotional"],
+  "the-portugals-new-legend": ["Dream", "Job"],
+  "princess-girl-the-one-we-all-needed": ["Emotional", "Adventure"],
+  "super-boy-and-the-dragon": ["Adventure", "Bedtime story"],
+  "princess-and-the-glowing-flower": ["Emotional", "Bedtime story"],
+  "the-boy-and-the-cosmic-journey": ["Dream", "Job"],
+  "boy-explores-the-zoo": ["Educative", "Adventure"],
+  "girl-explores-the-zoo": ["Educative", "Adventure"],
+  "girl-and-the-lost-fairy-wings": ["Bedtime story", "Dream"],
+  "vroom-vroom-the-boy-wins-the-race": ["Dream", "Job"],
+  "girl-counts-with-the-forest-friends": ["Educative"],
+  "the-abc-journey-with-girl": ["Educative"],
+  "girls-fun-in-the-sun": ["Adventure", "Emotional"],
+  "the-abc-journey-with-boy": ["Educative"],
+  "boy-and-the-forgotten-robot": ["Adventure"],
+  "the-boy-who-could-talk-to-animals": ["Emotional", "Educative"],
+};
 
 export function bookMeta(slug: string): BookMeta {
   let gender: BookMeta["gender"] = "any";
@@ -305,7 +311,7 @@ export function bookMeta(slug: string): BookMeta {
   return {
     gender,
     ages,
-    languages: bookLanguages.map((language) => language.label),
+    categories: bookCategoriesBySlug[slug] ?? [],
   };
 }
 

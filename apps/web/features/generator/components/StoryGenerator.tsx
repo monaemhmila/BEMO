@@ -38,7 +38,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
-import { STORY_CATEGORIES, STORY_LENGTH_CONFIG } from "../../../services/fal/storyGeneration";
+import { STORY_CATEGORIES, STORY_LANGUAGES, STORY_LENGTH_CONFIG } from "../../../services/fal/storyGeneration";
 import { STORY_STARTERS } from "../../../utils/prompts/storyPrompts";
 
 // Templates matching the ones defined on the backend
@@ -105,6 +105,7 @@ export function StoryGenerator() {
   const [theme, setTheme] = useState("");
   const [category, setCategory] = useState("adventure");
   const [storyLength, setStoryLength] = useState<"short" | "medium" | "long">("short");
+  const [storyLanguage, setStoryLanguage] = useState<"english" | "french" | "arabic">("english");
   const [dedication, setDedication] = useState("");
 
   // Pre-fill from ?templateId query param
@@ -158,6 +159,7 @@ export function StoryGenerator() {
           theme,
           category,
           storyLength,
+          language: storyLanguage,
           dedication: dedication || undefined,
           childImage: childImage || undefined,
         },
@@ -595,6 +597,22 @@ export function StoryGenerator() {
                   </Select>
                 </div>
                 <div>
+                  <Label>Story Language</Label>
+                  <Select
+                    value={storyLanguage}
+                    onValueChange={(v) => setStoryLanguage(v as "english" | "french" | "arabic")}
+                  >
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STORY_LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-2">
                   <Label>Category</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger className="mt-1 w-full">
@@ -644,6 +662,10 @@ export function StoryGenerator() {
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Story Length</span>
                     <p className="font-medium text-violet-deep">{STORY_LENGTH_CONFIG[storyLength].label}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Language</span>
+                    <p className="font-medium text-violet-deep">{STORY_LANGUAGES.find((l) => l.value === storyLanguage)?.label}</p>
                   </div>
                   <div className="col-span-2">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Adventure Theme</span>

@@ -188,7 +188,8 @@ Story:
 - Word budget: write rich, engaging story text of 45 to 60 words per page. Page 1 is a cover: give it only a short one-line hook.
 - HEART & LESSON: weave into every page, naturally and never preachy, a gentle moral, a warm sentimental feeling, or a simple educational observation (kindness, honesty, courage, gratitude, friendship, curiosity, sharing, patience, how the world works, and so on).
 - Themes: ${guidance.themes}
-${input.language ? `- Language: ${input.language}` : ""}
+${input.language ? `- Language: ${input.language}. Write the story text and title in ${input.language}.` : ""}
+- The imageDescription field must ALWAYS be written in English (it is used to generate the illustrations); only the story text and title are written in the selected language.
 ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
 
 ${characterProfile?.appearance

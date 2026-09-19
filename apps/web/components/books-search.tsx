@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Cake, ChevronDown, Languages, Search, UserRound, X } from "lucide-react";
+import { Cake, ChevronDown, Search, Tags, UserRound, X } from "lucide-react";
 
 import { BookCard } from "@/components/book-card";
 import { cn } from "@/lib/utils";
-import { bookLanguages, type SearchBook } from "@/lib/data";
+import { type SearchBook } from "@/lib/data";
 
 const GENDER_OPTIONS = [
   { value: "boy", label: "Boy" },
@@ -17,6 +17,15 @@ const AGE_OPTIONS = [
   { value: "4-6", label: "4-6" },
   { value: "6-8", label: "6-8" },
   { value: "8+", label: "8+" },
+];
+
+const CATEGORY_OPTIONS = [
+  { value: "Dream", label: "Dream" },
+  { value: "Job", label: "Job" },
+  { value: "Adventure", label: "Adventure" },
+  { value: "Bedtime story", label: "Bedtime story" },
+  { value: "Emotional", label: "Emotional" },
+  { value: "Educative", label: "Educative" },
 ];
 
 type FilterOption = { value: string; label: string };
@@ -156,7 +165,7 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
   const [search, setSearch] = React.useState("");
   const [genders, setGenders] = React.useState<string[]>([]);
   const [ages, setAges] = React.useState<string[]>([]);
-  const [languages, setLanguages] = React.useState<string[]>([]);
+  const [categories, setCategories] = React.useState<string[]>([]);
 
   const toggle = (
     setter: React.Dispatch<React.SetStateAction<string[]>>,
@@ -173,7 +182,7 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
     setSearch("");
     setGenders([]);
     setAges([]);
-    setLanguages([]);
+    setCategories([]);
   };
 
   const filtered = books.filter((book) => {
@@ -197,8 +206,8 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
     }
 
     if (
-      languages.length > 0 &&
-      !book.languages.some((language) => languages.includes(language))
+      categories.length > 0 &&
+      !book.categories.some((category) => categories.includes(category))
     ) {
       return false;
     }
@@ -245,14 +254,13 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
             />
           </div>
 
-          <div className="flex-1 md:w-32">
+          <div className="flex-1 md:w-40">
             <FilterDropdown
-              placeholder="Languages"
-              icon={<Languages aria-hidden className="h-4 w-4" />}
-              options={bookLanguages}
-              selected={languages}
-              onToggle={(value) => toggle(setLanguages, value)}
-              searchable
+              placeholder="Category"
+              icon={<Tags aria-hidden className="h-4 w-4" />}
+              options={CATEGORY_OPTIONS}
+              selected={categories}
+              onToggle={(value) => toggle(setCategories, value)}
             />
           </div>
 

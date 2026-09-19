@@ -15,7 +15,19 @@ export interface StorySettings {
   dedication?: string;
   artStyle?: string;
   modelId: string; // Reference to trained face model
+  language?: string;
 }
+
+/**
+ * Languages the story text can be written in. The image generation prompts
+ * stay in English so illustrations are unaffected; only the written story
+ * text is localized.
+ */
+export const STORY_LANGUAGES: { value: "english" | "french" | "arabic"; label: string }[] = [
+  { value: "english", label: "English" },
+  { value: "french", label: "French" },
+  { value: "arabic", label: "Arabic" },
+];
 
 export interface StoryPage {
   pageNumber: number;
@@ -78,6 +90,7 @@ export function buildStoryPrompt(settings: StorySettings): string {
 Create a ${lengthConfig.pages}-page children's story for ${settings.childName}, age ${settings.childAge}.
 Theme: ${settings.theme}
 ${settings.category ? `Category: ${settings.category}` : ""}
+${settings.language ? `Write ALL story text in: ${settings.language}.` : ""}
 
 Requirements:
 - Age-appropriate vocabulary and concepts for a ${settings.childAge}-year-old
@@ -86,6 +99,7 @@ Requirements:
 - Comic-style dialogue and action
 - Positive messages and gentle moral lessons
 - Each page should have a clear visual scene
+- The "sceneDescription" field must always be written in English (it is used for image generation); only the "text" and "title" are written in the selected language
 
 ${settings.dedication ? `Include dedication: "${settings.dedication}"` : ""}
 
