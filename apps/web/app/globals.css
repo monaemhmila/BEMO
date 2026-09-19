@@ -1,12 +1,103 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* @plugin "tailwindcss-animate"; */
-
-/* Remove dark mode override or ensure it matches light mode for this landing page aesthetic */
-/* We want to force the cream background even in dark mode for now to maintain consistency */
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------
+   WonderWraps brand tokens
+   Playful storybook palette: deep violet ink, buttercup accent,
+   warm paper background.
+   Swap these six values to re-skin the whole page.
+---------------------------------------------------------------- */
+:root {
+  --radius: 1.25rem;
+
+  --ww-violet: #5b3bd4;
+  --ww-violet-dark: #3d2699;
+  --ww-buttercup: #ffc83d;
+  --ww-paper: #fdf7ef;
+  --ww-blush: #ffe9e2;
+  --ww-ink: #1f1636;
+
+  --background: #ffffff;
+  --foreground: var(--ww-ink);
+  --card: #ffffff;
+  --card-foreground: var(--ww-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ww-ink);
+  --primary: var(--ww-violet);
+  --primary-foreground: #ffffff;
+  --secondary: var(--ww-paper);
+  --secondary-foreground: var(--ww-ink);
+  --muted: #f4f1fa;
+  --muted-foreground: #6b6483;
+  --accent: var(--ww-buttercup);
+  --accent-foreground: var(--ww-ink);
+  --destructive: #e5484d;
+  --border: #eae6f4;
+  --input: #eae6f4;
+  --ring: var(--ww-violet);
+}
+
+.dark {
+  /* Mirror the light brand palette so the page keeps its storybook look
+     even when the system/theme toggle forces .dark. */
+  --background: #ffffff;
+  --foreground: var(--ww-ink);
+  --card: #ffffff;
+  --card-foreground: var(--ww-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ww-ink);
+  --primary: var(--ww-violet);
+  --primary-foreground: #ffffff;
+  --secondary: var(--ww-paper);
+  --secondary-foreground: var(--ww-ink);
+  --muted: #f4f1fa;
+  --muted-foreground: #6b6483;
+  --accent: var(--ww-buttercup);
+  --accent-foreground: var(--ww-ink);
+  --destructive: #e5484d;
+  --border: #eae6f4;
+  --input: #eae6f4;
+  --ring: var(--ww-violet);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-violet-ink: var(--ww-violet);
+  --color-violet-deep: var(--ww-violet-dark);
+  --color-buttercup: var(--ww-buttercup);
+  --color-paper: var(--ww-paper);
+  --color-blush: var(--ww-blush);
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 8px);
+
+  --font-sans: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fredoka), var(--font-nunito), ui-sans-serif, sans-serif;
+}
+
+/* Existing app animations — kept for pages outside the new homepage. */
 @keyframes blob {
   0% { transform: translate(0px, 0px) scale(1); }
   33% { transform: translate(30px, -50px) scale(1.1); }
@@ -35,105 +126,44 @@
 .embla__slide__inner { position: relative; overflow: hidden; height: 100%; }
 .embla__slide__img { position: absolute; display: block; top: 50%; left: 50%; width: auto; min-height: 100%; min-width: 100%; max-width: none; transform: translate(-50%, -50%); }
 
-:root {
-  /* Updated for Warm Storybook Theme */
-  --background: #faf9f6; /* Cream White */
-  --foreground: #1c1917; /* Stone 900 */
-  
-  --card: #ffffff;
-  --card-foreground: #1c1917;
-  
-  --popover: #ffffff;
-  --popover-foreground: #1c1917;
-  
-  --primary: #1c1917; /* Stone 900 */
-  --primary-foreground: #faf9f6;
-  
-  --secondary: #f5f5f4; /* Stone 100 */
-  --secondary-foreground: #1c1917;
-  
-  --muted: #f5f5f4;
-  --muted-foreground: #78716c; /* Stone 500 */
-  
-  --accent: #fffbeb; /* Amber 50 */
-  --accent-foreground: #b45309; /* Amber 700 */
-  
-  --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(0 0% 98%);
-  
-  --border: #e7e5e4; /* Stone 200 */
-  --input: #e7e5e4;
-  --ring: #d97706; /* Amber 600 */
-  
-  --radius: 0.6rem;
-}
-
-.dark {
-  /* Forcing light theme values even in dark mode for consistent branding on landing page */
-  /* Or providing a very warm dark mode instead of pure black */
-  --background: #1c1917; /* Stone 900 - Warm Dark */
-  --foreground: #faf9f6;
-  
-  --card: #292524; /* Stone 800 */
-  --card-foreground: #faf9f6;
-  
-  --popover: #292524;
-  --popover-foreground: #faf9f6;
-  
-  --primary: #faf9f6;
-  --primary-foreground: #1c1917;
-  
-  --secondary: #292524;
-  --secondary-foreground: #faf9f6;
-  
-  --muted: #292524;
-  --muted-foreground: #a8a29e; /* Stone 400 */
-  
-  --accent: #451a03; /* Amber 950 */
-  --accent-foreground: #fbbf24; /* Amber 400 */
-  
-  --destructive: hsl(0 62.8% 30.6%);
-  --destructive-foreground: hsl(0 0% 98%);
-  
-  --border: #44403c; /* Stone 700 */
-  --input: #44403c;
-  --ring: #d97706;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring/40;
   }
   body {
-    @apply bg-background text-foreground;
-    /* Add noise texture globally if desired */
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  /* Hides the scrollbar on the horizontal book rails */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .shell {
+    @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

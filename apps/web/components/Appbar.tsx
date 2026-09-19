@@ -48,7 +48,11 @@ export function Appbar() {
   const isReader = segments[0] === "stories" && segments.length === 2 && segments[1] !== "new";
   const isImmersive = pathname === "/admin" || !!pathname?.startsWith("/admin/") || isReader;
 
-  if (isImmersive) {
+  // The homepage is a storefront with its own sticky header (WonderWraps
+  // design), so the marketing bar is skipped there.
+  const isHome = pathname === "/";
+
+  if (isImmersive || isHome) {
     return null;
   }
 

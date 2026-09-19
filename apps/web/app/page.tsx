@@ -1,46 +1,59 @@
-import dynamic from "next/dynamic";
+import { AnnouncementBar, SiteHeader } from "@/components/sections/site-header";
+import { Hero } from "@/components/sections/hero";
+import { BookRail } from "@/components/sections/book-rail";
+import { HowItWorks } from "@/components/sections/how-it-works";
+import { CharacterShowcase } from "@/components/sections/character-showcase";
+import { CareerDreams } from "@/components/sections/career-dreams";
+import { BrowseByAge } from "@/components/sections/browse-by-age";
+import { Faq } from "@/components/sections/faq";
+import { FinalCta } from "@/components/sections/final-cta";
+import { SiteFooter } from "@/components/sections/site-footer";
+import { bestsellers, boysBooks, girlsBooks, newReleases } from "@/lib/data";
 
-import { Hero } from "@/components/home/Hero";
-
-// The hero renders immediately; everything below the fold is split into its own
-// client chunk so the landing page ships and hydrates less JavaScript first.
-const StoryGallery = dynamic(() =>
-  import("@/components/home/StoryGallery").then((m) => m.StoryGallery)
-);
-const Process = dynamic(() =>
-  import("@/components/home/Process").then((m) => m.Process)
-);
-const Benefits = dynamic(() =>
-  import("@/components/home/Benefits").then((m) => m.Benefits)
-);
-const FeaturesSection = dynamic(() =>
-  import("@/components/home/FeaturesSection").then((m) => m.FeaturesSection)
-);
-const MagicEngine = dynamic(() =>
-  import("@/components/home/MagicEngine").then((m) => m.MagicEngine)
-);
-const FAQ = dynamic(() => import("@/components/home/FAQ").then((m) => m.FAQ));
-
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#faf9f6]">
+    <>
+      <AnnouncementBar />
+      <SiteHeader />
+
       <Hero />
-      <StoryGallery />
-      <div id="process">
-        <Process />
-      </div>
-      <div id="benefits">
-        <Benefits />
-      </div>
-      <div id="features">
-        <FeaturesSection />
-      </div>
-      <div id="magic">
-        <MagicEngine />
-      </div>
-      <div id="faq">
-        <FAQ />
-      </div>
-    </div>
+
+      <BookRail
+        eyebrow="Bestsellers"
+        title="Personalise a bestseller"
+        books={bestsellers}
+      />
+
+      <BookRail
+        eyebrow="New releases"
+        title="Discover what's new"
+        books={newReleases}
+        className="bg-paper"
+      />
+
+      <HowItWorks />
+
+      <BookRail
+        eyebrow="Our books"
+        title="Books for your little girl!"
+        books={girlsBooks}
+      />
+
+      <CharacterShowcase />
+
+      <BookRail
+        eyebrow="Our books"
+        title="Books for your little boy!"
+        books={boysBooks}
+        className="bg-paper"
+      />
+
+      <CareerDreams />
+      <BrowseByAge />
+      <Faq />
+      <FinalCta />
+
+      <SiteFooter />
+    </>
   );
 }

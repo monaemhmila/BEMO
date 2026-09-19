@@ -1,32 +1,43 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 import { Appbar } from "@/components/Appbar";
 import { Providers } from "../app/providers/Providers";
 
 import { ClerkProvider } from '@clerk/nextjs'
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+  display: "swap",
 });
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
+
+const fredoka = Fredoka({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-fredoka",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "Tales.ai - Personalized AI Storybooks for Kids",
-    template: "%s | Tales.ai",
+    default: "Personalized Books for Kids | Custom Storybooks - Wonder Wraps",
+    template: "%s | Wonder Wraps",
   },
   description:
-    "Turn your child's photos into beautifully illustrated, AI-powered bedtime stories. Pick from 9 ready-to-personalize storybooks or create one from scratch.",
-  keywords: ["AI storybook", "personalized children's books", "bedtime stories", "AI illustrations"],
+    "Create unique kids' storybooks with WonderWraps. Upload photos and watch them become part of personalized stories your child will treasure forever.",
+  keywords: [
+    "personalized storybooks",
+    "custom books for kids",
+    "personalized children's books",
+    "kids storybooks",
+  ],
   openGraph: {
-    title: "Tales.ai - Personalized AI Storybooks for Kids",
+    title: "Personalized Books for Kids | Custom Storybooks - Wonder Wraps",
     description:
-      "Turn your child's photos into beautifully illustrated, AI-powered bedtime stories.",
+      "Create unique kids' storybooks with WonderWraps. Upload photos and watch them become part of personalized stories your child will treasure forever.",
     type: "website",
+    siteName: "Wonderwraps",
   },
 };
 
@@ -38,20 +49,18 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className="h-full" suppressHydrationWarning>
+      <html
+        lang="en"
+        className={`${nunito.variable} ${fredoka.variable} h-full`}
+        suppressHydrationWarning
+      >
         <head>
           <link rel="preconnect" href="https://images.unsplash.com" />
           <link rel="preconnect" href="https://api.dicebear.com" crossOrigin="anonymous" />
-          <link
-            rel="apple-touch-icon"
-            sizes="180x180"
-            href="https://images.unsplash.com/photo-1512820790803-83ca734da794?w=180&q=80&auto=format&fit=crop"
-          />
         </head>
-        <body className={`${geistSans.variable} ${geistMono.variable} h-full bg-[#faf9f6]`}>
+        <body className="h-full">
           <Providers>
             <Appbar />
-            {/* Removed fixed pt-24 to let Hero handle spacing if needed, or keep minimal */}
             <main className="min-h-full">
               {children}
             </main>
