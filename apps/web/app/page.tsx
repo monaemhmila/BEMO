@@ -2,6 +2,7 @@ import { AnnouncementBar, SiteHeader } from "@/components/sections/site-header";
 import { Hero } from "@/components/sections/hero";
 import { BookRail } from "@/components/sections/book-rail";
 import { HowItWorks } from "@/components/sections/how-it-works";
+import { BeforeAfter } from "@/components/sections/before-after";
 import { CharacterShowcase } from "@/components/sections/character-showcase";
 import { CareerDreams } from "@/components/sections/career-dreams";
 import { BrowseByAge } from "@/components/sections/browse-by-age";
@@ -32,6 +33,8 @@ export default function HomePage() {
       />
 
       <HowItWorks />
+
+      <BeforeAfter />
 
       <BookRail
         eyebrow="Our books"

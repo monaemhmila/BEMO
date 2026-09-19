@@ -141,6 +141,23 @@
     font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
+
+  /* Arabic: swap to a stack with strong Arabic glyph coverage and
+     neutralise the Latin-tuned letter-spacing used by display fonts. */
+  html[lang="ar"] body,
+  html[lang="ar"] h1,
+  html[lang="ar"] h2,
+  html[lang="ar"] h3,
+  html[lang="ar"] h4 {
+    font-family: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, "Noto Kufi Arabic",
+      system-ui, sans-serif;
+  }
+  html[lang="ar"] h1,
+  html[lang="ar"] h2,
+  html[lang="ar"] h3,
+  html[lang="ar"] h4 {
+    letter-spacing: 0;
+  }
 }
 
 @layer utilities {

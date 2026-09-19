@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { BookCard } from "@/components/book-card";
+import { BooksSearch } from "@/components/books-search";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { Button } from "@/components/ui/button";
-import { allBooks, booksForAge } from "@/lib/data";
+import { searchableBooks } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Personalised Books",
@@ -12,20 +12,7 @@ export const metadata: Metadata = {
     "Browse personalised storybooks that make your child the hero. Choose from adventures, princess tales, space journeys and more.",
 };
 
-const AGE_FILTERS = ["All", "Age 2-4", "Age 4-6", "Age 6-8"] as const;
-
-export default async function BooksPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ age?: string }>;
-}) {
-  const { age } = await searchParams;
-  const active = AGE_FILTERS.includes(age as (typeof AGE_FILTERS)[number])
-    ? (age as string)
-    : "All";
-  const books = active === "All" ? allBooks : booksForAge(active);
-  const isFiltered = active !== "All";
-
+export default async function BooksPage() {
   return (
     <div className="min-h-screen bg-paper">
       <main className="pt-[7rem] pb-20">
@@ -45,43 +32,8 @@ export default async function BooksPage({
             </p>
           </div>
 
-          {/* Age filter */}
-          <div className="mb-10 flex flex-wrap items-center justify-center gap-2">
-            {AGE_FILTERS.map((filter) => {
-              const href =
-                filter === "All"
-                  ? "/books"
-                  : `/books?age=${encodeURIComponent(filter)}`;
-              const isActive = active === filter;
-              return (
-                <Link
-                  key={filter}
-                  href={href}
-                  className={
-                    isActive
-                      ? "rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-violet-deep"
-                      : "rounded-full border border-border bg-white px-5 py-2.5 text-sm font-semibold text-foreground/70 transition-colors hover:border-primary hover:text-primary"
-                  }
-                >
-                  {filter}
-                </Link>
-              );
-            })}
-          </div>
-
-          {isFiltered && (
-            <p className="mb-8 text-center text-sm text-muted-foreground">
-              Showing books for{" "}
-              <span className="font-bold text-violet-deep">{active}</span>
-            </p>
-          )}
-
-          {/* Grid */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-3 xl:grid-cols-4">
-            {books.map((book) => (
-              <BookCard key={book.slug} book={book} />
-            ))}
-          </div>
+          {/* Search & filters */}
+          <BooksSearch books={searchableBooks} />
 
           {/* CTA band */}
           <section className="relative mt-16 overflow-hidden rounded-[2rem] bg-gradient-to-r from-primary to-violet-deep p-10 text-center text-white md:p-14">

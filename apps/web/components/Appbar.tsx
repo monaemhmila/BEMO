@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import { navLinks } from "@/lib/data";
+import { LanguageSelector } from "@/components/language-selector";
 import {
   Sheet,
   SheetContent,
@@ -124,6 +125,8 @@ export function Appbar() {
           </nav>
 
           <div className="flex items-center gap-2">
+            <LanguageSelector />
+
             <Button asChild size="sm" className="hidden rounded-full px-5 font-bold sm:inline-flex">
               <Link href="/books">
                 <ShoppingBag className="size-4" aria-hidden />
@@ -194,6 +197,9 @@ export function Appbar() {
                     </Button>
                   </SignedIn>
                 </nav>
+                <div className="px-4 pt-4">
+                  <LanguageSelector />
+                </div>
               </SheetContent>
             </Sheet>
           </div>

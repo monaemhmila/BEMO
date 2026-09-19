@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookOpen, ChevronDown, Menu, ShoppingBag, User } from "lucide-react";
+import { BookOpen, Menu, ShoppingBag, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -12,16 +12,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { navLinks } from "@/lib/data";
 import { cn } from "@/lib/utils";
-
-const currencies = ["USD", "EUR", "GBP", "AUD"];
+import { LanguageSelector } from "@/components/language-selector";
 
 export function AnnouncementBar() {
   return (
@@ -34,7 +27,6 @@ export function AnnouncementBar() {
 
 export function SiteHeader() {
   const [scrolled, setScrolled] = useState(false);
-  const [currency, setCurrency] = useState("USD");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -73,29 +65,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="hidden gap-1.5 rounded-full font-semibold sm:inline-flex"
-              >
-                <span
-                  aria-hidden
-                  className="h-3.5 w-5 rounded-[3px] bg-[linear-gradient(180deg,#b22234_0_33%,#fff_33%_66%,#3c3b6e_66%)]"
-                />
-                {currency}
-                <ChevronDown className="size-3.5" aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {currencies.map((c) => (
-                <DropdownMenuItem key={c} onSelect={() => setCurrency(c)}>
-                  {c}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <LanguageSelector />
 
           <Button asChild size="sm" className="hidden rounded-full px-5 font-bold sm:inline-flex">
             <Link href="/books">
@@ -142,6 +112,9 @@ export function SiteHeader() {
                   <Link href="/personalise">Try for free</Link>
                 </Button>
               </nav>
+              <div className="px-4 pt-4">
+                <LanguageSelector />
+              </div>
             </SheetContent>
           </Sheet>
         </div>

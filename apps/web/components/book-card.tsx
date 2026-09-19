@@ -20,16 +20,18 @@ export function BookCard({ book }: { book: Book }) {
       </Link>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-display text-[17px] leading-snug font-semibold text-violet-deep">
-          <Link href={`/books/${book.slug}`} className="hover:underline">
-            {book.title}
-          </Link>
-        </h3>
-        <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
-          {book.tagline}
-        </p>
+        <div className="flex-1">
+          <h3 className="font-display text-[17px] leading-snug font-semibold text-violet-deep">
+            <Link href={`/books/${book.slug}`} className="hover:underline">
+              {book.title}
+            </Link>
+          </h3>
+          <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
+            {book.tagline}
+          </p>
+        </div>
 
-        <div className="mt-3 flex items-baseline gap-2">
+        <div className="mt-4 flex items-baseline justify-center gap-2">
           <span className="font-display text-lg font-bold text-foreground">
             {book.price}
           </span>

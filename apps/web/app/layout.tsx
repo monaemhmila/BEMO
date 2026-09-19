@@ -57,6 +57,11 @@ export default function RootLayout({
         <head>
           <link rel="preconnect" href="https://images.unsplash.com" />
           <link rel="preconnect" href="https://api.dicebear.com" crossOrigin="anonymous" />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `try{var l=localStorage.getItem("ww_lang");if(l==="fr"||l==="ar"){document.documentElement.lang=l;if(l==="ar")document.documentElement.dir="rtl";}}catch(e){}`,
+            }}
+          />
         </head>
         <body className="h-full">
           <Providers>

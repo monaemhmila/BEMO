@@ -267,3 +267,49 @@ export function booksForAge(age: string) {
   );
   return matches.length > 0 ? matches : allBooks;
 }
+
+export type BookMeta = {
+  gender: "boy" | "girl" | "any";
+  ages: string[];
+  languages: string[];
+};
+
+export type SearchBook = Book & BookMeta;
+
+export const bookLanguages = [
+  { value: "sq", label: "Albanian" },
+  { value: "ar", label: "Arabic" },
+  { value: "nl", label: "Dutch" },
+  { value: "en", label: "English" },
+  { value: "fr", label: "French" },
+  { value: "de", label: "German" },
+  { value: "it", label: "Italian" },
+  { value: "pt", label: "Portuguese (Brazil)" },
+  { value: "pt-pt", label: "Portuguese (Portugal)" },
+  { value: "es", label: "Spanish" },
+  { value: "tr", label: "Turkish" },
+];
+
+export function bookMeta(slug: string): BookMeta {
+  let gender: BookMeta["gender"] = "any";
+  if (/girl|princess/.test(slug)) gender = "girl";
+  else if (/boy/.test(slug)) gender = "boy";
+
+  const ages: string[] = [];
+  for (const [range, keywords] of Object.entries(ageKeywords)) {
+    if (keywords.some((keyword) => slug.includes(keyword))) {
+      ages.push(range === "Age 2-4" ? "2-4" : range === "Age 4-6" ? "4-6" : "6-8");
+    }
+  }
+
+  return {
+    gender,
+    ages,
+    languages: bookLanguages.map((language) => language.label),
+  };
+}
+
+export const searchableBooks: SearchBook[] = allBooks.map((book) => ({
+  ...book,
+  ...bookMeta(book.slug),
+}));
