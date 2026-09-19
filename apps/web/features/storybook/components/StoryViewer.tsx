@@ -239,21 +239,21 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
       }`}
     >
       {/* Top Navigation */}
-      <div className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center z-50 bg-gradient-to-b from-black/50 to-transparent">
+      <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between gap-2 z-50 bg-gradient-to-b from-black/50 to-transparent">
         <Button
           variant="ghost"
-          className="text-white/80 hover:text-white hover:bg-white/10"
+          className="text-white/80 hover:text-white hover:bg-white/10 shrink-0"
           onClick={() => router.push("/stories")}
         >
           <Home className="w-5 h-5 mr-2" />
-          Library
+          <span className="hidden sm:inline">Library</span>
         </Button>
 
-        <h1 className="font-display font-bold text-xl text-white/90 tracking-wide">
+        <h1 className="flex-1 min-w-0 font-display font-bold text-lg sm:text-xl text-white/90 tracking-wide text-center truncate px-1">
           {story.title}
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -266,11 +266,11 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
           {story.status === "Completed" && (
             <Button
               variant="gradient"
-              className="text-white"
+              className="text-white px-2 sm:px-4"
               onClick={() => setOrderOpen(true)}
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Order My Book
+              <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Order My Book</span>
             </Button>
           )}
         </div>
@@ -282,17 +282,17 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
         <button
           onClick={() => setCurrentPageIndex((p) => p - 1)}
           disabled={isFirstPage}
-          className={`absolute left-4 z-20 p-4 rounded-full transition-all ${
+          className={`absolute left-2 sm:left-4 z-20 p-2 sm:p-4 rounded-full transition-all ${
             isFirstPage
               ? "opacity-30 cursor-not-allowed"
               : "bg-black/20 hover:bg-black/40 text-white"
           }`}
         >
-          <ChevronLeft className="w-8 h-8" />
+          <ChevronLeft className="w-6 h-6 sm:w-8 sm:h-8" />
         </button>
 
         {/* Book Pages */}
-        <div className="w-full max-w-6xl aspect-[16/9] relative">
+        <div className="w-full max-w-6xl aspect-[4/5] sm:aspect-[16/9] relative">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPageIndex}
@@ -300,11 +300,11 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
               animate={{ opacity: 1, rotateY: 0 }}
               exit={{ opacity: 0, rotateY: 10 }}
               transition={{ duration: 0.4 }}
-              className="w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden flex"
+              className="w-full h-full bg-white rounded-lg shadow-2xl overflow-hidden flex flex-col sm:flex-row"
               style={{ perspective: "1000px" }}
             >
-              {/* Left: Image */}
-              <div className="w-1/2 h-full bg-muted relative">
+              {/* Top: Image (stacks above text on mobile) */}
+              <div className="w-full h-1/2 bg-muted relative shrink-0 sm:w-1/2 sm:h-full">
                 {currentPage?.imageUrl ? (
                   <img
                     src={currentPage.imageUrl}
@@ -324,17 +324,17 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
                 )}
               </div>
 
-              {/* Right: Text */}
-              <div className="w-1/2 h-full p-8 md:p-12 flex flex-col justify-center bg-paper relative">
+              {/* Bottom: Text */}
+              <div className="w-full h-1/2 p-6 sm:w-1/2 sm:h-full sm:p-8 md:p-12 flex flex-col justify-center bg-paper relative">
                 {/* Decorative book binding */}
-                <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-muted to-transparent" />
+                <div className="absolute left-0 top-0 bottom-0 w-1 sm:w-4 bg-gradient-to-r from-muted to-transparent" />
 
-                <div className="font-display text-xl md:text-2xl lg:text-3xl leading-relaxed text-foreground">
+                <div className="overflow-y-auto font-display text-lg sm:text-xl md:text-2xl lg:text-3xl leading-relaxed text-foreground">
                   {currentPage?.content}
                 </div>
 
                 {/* Page number */}
-                <div className="absolute bottom-6 left-0 right-0 text-center">
+                <div className="absolute bottom-4 sm:bottom-6 left-0 right-0 text-center">
                   <span className="text-muted-foreground text-sm font-sans">
                     Page {currentPageIndex + 1} of {story.pages.length}
                   </span>
@@ -348,13 +348,13 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
         <button
           onClick={() => setCurrentPageIndex((p) => p + 1)}
           disabled={isLastPage}
-          className={`absolute right-4 z-20 p-4 rounded-full transition-all ${
+          className={`absolute right-2 sm:right-4 z-20 p-2 sm:p-4 rounded-full transition-all ${
             isLastPage
               ? "opacity-30 cursor-not-allowed"
               : "bg-black/20 hover:bg-black/40 text-white"
           }`}
         >
-          <ChevronRight className="w-8 h-8" />
+          <ChevronRight className="w-6 h-6 sm:w-8 sm:h-8" />
         </button>
       </div>
 

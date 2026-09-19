@@ -158,7 +158,7 @@ function PageSheet({
         <>
           <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
           <p
-            className={`absolute bottom-9 text-white text-[11px] md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${
+            className={`absolute bottom-9 text-white text-xs md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${
               side === "left" ? "left-5 right-10" : "right-5 left-10"
             }`}
           >
@@ -410,21 +410,21 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
       </div>
 
       {/* Book */}
-      <div className="flex-1 flex items-center justify-center px-3 pb-2 min-h-0">
+      <div className="flex-1 flex items-center justify-center px-2 sm:px-3 pb-2 min-h-0">
         <button
           onClick={goPrev}
           disabled={spreadIndex === 0}
           aria-label="Previous page"
-          className={`z-20 p-3 rounded-full transition-all shrink-0 ${
+          className={`z-20 p-1.5 sm:p-3 rounded-full transition-all shrink-0 ${
             spreadIndex === 0
               ? "opacity-25 cursor-default text-white/40"
               : "bg-black/30 hover:bg-black/50 text-white"
           }`}
         >
-          <ChevronLeft className="w-7 h-7" />
+          <ChevronLeft className="w-5 h-5 sm:w-7 sm:h-7" />
         </button>
 
-        <div className="flex-1 max-w-6xl mx-2 md:mx-6" style={{ perspective: "2400px" }}>
+        <div className="flex-1 max-w-6xl mx-1 sm:mx-3 md:mx-6" style={{ perspective: "2400px" }}>
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={spreadIndex}
@@ -468,13 +468,13 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
           onClick={goNext}
           disabled={spreadIndex >= spreads.length - 1}
           aria-label="Next page"
-          className={`z-20 p-3 rounded-full transition-all shrink-0 ${
+          className={`z-20 p-1.5 sm:p-3 rounded-full transition-all shrink-0 ${
             spreadIndex >= spreads.length - 1
               ? "opacity-25 cursor-default text-white/40"
               : "bg-black/30 hover:bg-black/50 text-white"
           }`}
         >
-          <ChevronRight className="w-7 h-7" />
+          <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7" />
         </button>
       </div>
 

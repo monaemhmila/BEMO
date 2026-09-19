@@ -178,26 +178,26 @@ export default function StorybookDashboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <header className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-primary">
               Dashboard
             </p>
-            <h1 className="font-display text-4xl font-bold text-violet-deep mt-1">
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-violet-deep mt-1">
               My Storybook Studio
             </h1>
             <p className="text-muted-foreground mt-2">
               Track your creations and start new adventures.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             {/* Free story generations badge */}
             <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-buttercup/20 to-blush/40 rounded-full border border-buttercup/40">
-              <Gift className="w-5 h-5 text-primary" />
+              <Gift className="w-5 h-5 text-primary shrink-0" />
               <span className="font-bold text-violet-deep">
                 {trialsLoading ? "..." : trials}
               </span>
-              <span className="text-primary text-sm">
+              <span className="text-primary text-sm whitespace-nowrap">
                 free {trials === 1 ? "story" : "stories"} left
               </span>
             </div>

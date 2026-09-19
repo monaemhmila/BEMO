@@ -287,7 +287,7 @@ export function StoryLibrary() {
                       e.preventDefault();
                       toggleFavorite(story.id);
                     }}
-                    className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                    className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
                       favorites.includes(story.id)
                         ? "bg-buttercup text-white"
                         : "bg-white/80 text-muted-foreground hover:bg-white"

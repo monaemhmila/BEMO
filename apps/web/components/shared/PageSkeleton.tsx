@@ -54,10 +54,10 @@ export function PageSkeleton({
 export function StoryReaderSkeleton() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-violet-deep via-violet-ink to-violet-deep">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="h-8 w-24 animate-pulse rounded-full bg-white/10" />
-        <div className="h-8 w-32 animate-pulse rounded-full bg-white/10" />
-        <div className="h-8 w-28 animate-pulse rounded-full bg-white/10" />
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="h-8 w-14 shrink-0 animate-pulse rounded-full bg-white/10 sm:w-24" />
+        <div className="h-8 w-full max-w-36 min-w-0 flex-1 animate-pulse rounded-full bg-white/10" />
+        <div className="h-8 w-14 shrink-0 animate-pulse rounded-full bg-white/10 sm:w-20" />
       </div>
       <div className="flex flex-1 items-center justify-center px-4 pb-6">
         <div className="flex aspect-[2/1.15] w-full max-w-6xl animate-pulse overflow-hidden rounded-xl bg-paper shadow-2xl">

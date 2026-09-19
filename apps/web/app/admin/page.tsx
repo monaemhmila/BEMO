@@ -12,6 +12,7 @@ import {
   X, UserCheck, FileText,
   PencilLine, ScanFace, Save, Upload,
   ShoppingBag, Truck, Package, MapPin,
+  Menu,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { handleImageError } from "../../components/ui/image-fallback";
@@ -1057,6 +1058,7 @@ export default function AdminPage() {
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [orderSummary, setOrderSummary] = useState<OrdersSummary | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const authHeaders = useCallback(async () => {
     const token = await getToken();
@@ -1308,8 +1310,20 @@ export default function AdminPage() {
 
       {/* Sidebar */}
       <div className="flex h-screen overflow-hidden">
-        <aside className="w-60 bg-[#17171a] border-r border-white/5 flex flex-col shrink-0">
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 w-60 bg-[#17171a] border-r border-white/5 flex flex-col shrink-0 transition-transform duration-300 lg:static lg:translate-x-0 ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
           <div className="p-5 border-b border-white/5">
+            <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5 text-white" />
@@ -1318,6 +1332,14 @@ export default function AdminPage() {
                 <p className="font-bold text-white text-sm">Admin Console</p>
                 <p className="text-white/40 text-xs">StoryBook AI</p>
               </div>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="text-white/50 hover:text-white lg:hidden"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
             </div>
           </div>
 
@@ -1373,20 +1395,29 @@ export default function AdminPage() {
         <main className="flex-1 overflow-y-auto">
 
           {/* Top bar */}
-          <div className="sticky top-0 bg-[#0f0f11]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4 flex items-center justify-between z-30">
-            <div>
-              <h1 className="font-bold text-white text-xl capitalize">
-                {activeTab === "overview"
-                  ? "Dashboard Overview"
-                  : activeTab === "facelab"
-                    ? "Face Detection Lab"
-                    : activeTab === "orders"
-                      ? "Order Management"
-                      : activeTab}
-              </h1>
-              <p className="text-white/40 text-xs mt-0.5">StoryBook AI · Super Admin</p>
+          <div className="sticky top-0 bg-[#0f0f11]/80 backdrop-blur-xl border-b border-white/5 px-4 sm:px-6 py-4 flex items-center justify-between gap-4 z-30">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="lg:hidden text-white/70 hover:text-white transition-colors shrink-0"
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+              <div className="truncate">
+                <h1 className="font-bold text-white text-lg sm:text-xl capitalize truncate">
+                  {activeTab === "overview"
+                    ? "Dashboard Overview"
+                    : activeTab === "facelab"
+                      ? "Face Detection Lab"
+                      : activeTab === "orders"
+                        ? "Order Management"
+                        : activeTab}
+                </h1>
+                <p className="text-white/40 text-xs mt-0.5">StoryBook AI · Super Admin</p>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               {loading && <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />}
               <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl text-xs text-white/60">
                 <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />

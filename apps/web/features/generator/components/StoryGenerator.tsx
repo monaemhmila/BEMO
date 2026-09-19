@@ -584,7 +584,7 @@ export function StoryGenerator() {
                 <div>
                   <Label>Story Length</Label>
                   <Select value={storyLength} onValueChange={(v) => setStoryLength(v as "short" | "medium" | "long")}>
-                    <SelectTrigger className="mt-1">
+                    <SelectTrigger className="mt-1 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -597,7 +597,7 @@ export function StoryGenerator() {
                 <div>
                   <Label>Category</Label>
                   <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="mt-1">
+                    <SelectTrigger className="mt-1 w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
