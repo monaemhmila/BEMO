@@ -334,3 +334,27 @@ model Order {
   @@index([status])
   @@index([orderNumber])
 }
+
+// Page visit & click tracking. Used for the admin analytics dashboard and
+// the public site statistics page. `sessionId` is a per-browser random id
+// (localStorage) used to approximate unique visitors without cookies/PII.
+model PageEvent {
+  id        String         @id @default(uuid())
+  eventType PageEventType
+  path      String
+  label     String? // click label, e.g. "Try for free" or a data-track key
+  referrer  String? // for clicks: target href; for visits: HTTP referrer
+  sessionId String?
+  userId    String?
+  createdAt DateTime       @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([path, createdAt])
+  @@index([sessionId])
+  @@index([createdAt])
+}
+
+enum PageEventType {
+  visit
+  click
+}

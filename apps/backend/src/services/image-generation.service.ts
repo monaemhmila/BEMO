@@ -5,6 +5,7 @@ import {
   STORYBOOK_IMAGE_ASPECT_RATIO,
   STORYBOOK_NEGATIVE_PROMPT,
 } from "../contracts/storybook";
+import { getArtStylePrompt } from "./image-style.service";
 
 interface ImageGenerationRequest {
   prompt: string;
@@ -12,6 +13,7 @@ interface ImageGenerationRequest {
   seed?: number;
   imageUrl?: string;
   childName?: string;
+  artStyle?: string;
 }
 
 interface ImageGenerationResult {
@@ -236,14 +238,14 @@ export class ImageGenerationService {
     sceneDescription: string;
     hasReference?: boolean;
     childName?: string;
+    artStyle?: string;
   }): string {
     const scene = input.sceneDescription.trim();
-    const styleDirectives = "photo realistic EDGE-TO-EDGE COMPOSITION: The generated artwork must completely fill the entire 16:9 canvas from the extreme left edge to the extreme right edge and from the top edge to the bottom edge. No empty areas, no white space, no blank background, no side margins, no borders, no letterboxing, no pillarboxing. Extend the environment naturally all the way to every image edge. Important subjects may extend close to or beyond the frame edges. The entire canvas must contain continuous. correct anatomy, normal and well-drawn feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
-
+    const styled = getArtStylePrompt(scene, input.artStyle);
     if (input.hasReference) {
-      return `use the kid face without changing anything in the kid from the photo. ${scene}. ${styleDirectives}`;
+      return `use the kid face without changing anything in the kid from the photo. ${styled}`;
     }
-    return `${scene}. ${styleDirectives}`;
+    return styled;
   }
 
   /**
@@ -251,11 +253,11 @@ export class ImageGenerationService {
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
     const scene = request.prompt.trim();
-    const qualityDirectives = "photo realistic EDGE-TO-EDGE COMPOSITION: The generated artwork must completely fill the entire 16:9 canvas from the extreme left edge to the extreme right edge and from the top edge to the bottom edge. No empty areas, no white space, no blank background, no side margins, no borders, no letterboxing, no pillarboxing. Extend the environment naturally all the way to every image edge. Important subjects may extend close to or beyond the frame edges. The entire canvas must contain continuous. correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs, completely textless, absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark, no deformed feet, no extra limbs, no mutated legs,  no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)";
+    const directives = getArtStylePrompt(scene, request.artStyle);
 
-    let baseScene = scene;
+    let baseScene = directives;
     if (!baseScene.includes("completely textless")) {
-      baseScene = `${baseScene}. ${qualityDirectives}`;
+      baseScene = `${baseScene}. no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark`;
     } else if (!baseScene.includes("no white space")) {
       baseScene = `${baseScene}. no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)`;
     }

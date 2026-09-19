@@ -19,6 +19,7 @@ import { adminRouter } from "./routes/admin.routes";
 import { simpleStorybookRouter } from "./routes/simple-storybook.routes";
 import { orderRouter } from "./routes/order.routes";
 import { customStoryRouter } from "./routes/custom-story.routes";
+import { analyticsRouter } from "./routes/analytics.routes";
 
 initSentry();
 
@@ -103,6 +104,7 @@ export function createApp() {
 
   app.use("/simple-storybook", simpleStorybookRouter);
   app.use("/custom-story", customStoryRouter);
+  app.use("/analytics", analyticsRouter);
 
   app.use(notFoundHandler);
   app.use(sentryErrorHandler());

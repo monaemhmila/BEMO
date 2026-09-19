@@ -13,6 +13,7 @@ import {
   PencilLine, ScanFace, Save, Upload,
   ShoppingBag, Truck, Package, MapPin,
   Menu,
+  MousePointerClick,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { handleImageError } from "../../components/ui/image-fallback";
@@ -121,7 +122,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "facelab" | "orders" | "models" | "activity";
+type TabType = "overview" | "users" | "stories" | "facelab" | "orders" | "models" | "activity" | "analytics";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -510,6 +511,207 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Analytics (visits & clicks) ─────────────────────────────────────────────
+
+interface PerPageStat {
+  path: string;
+  visits: number;
+  clicks: number;
+  visitors: number;
+}
+
+interface TopClickStat {
+  label: string;
+  path: string;
+  count: number;
+}
+
+interface DailyStat {
+  date: string;
+  visits: number;
+  clicks: number;
+}
+
+interface AnalyticsStats {
+  totals: { visits: number; clicks: number; visitors: number };
+  perPage: PerPageStat[];
+  topClicks: TopClickStat[];
+  daily: DailyStat[];
+}
+
+const ANALYTICS_RANGES = [7, 30, 90, 365];
+
+function AnalyticsTab({ authHeaders }: { authHeaders: () => Promise<Record<string, string>> }) {
+  const [days, setDays] = useState(30);
+  const [data, setData] = useState<AnalyticsStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const headers = await authHeaders();
+        const res = await axios.get(`${BACKEND_URL}/analytics/stats?days=${days}`, { headers });
+        if (!cancelled) setData(res.data);
+      } catch {
+        if (!cancelled) toast.error("Failed to load analytics");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [days, authHeaders]);
+
+  const totals = data?.totals;
+  const maxVisits = Math.max(1, ...(data?.perPage.map((p) => p.visits) ?? [1]));
+  const maxTrend = Math.max(1, ...(data?.daily.map((d) => Math.max(d.visits, d.clicks)) ?? [1]));
+  const avgViews = totals && totals.visitors > 0 ? (totals.visits / totals.visitors).toFixed(1) : "—";
+
+  const summaryCards = [
+    { label: "Total Visits", value: totals?.visits.toLocaleString() ?? "0", icon: <Eye className="w-5 h-5" />, color: "bg-indigo-500/20 text-indigo-400" },
+    { label: "Total Clicks", value: totals?.clicks.toLocaleString() ?? "0", icon: <MousePointerClick className="w-5 h-5" />, color: "bg-emerald-500/20 text-emerald-400" },
+    { label: "Unique Visitors", value: totals?.visitors.toLocaleString() ?? "0", icon: <Users className="w-5 h-5" />, color: "bg-purple-500/20 text-purple-400" },
+    { label: "Views per Visitor", value: avgViews, icon: <TrendingUp className="w-5 h-5" />, color: "bg-[#7a5bff]/20 text-[#c4b2ff]" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Range selector */}
+      <div className="flex flex-wrap items-center gap-2">
+        {ANALYTICS_RANGES.map((r) => (
+          <button
+            key={r}
+            onClick={() => setDays(r)}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+              days === r ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+            }`}
+          >
+            Last {r} days
+          </button>
+        ))}
+        {loading && <div className="ml-auto w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />}
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {summaryCards.map((card) => (
+          <div key={card.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center ${card.color}`}>
+              {card.icon}
+            </div>
+            <p className="text-3xl font-bold text-white mb-1">{card.value}</p>
+            <p className="text-white/50 text-xs font-medium uppercase tracking-wide">{card.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Daily trend */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+        <h3 className="font-bold text-white mb-1 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-purple-400" /> Daily Traffic
+        </h3>
+        <p className="text-white/40 text-xs mb-5">Indigo = visits · Green = clicks (hover a bar for details)</p>
+        {data && data.daily.length > 0 ? (
+          <>
+            <div className="flex items-end gap-px h-36 w-full">
+              {data.daily.map((d) => (
+                <div
+                  key={d.date}
+                  className="flex items-end gap-px flex-1 h-full group"
+                  title={`${d.date}: ${d.visits} visits · ${d.clicks} clicks`}
+                >
+                  <div
+                    className="w-1/2 max-w-[8px] rounded-t bg-indigo-500 group-hover:bg-indigo-400 transition-colors"
+                    style={{ height: `${Math.max(2, (d.visits / maxTrend) * 100)}%` }}
+                  />
+                  <div
+                    className="w-1/2 max-w-[8px] rounded-t bg-emerald-500/70 group-hover:bg-emerald-400 transition-colors"
+                    style={{ height: `${Math.max(2, (d.clicks / maxTrend) * 100)}%` }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mt-2 text-white/30 text-xs">
+              <span>{data.daily[0]?.date}</span>
+              <span>{data.daily[data.daily.length - 1]?.date}</span>
+            </div>
+          </>
+        ) : (
+          <p className="text-white/30 text-sm">No traffic recorded in this period yet.</p>
+        )}
+      </div>
+
+      {/* Per-page table */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+        <div className="px-5 pt-5">
+          <h3 className="font-bold text-white flex items-center gap-2">
+            <Eye className="w-4 h-4 text-indigo-400" /> Page Performance
+          </h3>
+          <p className="text-white/40 text-xs mt-0.5">Visits, unique visitors and clicks for each page.</p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-white/40 text-xs uppercase font-semibold tracking-wider">
+                <th className="text-left py-3.5 px-5">Page</th>
+                <th className="text-left py-3.5 px-4">Visits</th>
+                <th className="text-left py-3.5 px-4">Visitors</th>
+                <th className="text-left py-3.5 px-4">Clicks</th>
+                <th className="text-left py-3.5 px-4">Share</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {data?.perPage.map((p) => (
+                <tr key={p.path} className="hover:bg-white/5 transition-colors">
+                  <td className="py-3 px-5 font-mono text-xs text-white/80">{p.path}</td>
+                  <td className="py-3 px-4 font-bold text-white">{p.visits.toLocaleString()}</td>
+                  <td className="py-3 px-4 text-white/60">{p.visitors.toLocaleString()}</td>
+                  <td className="py-3 px-4 text-white/60">{p.clicks.toLocaleString()}</td>
+                  <td className="py-3 px-4 w-40">
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+                        style={{ width: `${(p.visits / maxVisits) * 100}%` }}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {data && data.perPage.length === 0 && (
+                <tr><td colSpan={5} className="py-10 text-center text-white/30">No visits recorded for this period.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Top clicked elements */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+        <h3 className="font-bold text-white mb-1 flex items-center gap-2">
+          <MousePointerClick className="w-4 h-4 text-emerald-400" /> Most Clicked
+        </h3>
+        <p className="text-white/40 text-xs mb-4">Top links & buttons across the site.</p>
+        <div className="flex flex-wrap gap-2">
+          {data?.topClicks.map((t, i) => (
+            <span
+              key={`${t.label}-${t.path}-${i}`}
+              className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-3 py-1.5 text-xs"
+            >
+              <span className="font-bold text-emerald-400">{t.count.toLocaleString()}</span>
+              <span className="text-white/70 max-w-[220px] truncate">{t.label}</span>
+              <span className="text-white/30 font-mono truncate max-w-[120px]">{t.path}</span>
+            </span>
+          ))}
+          {data && data.topClicks.length === 0 && (
+            <p className="text-white/30 text-sm">No link clicks recorded yet.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1237,6 +1439,7 @@ export default function AdminPage() {
     { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" />, count: orders.length },
     { id: "models", label: "AI Models", icon: <Sparkles className="w-4 h-4" />, count: models.length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
+    { id: "analytics", label: "Analytics", icon: <MousePointerClick className="w-4 h-4" /> },
   ];
 
   return (
@@ -1412,7 +1615,9 @@ export default function AdminPage() {
                       ? "Face Detection Lab"
                       : activeTab === "orders"
                         ? "Order Management"
-                        : activeTab}
+                        : activeTab === "analytics"
+                          ? "Analytics & Traffic"
+                          : activeTab}
                 </h1>
                 <p className="text-white/40 text-xs mt-0.5">StoryBook AI · Super Admin</p>
               </div>
@@ -1718,6 +1923,9 @@ export default function AdminPage() {
 
             {/* ── FACE LAB TAB ─────────────────────────────────────────────── */}
             {activeTab === "facelab" && <FaceLabTab authHeaders={authHeaders} />}
+
+            {/* ── ANALYTICS TAB ────────────────────────────────────────────── */}
+            {activeTab === "analytics" && <AnalyticsTab authHeaders={authHeaders} />}
 
             {/* ── ORDERS TAB ───────────────────────────────────────────────── */}
             {activeTab === "orders" && (

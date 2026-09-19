@@ -41,6 +41,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
 import { STORY_CATEGORIES, STORY_LANGUAGES, STORY_LENGTH_CONFIG } from "../../../services/fal/storyGeneration";
+import { CARTOON_ART_STYLES, DEFAULT_ART_STYLE, getArtStyle } from "../../../services/fal/cartoonGeneration";
 import { STORY_STARTERS } from "../../../utils/prompts/storyPrompts";
 
 // Templates matching the ones defined on the backend
@@ -113,6 +114,7 @@ export function StoryGenerator() {
   const [customMessage, setCustomMessage] = useState("");
   const [storyLength, setStoryLength] = useState<"short" | "medium" | "long">("short");
   const [storyLanguage, setStoryLanguage] = useState<"english" | "french" | "arabic">("english");
+  const [artStyle, setArtStyle] = useState(DEFAULT_ART_STYLE);
   const [dedication, setDedication] = useState("");
 
   const buildCustomTheme = () => {
@@ -175,6 +177,7 @@ export function StoryGenerator() {
           category,
           storyLength,
           language: storyLanguage,
+          artStyle,
           dedication: dedication || undefined,
           childImage: childImage || undefined,
         },
@@ -664,7 +667,7 @@ export function StoryGenerator() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Story Length</Label>
                   <Select value={storyLength} onValueChange={(v) => setStoryLength(v as "short" | "medium" | "long")}>
@@ -694,7 +697,25 @@ export function StoryGenerator() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
+                  <Label>Art Style</Label>
+                  <Select value={artStyle} onValueChange={setArtStyle}>
+                    <SelectTrigger className="mt-1 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CARTOON_ART_STYLES.map((style) => (
+                        <SelectItem key={style.id} value={style.id}>
+                          {style.emoji} {style.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {getArtStyle(artStyle).description}
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
                   <Label>Category</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger className="mt-1 w-full">
@@ -748,6 +769,10 @@ export function StoryGenerator() {
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Language</span>
                     <p className="font-medium text-violet-deep">{STORY_LANGUAGES.find((l) => l.value === storyLanguage)?.label}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Art Style</span>
+                    <p className="font-medium text-violet-deep">{getArtStyle(artStyle).emoji} {getArtStyle(artStyle).name}</p>
                   </div>
                   <div className="col-span-2">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Adventure Theme</span>

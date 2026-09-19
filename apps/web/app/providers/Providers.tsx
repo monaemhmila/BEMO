@@ -2,6 +2,7 @@
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "react-hot-toast";
 import { LanguageProvider } from "@/components/language-provider";
+import { TrackingProvider } from "@/components/tracking-provider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,8 +18,10 @@ export function Providers({ children }: ProvidersProps) {
       disableTransitionOnChange
     >
       <LanguageProvider>
-        {children}
-        <Toaster position="bottom-right" />
+        <TrackingProvider>
+          {children}
+          <Toaster position="bottom-right" />
+        </TrackingProvider>
       </LanguageProvider>
     </ThemeProvider>
   );

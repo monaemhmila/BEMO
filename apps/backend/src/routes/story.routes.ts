@@ -101,7 +101,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
         page.id,
         page.imagePrompt,
         model.thumbnail,
-        { childName }
+        { childName, artStyle }
       ).catch((error) => {
         logger.error({ error, pageId: page.id }, "Failed to start page generation");
         return null;

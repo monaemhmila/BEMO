@@ -32,7 +32,7 @@ export function Hero() {
               size="lg"
               className="h-13 w-full rounded-full px-8 text-base font-bold shadow-[0_10px_0_-2px_var(--ww-violet-dark)] transition-transform active:translate-y-0.5 sm:w-auto"
             >
-              <Link href="/personalise">Try for free</Link>
+              <Link href="/personalise" data-track="hero_try_for_free">Try for free</Link>
             </Button>
             <Button
               asChild

@@ -313,7 +313,7 @@ Return ONLY valid JSON:
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; position?: PositionOnCanvas }
+    options?: { childName?: string; position?: PositionOnCanvas; artStyle?: string }
   ) {
     try {
       const page = await prismaClient.storyPage.findUnique({
@@ -343,6 +343,7 @@ Return ONLY valid JSON:
             aspectRatio: "16:9",
             childName: options?.childName,
             position,
+            artStyle: options?.artStyle,
           },
           STORY_WEBHOOK
         );

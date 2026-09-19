@@ -26,7 +26,7 @@ export function CustomStoryBanner() {
                 size="lg"
                 className="h-13 rounded-full bg-buttercup px-9 text-base font-bold text-violet-deep hover:bg-buttercup/90"
               >
-                <Link href="/create-custom">Create Your Own Story</Link>
+                <Link href="/create-custom" data-track="custom_story_cta">Create Your Own Story</Link>
               </Button>
               <Button
                 asChild

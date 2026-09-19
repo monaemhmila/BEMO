@@ -225,6 +225,7 @@ export const footerColumns = [
     links: [
       { label: "My Account", href: "/profile" },
       { label: "Orders", href: "/my/purchases" },
+      { label: "Site Statistics", href: "/stats" },
       { label: "Terms", href: "/support/terms-and-conditions" },
       { label: "Privacy Policy", href: "/support/privacy-policy" },
     ],

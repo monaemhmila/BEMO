@@ -51,6 +51,7 @@ const SimplePDFSchema = z.object({
   dedication: z.string().optional().nullable().or(z.literal("")),
   childImage: z.string().optional().nullable().or(z.literal("")),
   language: z.enum(["english", "french", "arabic"]).optional().default("english"),
+  artStyle: z.string().optional().nullable().or(z.literal("")),
 });
 
 /**
@@ -248,7 +249,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     // Step 5: Trigger every page with the model's reference portrait through Grok Imagine.
     const generationResults = await Promise.allSettled(
       pages.map((page) =>
-        storyService.triggerPageGeneration(page.id, page.imagePrompt, model.thumbnail, { childName })
+        storyService.triggerPageGeneration(page.id, page.imagePrompt, model.thumbnail, { childName, artStyle })
       )
     );
 
@@ -674,6 +675,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
   const dedication = validation.data.dedication || undefined;
   const childImage = validation.data.childImage || undefined;
   const language = validation.data.language || undefined;
+  const artStyle = validation.data.artStyle || undefined;
 
   try {
     // Gate generation behind the free-generation allowance
@@ -765,6 +767,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
           aspectRatio: "16:9",
           imageUrl: referenceUrl,
           childName,
+          artStyle,
         }).catch((err) => {
           logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for preview page");
           return null;
@@ -871,6 +874,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
                 aspectRatio: "16:9",
                 imageUrl: referenceUrl,
                 childName,
+                artStyle,
               }).catch((err) => {
                 logger.error({ err, pageNumber: page.pageNumber }, "Failed background image generation for page");
                 return null;
