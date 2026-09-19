@@ -17,10 +17,10 @@ export default function DashboardRedirect() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#faf9f6] flex items-center justify-center">
+    <div className="min-h-screen bg-paper flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="w-8 h-8 animate-spin text-amber-500 mx-auto mb-4" />
-        <p className="text-stone-500">Redirecting to your dashboard...</p>
+        <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+        <p className="text-muted-foreground">Redirecting to your dashboard...</p>
       </div>
     </div>
   );

@@ -337,12 +337,12 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
-                <div className="flex items-center gap-2 text-sm text-stone-600">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-paper px-4 py-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <ShieldCheck className="size-4 text-emerald-600" />
                   Cash on Delivery · No online payment
                 </div>
-                <div className="font-semibold text-stone-900">
+                <div className="font-semibold text-violet-deep">
                   {priceLoading ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : price !== null ? (
@@ -379,41 +379,41 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
             </DialogHeader>
 
             <div className="grid gap-3">
-              <div className="rounded-lg border border-stone-200 p-4">
+              <div className="rounded-lg border border-border p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-full bg-amber-100 text-amber-700">
+                  <div className="flex size-10 items-center justify-center rounded-full bg-buttercup/20 text-violet-deep">
                     <Package className="size-5" />
                   </div>
                   <div>
-                    <p className="font-semibold text-stone-900">{story.title}</p>
-                    <p className="text-sm text-stone-500">
+                    <p className="font-semibold text-violet-deep">{story.title}</p>
+                    <p className="text-sm text-muted-foreground">
                       Hardcover storybook
                       {story.childName ? ` · For ${story.childName}` : ""}
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-3 text-sm">
-                  <span className="text-stone-600">Price</span>
-                  <span className="font-semibold text-stone-900">
+                <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
+                  <span className="text-muted-foreground">Price</span>
+                  <span className="font-semibold text-violet-deep">
                     {price !== null ? formatMoney(price) : "—"}
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-stone-200 p-4 text-sm">
-                <div className="flex items-center gap-2 font-semibold text-stone-900">
-                  <MapPin className="size-4 text-stone-500" />
+              <div className="rounded-lg border border-border p-4 text-sm">
+                <div className="flex items-center gap-2 font-semibold text-violet-deep">
+                  <MapPin className="size-4 text-muted-foreground" />
                   Delivery details
                 </div>
                 <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
-                  <dt className="text-stone-500">Name</dt>
-                  <dd className="text-stone-800">{form.customerName.trim()}</dd>
-                  <dt className="text-stone-500">Phone</dt>
-                  <dd className="text-stone-800">{form.phone.trim()}</dd>
-                  <dt className="text-stone-500">Address</dt>
-                  <dd className="text-stone-800">{form.address.trim()}</dd>
-                  <dt className="text-stone-500">City</dt>
-                  <dd className="text-stone-800">
+                  <dt className="text-muted-foreground">Name</dt>
+                  <dd className="text-foreground">{form.customerName.trim()}</dd>
+                  <dt className="text-muted-foreground">Phone</dt>
+                  <dd className="text-foreground">{form.phone.trim()}</dd>
+                  <dt className="text-muted-foreground">Address</dt>
+                  <dd className="text-foreground">{form.address.trim()}</dd>
+                  <dt className="text-muted-foreground">City</dt>
+                  <dd className="text-foreground">
                     {form.city.trim()}
                     {form.postalCode.trim()
                       ? `, ${form.postalCode.trim()}`
@@ -466,34 +466,34 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
             </DialogHeader>
 
             <div className="grid gap-3">
-              <div className="rounded-lg border border-stone-200 p-4 text-center">
-                <p className="text-sm text-stone-500">Order number</p>
-                <p className="mt-1 font-mono text-xl font-bold text-stone-900">
+              <div className="rounded-lg border border-border p-4 text-center">
+                <p className="text-sm text-muted-foreground">Order number</p>
+                <p className="mt-1 font-mono text-xl font-bold text-violet-deep">
                   {order.orderNumber}
                 </p>
               </div>
 
-              <div className="rounded-lg border border-stone-200 p-4 text-sm">
+              <div className="rounded-lg border border-border p-4 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-stone-600">Book</span>
-                  <span className="font-medium text-stone-900">
+                  <span className="text-muted-foreground">Book</span>
+                  <span className="font-medium text-violet-deep">
                     {order.story.title}
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-stone-600">Total</span>
-                  <span className="font-semibold text-stone-900">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="font-semibold text-violet-deep">
                     {formatMoney(order.totalAmount)}
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-stone-600">Deliver to</span>
-                  <span className="font-medium text-stone-900">
+                  <span className="text-muted-foreground">Deliver to</span>
+                  <span className="font-medium text-violet-deep">
                     {order.city}
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-stone-600">Payment</span>
+                  <span className="text-muted-foreground">Payment</span>
                   <span className="font-medium text-emerald-700">
                     Cash on Delivery
                   </span>

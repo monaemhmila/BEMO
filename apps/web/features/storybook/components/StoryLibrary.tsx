@@ -51,8 +51,8 @@ interface Story {
 const STATUS_FILTERS: (Story["status"] | "All")[] = ["All", "Completed", "Generating", "Failed"];
 
 const STATUS_COLORS = {
-  Pending: "bg-stone-100 text-stone-600",
-  Generating: "bg-amber-100 text-amber-700",
+  Pending: "bg-muted text-muted-foreground",
+  Generating: "bg-buttercup/20 text-violet-deep",
   Completed: "bg-emerald-100 text-emerald-700",
   Failed: "bg-red-100 text-red-700",
 };
@@ -149,16 +149,16 @@ export function StoryLibrary() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-serif font-bold text-stone-900 mb-2">
+          <h1 className="text-4xl font-display font-bold text-violet-deep mb-2">
             Story Library
           </h1>
-          <p className="text-stone-500">
+          <p className="text-muted-foreground">
             Your collection of personalized adventures
           </p>
         </div>
         <div className="flex gap-3">
           <Link href="/storybook/create">
-            <Button className="bg-stone-900 text-white rounded-full gap-2">
+            <Button className="bg-primary text-white rounded-full gap-2">
               <Sparkles className="w-4 h-4" /> Create New Story
             </Button>
           </Link>
@@ -167,7 +167,7 @@ export function StoryLibrary() {
 
       {/* Filters */}
       <Card className="p-4 flex flex-col md:flex-row md:items-center gap-4">
-        <div className="flex items-center gap-2 text-stone-500 text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground text-sm">
           <Filter className="w-4 h-4" />
           <span>Filter</span>
         </div>
@@ -179,8 +179,8 @@ export function StoryLibrary() {
               onClick={() => setStatusFilter(status)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 statusFilter === status
-                  ? "bg-stone-900 text-white"
-                  : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                  ? "bg-primary text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted-foreground/15"
               }`}
             >
               {status}
@@ -207,7 +207,7 @@ export function StoryLibrary() {
             placeholder="Search stories..."
             className="pl-10"
           />
-          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
         </div>
       </Card>
 
@@ -217,24 +217,24 @@ export function StoryLibrary() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-96 bg-stone-100 rounded-3xl animate-pulse"
+              className="h-96 bg-muted rounded-3xl animate-pulse"
             />
           ))}
         </div>
       ) : filteredStories.length === 0 ? (
         <Card className="p-12 text-center">
-          <BookOpen className="w-16 h-16 text-stone-200 mx-auto mb-4" />
-          <h3 className="text-2xl font-serif text-stone-900 mb-2">
+          <BookOpen className="w-16 h-16 text-foreground/40 mx-auto mb-4" />
+          <h3 className="text-2xl font-display text-violet-deep mb-2">
             {stories.length === 0 ? "No stories yet" : "No matching stories"}
           </h3>
-          <p className="text-stone-500 mb-6">
+          <p className="text-muted-foreground mb-6">
             {stories.length === 0
               ? "Create your first AI-powered storybook"
               : "Try adjusting your filters"}
           </p>
           {stories.length === 0 && (
             <Link href="/storybook/create">
-              <Button className="rounded-full bg-stone-900 text-white">
+              <Button className="rounded-full bg-primary text-white">
                 <Sparkles className="w-4 h-4 mr-2" /> Create Story
               </Button>
             </Link>
@@ -244,9 +244,9 @@ export function StoryLibrary() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredStories.map((story) => (
             <div key={story.id} className="animate-in fade-in">
-              <Card className="overflow-hidden border-stone-100 hover:shadow-xl transition-all group">
+              <Card className="overflow-hidden border-border hover:shadow-xl transition-all group">
                 {/* Preview Image */}
-                <div className="aspect-[4/3] bg-stone-100 relative overflow-hidden">
+                <div className="aspect-[4/3] bg-muted relative overflow-hidden">
                   {getStoryPreviewImage(story) ? (
                     <img
                       loading="lazy"
@@ -257,9 +257,9 @@ export function StoryLibrary() {
                       onError={handleImageError}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50">
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-buttercup/15 to-blush/40">
                       {story.status === "Generating" ? (
-                        <Loader2 className="w-12 h-12 text-amber-400 animate-spin" />
+                        <Loader2 className="w-12 h-12 text-buttercup animate-spin" />
                       ) : (
                         <span className="text-6xl">✨</span>
                       )}
@@ -289,8 +289,8 @@ export function StoryLibrary() {
                     }}
                     className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                       favorites.includes(story.id)
-                        ? "bg-amber-400 text-white"
-                        : "bg-white/80 text-stone-500 hover:bg-white"
+                        ? "bg-buttercup text-white"
+                        : "bg-white/80 text-muted-foreground hover:bg-white"
                     }`}
                   >
                     <Star
@@ -307,7 +307,7 @@ export function StoryLibrary() {
                       className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors"
                     >
                       <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:scale-100 scale-75">
-                        <Play className="w-6 h-6 text-stone-900 ml-1" />
+                        <Play className="w-6 h-6 text-violet-deep ml-1" />
                       </div>
                     </Link>
                   )}
@@ -315,10 +315,10 @@ export function StoryLibrary() {
 
                 {/* Content */}
                 <div className="p-5">
-                  <h3 className="font-serif text-xl text-stone-900 mb-1 truncate">
+                  <h3 className="font-display text-xl text-violet-deep mb-1 truncate">
                     {story.title}
                   </h3>
-                  <p className="text-sm text-stone-500 flex items-center gap-1">
+                  <p className="text-sm text-muted-foreground flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {new Date(story.createdAt).toLocaleDateString()}
                     {story.childName && ` • Starring ${story.childName}`}

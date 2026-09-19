@@ -136,8 +136,8 @@ function StatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
     Completed: "bg-emerald-100 text-emerald-800",
     Generated: "bg-emerald-100 text-emerald-800",
-    Generating: "bg-amber-100 text-amber-800",
-    Pending: "bg-amber-100 text-amber-800",
+    Generating: "bg-buttercup/25 text-violet-deep",
+    Pending: "bg-buttercup/25 text-violet-deep",
     Failed: "bg-red-100 text-red-800",
     Processing: "bg-blue-100 text-blue-800",
   };
@@ -160,17 +160,17 @@ function TrialsEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id:
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-5" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-stone-900 text-lg">Adjust Free Stories</h3>
+            <h3 className="font-bold text-violet-deep text-lg">Adjust Free Stories</h3>
             <p className="text-stone-500 text-sm">{user.email}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-xl"><X className="w-5 h-5 text-stone-500" /></button>
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
-          <Gift className="w-6 h-6 text-amber-600" />
+        <div className="bg-buttercup/15 border border-buttercup/35 rounded-xl p-4 flex items-center gap-3">
+          <Gift className="w-6 h-6 text-primary" />
           <div>
-            <p className="text-xs text-amber-600 font-medium uppercase tracking-wide">Current Balance</p>
-            <p className="text-2xl font-bold text-amber-700">{user.trials.toLocaleString()} free stories</p>
+            <p className="text-xs text-primary font-medium uppercase tracking-wide">Current Balance</p>
+            <p className="text-2xl font-bold text-violet-deep">{user.trials.toLocaleString()} free stories</p>
           </div>
         </div>
 
@@ -210,7 +210,7 @@ function TrialsEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id:
         {action !== "set" && (
           <div className="bg-stone-50 rounded-xl p-3 text-sm text-stone-600">
             New balance will be:{" "}
-            <strong className="text-stone-900">
+            <strong className="text-violet-deep">
               {action === "add" ? user.trials + amount : Math.max(0, user.trials - amount)} free stories
             </strong>
           </div>
@@ -241,11 +241,11 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: Admin
       <div className="w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-stone-100 p-5 flex items-center justify-between z-10">
           <div>
-            <h3 className="font-bold text-stone-900 text-lg">{user.name || user.email}</h3>
+            <h3 className="font-bold text-violet-deep text-lg">{user.name || user.email}</h3>
             <p className="text-stone-500 text-sm">{user.email}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => onEditTrials(user)} className="px-3 py-1.5 bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold hover:bg-amber-200 transition-colors">
+            <button onClick={() => onEditTrials(user)} className="px-3 py-1.5 bg-buttercup/25 text-violet-deep rounded-lg text-xs font-semibold hover:bg-buttercup/35 transition-colors">
               Edit Free Stories
             </button>
             <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-xl">
@@ -257,9 +257,9 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: Admin
         <div className="p-5 space-y-6">
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-amber-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-amber-700">{user.trials.toLocaleString()}</p>
-              <p className="text-xs text-amber-600 font-medium">Free Stories</p>
+            <div className="bg-buttercup/15 rounded-xl p-3 text-center">
+              <p className="text-2xl font-bold text-violet-deep">{user.trials.toLocaleString()}</p>
+              <p className="text-xs text-primary font-medium">Free Stories</p>
             </div>
             <div className="bg-purple-50 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-purple-700">{user.modelCount}</p>
@@ -278,14 +278,14 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: Admin
           {/* Models */}
           {user.models.length > 0 && (
             <div>
-              <h4 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
+              <h4 className="font-semibold text-violet-deep mb-3 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-500" /> AI Models ({user.models.length})
               </h4>
               <div className="space-y-2">
                 {user.models.map((m) => (
                   <div key={m.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
                     <div>
-                      <p className="font-medium text-stone-900 text-sm">{m.name}</p>
+                      <p className="font-medium text-violet-deep text-sm">{m.name}</p>
                       <p className="text-xs text-stone-400">{timeAgo(m.createdAt)}</p>
                     </div>
                     <StatusBadge status={m.trainingStatus} />
@@ -298,7 +298,7 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: Admin
           {/* Stories */}
           {user.stories.length > 0 && (
             <div>
-              <h4 className="font-semibold text-stone-900 mb-3 flex items-center gap-2">
+              <h4 className="font-semibold text-violet-deep mb-3 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-blue-500" /> Stories ({user.stories.length})
               </h4>
               <div className="space-y-2">
@@ -309,7 +309,7 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: Admin
                   return (
                     <div key={s.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
                       <div>
-                        <p className="font-medium text-stone-900 text-sm">{s.title}</p>
+                        <p className="font-medium text-violet-deep text-sm">{s.title}</p>
                         <p className="text-xs text-stone-400">{timeAgo(s.createdAt)}</p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -457,9 +457,9 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
 
       {/* Detection report */}
       {result && (
-        <div className={`rounded-2xl border p-5 ${result.detection.found ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
+        <div className={`rounded-2xl border p-5 ${result.detection.found ? "bg-emerald-500/5 border-emerald-500/20" : "bg-[#7a5bff]/10 border-[#7a5bff]/30"}`}>
           <div className="flex items-center gap-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${result.detection.found ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${result.detection.found ? "bg-emerald-500/20 text-emerald-400" : "bg-[#7a5bff]/20 text-[#c4b2ff]"}`}>
               {result.detection.found ? <CheckCircle2 className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
             </div>
             <div className="min-w-0">
@@ -805,7 +805,7 @@ const ORDER_FLOW = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"] as const;
 
 function OrderStatusBadge({ status }: { status: string }) {
   const map: Record<string, string> = {
-    PENDING: "bg-amber-500/20 text-amber-400",
+    PENDING: "bg-[#7a5bff]/20 text-[#c4b2ff]",
     PROCESSING: "bg-blue-500/20 text-blue-400",
     SHIPPED: "bg-purple-500/20 text-purple-400",
     DELIVERED: "bg-emerald-500/20 text-emerald-400",
@@ -861,7 +861,7 @@ function OrdersTab({ orders, summary, authHeaders, onChanged }: {
   };
 
   const summaryCards = [
-    { label: "Pending", value: summary?.PENDING ?? 0, cls: "text-amber-400 bg-amber-500/20" },
+    { label: "Pending", value: summary?.PENDING ?? 0, cls: "text-[#c4b2ff] bg-[#7a5bff]/20" },
     { label: "Processing", value: summary?.PROCESSING ?? 0, cls: "text-blue-400 bg-blue-500/20" },
     { label: "Shipped", value: summary?.SHIPPED ?? 0, cls: "text-purple-400 bg-purple-500/20" },
     { label: "Delivered", value: summary?.DELIVERED ?? 0, cls: "text-emerald-400 bg-emerald-500/20" },
@@ -1214,12 +1214,12 @@ export default function AdminPage() {
 
   if (isLoaded && !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 to-red-50 p-6">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-paper to-blush p-6">
         <div className="bg-white p-10 rounded-3xl border border-stone-200 text-center max-w-md shadow-xl space-y-5">
           <div className="w-16 h-16 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto text-3xl">🔒</div>
-          <h2 className="text-2xl font-bold text-stone-900 font-serif">Restricted Access</h2>
+          <h2 className="text-2xl font-bold text-violet-deep font-display">Restricted Access</h2>
           <p className="text-stone-500">This control center is private and strictly restricted to the super administrator.</p>
-          <a href="/dashboard" className="inline-block px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-semibold hover:bg-stone-800 transition-all">
+          <a href="/dashboard" className="inline-block px-6 py-3 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-violet-deep transition-all">
             Return to Dashboard
           </a>
         </div>
@@ -1413,7 +1413,7 @@ export default function AdminPage() {
                         stat.color === "blue" ? "bg-blue-500/20 text-blue-400" :
                         stat.color === "purple" ? "bg-purple-500/20 text-purple-400" :
                         stat.color === "indigo" ? "bg-indigo-500/20 text-indigo-400" :
-                        "bg-amber-500/20 text-amber-400"
+                        "bg-[#7a5bff]/20 text-[#c4b2ff]"
                       }`}>
                         {stat.icon}
                       </div>
@@ -1428,7 +1428,7 @@ export default function AdminPage() {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
                     { label: "New Users This Month", value: stats?.newUsersThisMonth ?? 0, icon: <TrendingUp className="w-4 h-4" />, color: "text-emerald-400" },
-                    { label: "Stories Generating", value: stats?.generatingStories ?? 0, icon: <Zap className="w-4 h-4" />, color: "text-amber-400" },
+                    { label: "Stories Generating", value: stats?.generatingStories ?? 0, icon: <Zap className="w-4 h-4" />, color: "text-[#c4b2ff]" },
                     { label: "Completed Stories", value: stats?.completedStories ?? 0, icon: <CheckCircle2 className="w-4 h-4" />, color: "text-emerald-400" },
                     { label: "Models in Training", value: stats?.pendingModels ?? 0, icon: <Clock className="w-4 h-4" />, color: "text-purple-400" },
                   ].map((s) => (
@@ -1443,10 +1443,10 @@ export default function AdminPage() {
                 </div>
 
                 {/* Grant Free Stories Panel */}
-                <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 border border-amber-500/20 rounded-2xl p-6">
+                <div className="bg-gradient-to-r from-violet-deep/50 to-blush/15 border border-[#7a5bff]/30 rounded-2xl p-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1">
-                      <h3 className="font-bold text-white text-lg flex items-center gap-2"><Gift className="w-5 h-5 text-amber-400" /> Grant Free Stories to All Users</h3>
+                      <h3 className="font-bold text-white text-lg flex items-center gap-2"><Gift className="w-5 h-5 text-[#c4b2ff]" /> Grant Free Stories to All Users</h3>
                       <p className="text-white/50 text-sm mt-1">Give extra free story generations to every registered user at once.</p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1456,11 +1456,11 @@ export default function AdminPage() {
                           min={1}
                           value={grantAmount}
                           onChange={(e) => setGrantAmount(Number(e.target.value))}
-                          className="w-28 bg-white/10 border border-white/20 text-white px-3 py-2 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          className="w-28 bg-white/10 border border-white/20 text-white px-3 py-2 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-primary"
                         />
                         <span className="text-white/50 text-sm">free stories</span>
                       </div>
-                      <button onClick={handleGrantAll} className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white rounded-xl font-semibold text-sm shadow-lg shadow-orange-500/20 transition-all">
+                      <button onClick={handleGrantAll} className="px-5 py-2.5 bg-gradient-to-r from-primary to-[#7a5bff] hover:from-[#7a5bff] hover:to-[#a78bfa] text-white rounded-xl font-semibold text-sm shadow-lg shadow-primary/30 transition-all">
                         Grant to All
                       </button>
                     </div>
@@ -1527,7 +1527,7 @@ export default function AdminPage() {
                       className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                   </div>
-                  <button onClick={handleGrantAll} className="px-4 py-2.5 bg-amber-500/20 border border-amber-500/30 text-amber-400 hover:bg-amber-500/30 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all">
+                  <button onClick={handleGrantAll} className="px-4 py-2.5 bg-[#7a5bff]/20 border border-[#7a5bff]/40 text-[#c4b2ff] hover:bg-[#7a5bff]/30 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all">
                     <Gift className="w-4 h-4" /> Grant {grantAmount.toLocaleString()} to All
                   </button>
                 </div>
@@ -1559,7 +1559,7 @@ export default function AdminPage() {
                               </div>
                             </td>
                             <td className="py-3.5 px-4">
-                              <span className="font-bold text-amber-400">{u.trials.toLocaleString()}</span>
+                              <span className="font-bold text-[#c4b2ff]">{u.trials.toLocaleString()}</span>
                             </td>
                             <td className="py-3.5 px-4 text-white/60">{u.modelCount}</td>
                             <td className="py-3.5 px-4 text-white/60">{u.storyCount}</td>
@@ -1568,7 +1568,7 @@ export default function AdminPage() {
                               <div className="flex items-center gap-1">
                                 <button onClick={() => handleUpdateTrials(u.id, 1, "subtract")} className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/20 hover:bg-red-500/30 rounded-lg text-xs font-bold transition-colors">-1</button>
                                 <button onClick={() => handleUpdateTrials(u.id, 1, "add")} className="px-2 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/30 rounded-lg text-xs font-bold transition-colors">+1</button>
-                                <button onClick={() => handleUpdateTrials(u.id, 3, "add")} className="px-2 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/20 hover:bg-amber-500/30 rounded-lg text-xs font-bold transition-colors">+3</button>
+                                <button onClick={() => handleUpdateTrials(u.id, 3, "add")} className="px-2 py-1 bg-[#7a5bff]/20 text-[#c4b2ff] border border-[#7a5bff]/30 hover:bg-[#7a5bff]/30 rounded-lg text-xs font-bold transition-colors">+3</button>
                               </div>
                             </td>
                             <td className="py-3.5 px-4">
@@ -1787,7 +1787,7 @@ export default function AdminPage() {
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                       item.type === "user_joined" ? "bg-blue-500/20 text-blue-400" :
                       item.type === "story_created" ? "bg-purple-500/20 text-purple-400" :
-                      "bg-amber-500/20 text-amber-400"
+                      "bg-[#7a5bff]/20 text-[#c4b2ff]"
                     }`}>
                       {item.type === "user_joined" ? <UserCheck className="w-4 h-4" /> :
                        item.type === "story_created" ? <BookOpen className="w-4 h-4" /> :

@@ -133,17 +133,17 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-stone-900">
-        <Loader2 className="w-12 h-12 animate-spin text-amber-500" />
+      <div className="h-screen flex items-center justify-center bg-primary">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!story) {
     return (
-      <div className="h-screen flex items-center justify-center bg-stone-100">
+      <div className="h-screen flex items-center justify-center bg-muted">
         <div className="text-center">
-          <h2 className="text-2xl font-serif text-stone-900 mb-4">
+          <h2 className="text-2xl font-display text-violet-deep mb-4">
             Story not found
           </h2>
           <Button onClick={() => router.push("/stories")}>
@@ -165,7 +165,7 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
       : 0;
 
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-paper flex items-center justify-center p-4">
         <GenerationProgress
           storyId={story.id}
           totalPages={story.pages.length}
@@ -234,7 +234,7 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
 
   return (
     <div
-      className={`h-screen bg-stone-900 flex flex-col ${
+      className={`h-screen bg-primary flex flex-col ${
         isFullscreen ? "fixed inset-0 z-50" : ""
       }`}
     >
@@ -249,7 +249,7 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
           Library
         </Button>
 
-        <h1 className="font-serif font-bold text-xl text-white/90 tracking-wide">
+        <h1 className="font-display font-bold text-xl text-white/90 tracking-wide">
           {story.title}
         </h1>
 
@@ -304,7 +304,7 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
               style={{ perspective: "1000px" }}
             >
               {/* Left: Image */}
-              <div className="w-1/2 h-full bg-stone-100 relative">
+              <div className="w-1/2 h-full bg-muted relative">
                 {currentPage?.imageUrl ? (
                   <img
                     src={currentPage.imageUrl}
@@ -313,10 +313,10 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
                     onError={handleImageError}
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-50 to-orange-50">
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-buttercup/15 to-blush/40">
                     <div className="text-center">
-                      <Loader2 className="w-12 h-12 animate-spin text-amber-400 mx-auto mb-3" />
-                      <p className="text-amber-700 font-medium">
+                      <Loader2 className="w-12 h-12 animate-spin text-buttercup mx-auto mb-3" />
+                      <p className="text-violet-deep font-medium">
                         Illustrating...
                       </p>
                     </div>
@@ -325,17 +325,17 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
               </div>
 
               {/* Right: Text */}
-              <div className="w-1/2 h-full p-8 md:p-12 flex flex-col justify-center bg-[#fdfbf7] relative">
+              <div className="w-1/2 h-full p-8 md:p-12 flex flex-col justify-center bg-paper relative">
                 {/* Decorative book binding */}
-                <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-stone-200 to-transparent" />
+                <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-muted to-transparent" />
 
-                <div className="font-serif text-xl md:text-2xl lg:text-3xl leading-relaxed text-stone-800">
+                <div className="font-display text-xl md:text-2xl lg:text-3xl leading-relaxed text-foreground">
                   {currentPage?.content}
                 </div>
 
                 {/* Page number */}
                 <div className="absolute bottom-6 left-0 right-0 text-center">
-                  <span className="text-stone-400 text-sm font-sans">
+                  <span className="text-muted-foreground text-sm font-sans">
                     Page {currentPageIndex + 1} of {story.pages.length}
                   </span>
                 </div>
@@ -400,7 +400,7 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
             variant="ghost"
             className={`text-sm ${
               autoPlay
-                ? "text-amber-400 hover:text-amber-300"
+                ? "text-buttercup hover:text-buttercup"
                 : "text-white/60 hover:text-white"
             }`}
             onClick={() => setAutoPlay(!autoPlay)}
@@ -418,7 +418,7 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
               onClick={() => setCurrentPageIndex(i)}
               className={`w-2 h-2 rounded-full transition-all ${
                 i === currentPageIndex
-                  ? "bg-amber-400 w-6"
+                  ? "bg-buttercup w-6"
                   : "bg-white/40 hover:bg-white/60"
               }`}
             />

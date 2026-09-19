@@ -95,7 +95,7 @@ function PageSheet({
 
   return (
     <div
-      className={`relative flex-1 bg-[#FFF9F0] overflow-hidden ${
+      className={`relative flex-1 bg-paper overflow-hidden ${
         side === "left" ? "rounded-l-lg" : "rounded-r-lg"
       }`}
     >
@@ -108,9 +108,9 @@ function PageSheet({
           className="absolute inset-0 w-full h-full object-cover"
         />
       ) : page && isCover ? (
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100" />
+        <div className="absolute inset-0 bg-gradient-to-br from-buttercup/25 via-blush/50 to-blush/70" />
       ) : (
-        <div className="absolute inset-0 bg-[#FFF9F0]" />
+        <div className="absolute inset-0 bg-paper" />
       )}
 
       {/* Cover layout */}
@@ -118,11 +118,11 @@ function PageSheet({
         <>
           <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/55" />
           <div className="absolute top-8 inset-x-4 text-center px-4">
-            <h2 className="font-serif text-2xl md:text-4xl font-bold text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.65)]">
+            <h2 className="font-display text-2xl md:text-4xl font-bold text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.65)]">
               {story.title}
             </h2>
             {story.childName && (
-              <p className="mt-2 text-amber-200 text-xs md:text-sm font-semibold uppercase tracking-[0.25em] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]">
+              <p className="mt-2 text-buttercup text-xs md:text-sm font-semibold uppercase tracking-[0.25em] [text-shadow:0_1px_6px_rgba(0,0,0,0.6)]">
                 Starring {story.childName}
               </p>
             )}
@@ -139,13 +139,13 @@ function PageSheet({
       {!page && (
         <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center">
           {story.dedication ? (
-            <p className="font-serif italic text-stone-600 text-sm md:text-lg leading-relaxed">
+            <p className="font-display italic text-muted-foreground text-sm md:text-lg leading-relaxed">
               “{story.dedication}”
             </p>
           ) : (
             <>
-              <BookOpen className="w-8 h-8 text-amber-300/70 mb-3" />
-              <p className="font-serif italic text-stone-400 text-xs md:text-sm">
+              <BookOpen className="w-8 h-8 text-buttercup/70 mb-3" />
+              <p className="font-display italic text-muted-foreground text-xs md:text-sm">
                 A personalized adventure
               </p>
             </>
@@ -172,7 +172,7 @@ function PageSheet({
         <div className="absolute bottom-2.5 inset-x-0 text-center">
           <span
             className={`text-[10px] md:text-xs ${
-              hasImage ? "text-white/80 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]" : "text-stone-400"
+              hasImage ? "text-white/80 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]" : "text-muted-foreground"
             }`}
           >
             {page.pageNumber}
@@ -330,17 +330,17 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-900">
-        <Loader2 className="w-12 h-12 animate-spin text-amber-500" />
+      <div className="min-h-screen flex items-center justify-center bg-primary">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!story) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-100">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center">
-          <h2 className="text-2xl font-serif text-stone-900 mb-4">Story not found</h2>
+          <h2 className="text-2xl font-display text-violet-deep mb-4">Story not found</h2>
           <Button onClick={() => router.push("/stories")}>Return to Library</Button>
         </div>
       </div>
@@ -354,7 +354,7 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
     const progress = pages.length ? Math.round((completedPages / pages.length) * 100) : 0;
 
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-paper flex items-center justify-center p-4">
         <GenerationProgress
           storyId={story.id}
           totalPages={pages.length}
@@ -377,14 +377,14 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
 
   if (spreads.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-100">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
         <Button onClick={() => router.push("/stories")}>Return to Library</Button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-violet-deep via-violet-ink to-violet-deep flex flex-col">
       {/* Toolbar */}
       <div className="px-4 py-3 flex items-center justify-between gap-3">
         <Button
@@ -395,12 +395,12 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
         >
           <Home className="w-4 h-4 mr-2" /> Library
         </Button>
-        <p className="hidden md:block font-serif text-white/90 truncate px-4">{story.title}</p>
+        <p className="hidden md:block font-display text-white/90 truncate px-4">{story.title}</p>
         <div className="flex items-center gap-2">
 
           <Button
             size="sm"
-            className="bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-lg shadow-amber-900/30"
+            className="bg-gradient-to-r from-primary to-violet-deep text-white rounded-full shadow-lg shadow-primary/40"
             onClick={() => setOrderOpen(true)}
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
@@ -516,7 +516,7 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
                   }}
                   aria-label={`Go to spread ${i + 1}`}
                   className={`h-1.5 rounded-full transition-all ${
-                    i === spreadIndex ? "bg-amber-400 w-5" : "bg-white/25 hover:bg-white/50 w-1.5"
+                    i === spreadIndex ? "bg-buttercup w-5" : "bg-white/25 hover:bg-white/50 w-1.5"
                   }`}
                 />
               ))}

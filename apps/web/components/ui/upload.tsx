@@ -38,29 +38,29 @@ export function UploadModal({
       onDragOver={handleDrag}
       onDrop={handleDrop}
       className={cn(
-        "group relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-stone-200 bg-stone-50/50 p-12 transition-all hover:border-amber-400 hover:bg-amber-50/30",
-        isDragging && "border-amber-500 bg-amber-50 ring-4 ring-amber-100",
+        "group relative flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-border bg-paper/50 p-12 transition-all hover:border-amber-400 hover:bg-buttercup/10/30",
+        isDragging && "border-primary bg-buttercup/10 ring-4 ring-buttercup/40",
         isUploading && "pointer-events-none opacity-80"
       )}
     >
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-stone-100 transition-transform group-hover:scale-110">
-        <UploadCloud className={cn("h-10 w-10 text-stone-400 transition-colors group-hover:text-amber-500", isDragging && "text-amber-600")} />
+        <UploadCloud className={cn("h-10 w-10 text-muted-foreground transition-colors group-hover:text-primary", isDragging && "text-primary")} />
       </div>
 
       {isUploading ? (
         <div className="w-full max-w-xs space-y-4 text-center">
-          <Progress value={uploadProgress} className="h-2 w-full bg-stone-100 [&>div]:bg-amber-500" />
-          <p className="text-sm font-medium text-stone-600 animate-pulse">
+          <Progress value={uploadProgress} className="h-2 w-full bg-muted [&>div]:bg-buttercup/100" />
+          <p className="text-sm font-medium text-muted-foreground animate-pulse">
             {uploadProgress < 100 ? "Uploading photos..." : "Processing..."}
           </p>
         </div>
       ) : (
         <div className="text-center space-y-4">
           <div>
-            <p className="text-lg font-serif font-medium text-stone-900">
+            <p className="text-lg font-display font-medium text-violet-deep">
               Drag & drop photos here
             </p>
-            <p className="text-sm text-stone-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               or click to browse
             </p>
           </div>
@@ -77,12 +77,12 @@ export function UploadModal({
               };
               input.click();
             }}
-            className="rounded-full bg-stone-900 px-8 hover:bg-stone-800"
+            className="rounded-full bg-primary px-8 hover:bg-violet-deep"
           >
             Select Photos
           </Button>
           
-          <p className="text-xs text-stone-400">
+          <p className="text-xs text-muted-foreground">
             Supports JPG, PNG, WEBP • Max 50 files
           </p>
         </div>

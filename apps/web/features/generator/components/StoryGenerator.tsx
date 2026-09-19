@@ -44,23 +44,23 @@ import { STORY_STARTERS } from "../../../utils/prompts/storyPrompts";
 // Templates matching the ones defined on the backend
 const TEMPLATES: Record<string, { theme: string; category: string }> = {
   "magical-adventure": { theme: "discovers a magical portal and goes on an amazing adventure", category: "adventure" },
-  "brave-explorer":    { theme: "becomes a brave explorer and discovers hidden treasures", category: "adventure" },
-  "kind-friend":       { theme: "helps a lost animal find its way home and makes a new friend", category: "friendship" },
-  "space-adventure":   { theme: "blasts off in a rocket ship and meets friendly aliens", category: "space" },
-  "bedtime-dream":     { theme: "floats up to the clouds and has a magical dream adventure", category: "bedtime" },
-  "animal-friends":    { theme: "visits a magical forest and befriends talking animals", category: "animals" },
-  "superhero-day":     { theme: "wakes up with super powers and saves the day", category: "superhero" },
-  "ocean-adventure":   { theme: "dives under the ocean and discovers a mermaid kingdom", category: "ocean" },
+  "brave-explorer": { theme: "becomes a brave explorer and discovers hidden treasures", category: "adventure" },
+  "kind-friend": { theme: "helps a lost animal find its way home and makes a new friend", category: "friendship" },
+  "space-adventure": { theme: "blasts off in a rocket ship and meets friendly aliens", category: "space" },
+  "bedtime-dream": { theme: "floats up to the clouds and has a magical dream adventure", category: "bedtime" },
+  "animal-friends": { theme: "visits a magical forest and befriends talking animals", category: "animals" },
+  "superhero-day": { theme: "wakes up with super powers and saves the day", category: "superhero" },
+  "ocean-adventure": { theme: "dives under the ocean and discovers a mermaid kingdom", category: "ocean" },
   // Home page story gallery templates
-  "rocket-to-the-stars":   { theme: "builds a rocket with tools from the shed, blasts off to the moon and befriends a tiny alien named Fizz who needs help finding his way back to his star", category: "space" },
-  "the-ocean-kingdom":     { theme: "puts on a magic diving helmet, explores the deep sea and helps princess coral find her lost pearl-that-holds-the-sunset before the tide goes out", category: "ocean" },
-  "the-enchanted-forest":  { theme: "steps into a glowing forest where animals can talk and solves the riddle of the sleeping waterfall to bring the magic back to the woods", category: "animals" },
-  "the-lost-puppy":        { theme: "finds a scared lost puppy in the rain, comforts it with patience and gentleness, and helps it find its way back to its family", category: "animals" },
-  "the-bravest-hug":       { theme: "has butterflies before the first day of a new school and learns from the people who love them that the bravest thing is to share their feelings and ask for a hug", category: "bedtime" },
+  "rocket-to-the-stars": { theme: "builds a rocket with tools from the shed, blasts off to the moon and befriends a tiny alien named Fizz who needs help finding his way back to his star", category: "space" },
+  "the-ocean-kingdom": { theme: "puts on a magic diving helmet, explores the deep sea and helps princess coral find her lost pearl-that-holds-the-sunset before the tide goes out", category: "ocean" },
+  "the-enchanted-forest": { theme: "steps into a glowing forest where animals can talk and solves the riddle of the sleeping waterfall to bring the magic back to the woods", category: "animals" },
+  "the-lost-puppy": { theme: "finds a scared lost puppy in the rain, comforts it with patience and gentleness, and helps it find its way back to its family", category: "animals" },
+  "the-bravest-hug": { theme: "has butterflies before the first day of a new school and learns from the people who love them that the bravest thing is to share their feelings and ask for a hug", category: "bedtime" },
   "grandmas-moonlight-garden": { theme: "spends a quiet evening with grandma in the moonlight garden, hears the story of every flower and learns that family love stays with us forever", category: "bedtime" },
-  "the-planet-hop":        { theme: "joins professor Zuzu the teacher alien on a solar-system scavenger hunt and learns the order of the planets by visiting every one", category: "space" },
-  "a-world-of-words":      { theme: "discovers a magic library where letters come alive, learns to recognize them and sound out first words to help them get back into their books", category: "bedtime" },
-  "the-tiny-gardeners":    { theme: "plants seeds in the family garden with grandma, learns what plants need to grow - soil, water, sunlight and patience - and watches a tiny garden come to life", category: "animals" },
+  "the-planet-hop": { theme: "joins professor Zuzu the teacher alien on a solar-system scavenger hunt and learns the order of the planets by visiting every one", category: "space" },
+  "a-world-of-words": { theme: "discovers a magic library where letters come alive, learns to recognize them and sound out first words to help them get back into their books", category: "bedtime" },
+  "the-tiny-gardeners": { theme: "plants seeds in the family garden with grandma, learns what plants need to grow - soil, water, sunlight and patience - and watches a tiny garden come to life", category: "animals" },
 };
 
 const STEPS = [
@@ -226,16 +226,16 @@ export function StoryGenerator() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Card className="p-8 text-center max-w-md">
-          <User className="w-16 h-16 mx-auto text-stone-300 mb-4" />
-          <h2 className="text-2xl font-serif font-bold text-stone-900 mb-2">
+          <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-2xl font-display font-bold text-violet-deep mb-2">
             Sign in to Create Stories
           </h2>
-          <p className="text-stone-500 mb-6">
+          <p className="text-muted-foreground mb-6">
             Join to create personalized storybooks with your child as the hero.
           </p>
           <Button
-            onClick={() => router.push("/sign-in")}
-            className="bg-amber-500 hover:bg-amber-600 text-white"
+            onClick={() => router.push("/login")}
+            className="bg-buttercup/100 hover:bg-violet-deep text-white"
           >
             Sign In
           </Button>
@@ -254,14 +254,14 @@ export function StoryGenerator() {
     return (
       <div className="max-w-5xl mx-auto space-y-8 pb-12">
         {/* Celebration Header */}
-        <Card className="p-8 text-center bg-gradient-to-b from-amber-50/80 via-white to-orange-50/50 shadow-xl border-amber-100/60 rounded-3xl">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-200">
+        <Card className="p-8 text-center bg-gradient-to-b from-buttercup/15 via-white to-blush/40 shadow-xl border-buttercup/30 rounded-3xl">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-violet-deep text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
             <Sparkles className="w-8 h-8" />
           </div>
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 mb-2">
+          <h2 className="text-3xl sm:text-4xl font-display font-bold text-violet-deep mb-2">
             {generatedStory.title} is Ready! 🎉
           </h2>
-          <p className="text-stone-600 max-w-xl mx-auto text-sm sm:text-base">
+          <p className="text-muted-foreground max-w-xl mx-auto text-sm sm:text-base">
             Here is an exclusive preview of the first 2 pages of <strong>{generatedStory.childName}&apos;s</strong> adventure book.
           </p>
         </Card>
@@ -269,10 +269,10 @@ export function StoryGenerator() {
         {/* 2-Page Preview Spread */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
-            <h3 className="text-xl font-serif font-bold text-stone-900 flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-amber-500" /> Story Preview (First 2 Pages)
+            <h3 className="text-xl font-display font-bold text-violet-deep flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-primary" /> Story Preview (First 2 Pages)
             </h3>
-            <span className="text-xs font-semibold px-3 py-1 bg-amber-100 text-amber-800 rounded-full">
+            <span className="text-xs font-semibold px-3 py-1 bg-buttercup/20 text-violet-deep rounded-full">
               Pages 1 & 2 of {generatedStory.pages.length}
             </span>
           </div>
@@ -281,20 +281,20 @@ export function StoryGenerator() {
             {previewPages.map((page, idx) => (
               <div
                 key={page.pageNumber || idx}
-                className="bg-white rounded-3xl border border-stone-200 shadow-xl overflow-hidden flex flex-col transition-all hover:shadow-2xl hover:-translate-y-1 duration-300"
+                className="bg-white rounded-3xl border border-border shadow-xl overflow-hidden flex flex-col transition-all hover:shadow-2xl hover:-translate-y-1 duration-300"
               >
                 {/* Page Header */}
-                <div className="bg-stone-900 px-4 py-2.5 flex items-center justify-between text-white">
-                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                <div className="bg-primary px-4 py-2.5 flex items-center justify-between text-white">
+                  <span className="text-xs font-bold uppercase tracking-wider text-buttercup">
                     Page {page.pageNumber || idx + 1}
                   </span>
-                  <span className="text-[10px] text-stone-400 font-mono">
+                  <span className="text-[10px] text-muted-foreground font-mono">
                     {generatedStory.childName}&apos;s Adventure
                   </span>
                 </div>
 
                 {/* Illustration Frame */}
-                <div className="relative aspect-video bg-stone-100 overflow-hidden group">
+                <div className="relative aspect-video bg-muted overflow-hidden group">
                   {page.imageUrl ? (
                     <img
                       src={page.imageUrl}
@@ -303,17 +303,17 @@ export function StoryGenerator() {
                       onError={handleImageError}
                     />
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-amber-50/50 p-6 text-center">
-                      <Sparkles className="w-8 h-8 text-amber-400 mb-2 animate-pulse" />
-                      <p className="text-xs text-stone-500 font-serif">Illustration Preview</p>
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-buttercup/10/50 p-6 text-center">
+                      <Sparkles className="w-8 h-8 text-buttercup mb-2 animate-pulse" />
+                      <p className="text-xs text-muted-foreground font-display">Illustration Preview</p>
                     </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
 
                 {/* Story Text Content */}
-                <div className="p-6 bg-gradient-to-b from-amber-50/30 to-stone-50/50 flex-1 flex flex-col justify-between border-t border-stone-100">
-                  <p className="text-stone-800 font-serif text-base leading-relaxed italic">
+                <div className="p-6 bg-gradient-to-b from-buttercup/10 to-paper flex-1 flex flex-col justify-between border-t border-border">
+                  <p className="text-foreground font-display text-base leading-relaxed italic">
                     &ldquo;{page.content}&rdquo;
                   </p>
                 </div>
@@ -323,16 +323,16 @@ export function StoryGenerator() {
         </div>
 
         {/* Action CTA Banner */}
-        <Card className="p-8 bg-gradient-to-r from-stone-900 via-purple-950 to-stone-900 text-white rounded-3xl shadow-2xl border-purple-500/20">
+        <Card className="p-8 bg-gradient-to-r from-violet-deep via-violet-ink to-violet-deep text-white rounded-3xl shadow-2xl border-purple-500/20">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center md:text-left">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/20 text-amber-300 rounded-full text-xs font-semibold border border-amber-400/30">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-buttercup/20 text-buttercup rounded-full text-xs font-semibold border border-buttercup/40">
                 <Package className="w-3.5 h-3.5" /> Hardcover Printed Edition Available
               </div>
-              <h4 className="text-2xl font-serif font-bold text-white">
+              <h4 className="text-2xl font-display font-bold text-white">
                 Get the Full Printed Storybook Delivered!
               </h4>
-              <p className="text-stone-300 text-sm max-w-lg">
+              <p className="text-muted-foreground text-sm max-w-lg">
                 Order a high-quality hardcover print of {generatedStory.title} with all {generatedStory.pages.length} illustrated pages delivered directly to your doorstep.
               </p>
             </div>
@@ -340,7 +340,7 @@ export function StoryGenerator() {
             <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto shrink-0">
               <Button
                 onClick={() => setIsOrderModalOpen(true)}
-                className="px-8 py-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold text-base rounded-2xl shadow-xl shadow-amber-500/20 transition-all hover:scale-105"
+                className="px-8 py-6 bg-gradient-to-r from-primary to-violet-deep hover:from-violet-deep hover:to-violet text-white font-bold text-base rounded-2xl shadow-xl shadow-primary/25 transition-all hover:scale-105"
               >
                 <ShoppingBag className="w-5 h-5 mr-2" />
                 Order Printed Book Now
@@ -355,7 +355,7 @@ export function StoryGenerator() {
                 setPdfUrl(null);
                 setStep(0);
               }}
-              className="hover:text-amber-300 transition-colors underline"
+              className="hover:text-buttercup transition-colors underline"
             >
               ← Create Another Story
             </button>
@@ -381,19 +381,19 @@ export function StoryGenerator() {
   if (pdfUrl) {
     return (
       <div className="max-w-4xl mx-auto">
-        <Card className="p-12 text-center shadow-xl border-stone-100">
+        <Card className="p-12 text-center shadow-xl border-border">
           <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 className="w-10 h-10 text-emerald-600" />
           </div>
-          <h2 className="text-3xl font-serif font-bold text-stone-900 mb-2">
+          <h2 className="text-3xl font-display font-bold text-violet-deep mb-2">
             Your Storybook is Ready! 🎉
           </h2>
-          <p className="text-stone-500 mb-8">{pdfTitle} has been created with Fal AI illustrations.</p>
+          <p className="text-muted-foreground mb-8">{pdfTitle} has been created with Fal AI illustrations.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a
               href={pdfUrl}
               download={`${pdfTitle || "storybook"}.pdf`}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold shadow-lg shadow-amber-200 hover:opacity-90 transition-opacity"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-primary to-violet-deep text-white rounded-xl font-semibold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity"
             >
               <Download className="w-5 h-5" />
               Download PDF
@@ -416,9 +416,9 @@ export function StoryGenerator() {
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex justify-between items-center relative">
-          <div className="absolute left-0 right-0 top-6 h-0.5 bg-stone-200" />
+          <div className="absolute left-0 right-0 top-6 h-0.5 bg-muted" />
           <div
-            className="absolute left-0 top-6 h-0.5 bg-amber-500 transition-all duration-500"
+            className="absolute left-0 top-6 h-0.5 bg-buttercup/100 transition-all duration-500"
             style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }}
           />
           {STEPS.map((s, index) => {
@@ -428,17 +428,16 @@ export function StoryGenerator() {
             return (
               <div key={s.title} className="relative z-10 flex flex-col items-center">
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                    isActive
-                      ? "bg-amber-500 text-white scale-110 shadow-lg shadow-amber-200"
-                      : isComplete
+                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${isActive
+                    ? "bg-buttercup/100 text-white scale-110 shadow-lg shadow-primary/20"
+                    : isComplete
                       ? "bg-emerald-500 text-white"
-                      : "bg-white border-2 border-stone-200 text-stone-400"
-                  }`}
+                      : "bg-white border-2 border-border text-muted-foreground"
+                    }`}
                 >
                   {isComplete ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-5 h-5" />}
                 </div>
-                <span className={`mt-2 text-xs font-medium ${isActive ? "text-amber-600" : "text-stone-400"}`}>
+                <span className={`mt-2 text-xs font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                   {s.title}
                 </span>
               </div>
@@ -448,7 +447,7 @@ export function StoryGenerator() {
       </div>
 
       {/* Main Card */}
-      <Card className="p-8 shadow-xl border-stone-100 overflow-hidden">
+      <Card className="p-8 shadow-xl border-border overflow-hidden">
         <AnimatePresence mode="wait">
 
           {/* Step 0: Upload child photo */}
@@ -461,18 +460,17 @@ export function StoryGenerator() {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-serif font-bold text-stone-900">Who is the Hero?</h2>
-                <p className="text-stone-500 mt-2">Use one clear, front-facing photo so the hero stays recognizable on every page.</p>
+                <h2 className="text-3xl font-display font-bold text-violet-deep">Who is the Hero?</h2>
+                <p className="text-muted-foreground mt-2">Use one clear, front-facing photo so the hero stays recognizable on every page.</p>
               </div>
 
               {/* Photo upload */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className={`cursor-pointer border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
-                  childImagePreview
-                    ? "border-emerald-400 bg-emerald-50/30"
-                    : "border-amber-300 hover:border-amber-500 bg-amber-50/20"
-                }`}
+                className={`cursor-pointer border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${childImagePreview
+                  ? "border-emerald-400 bg-emerald-50/30"
+                  : "border-buttercup/50 hover:border-primary bg-buttercup/10/20"
+                  }`}
               >
                 {childImagePreview ? (
                   <div className="flex flex-col items-center gap-4">
@@ -481,23 +479,23 @@ export function StoryGenerator() {
                       alt="Child preview"
                       width={128}
                       height={128}
-                      className="w-32 h-32 rounded-full object-cover border-4 border-amber-300 shadow-lg"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-buttercup/50 shadow-lg"
                       onError={handleImageError}
                     />
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Photo attached for AI face matching
                     </div>
-                    <p className="text-xs text-stone-400">Click to change photo</p>
+                    <p className="text-xs text-muted-foreground">Click to change photo</p>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-3">
-                    <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
-                      <Upload className="w-8 h-8 text-amber-500" />
+                    <div className="w-16 h-16 rounded-full bg-buttercup/20 flex items-center justify-center">
+                      <Upload className="w-8 h-8 text-primary" />
                     </div>
-                    <p className="font-semibold text-stone-800">
+                    <p className="font-semibold text-foreground">
                       Upload your child&apos;s photo <span className="text-red-500 font-bold">*</span>
                     </p>
-                    <p className="text-xs font-medium text-amber-700 bg-amber-100 px-3 py-1.5 rounded-full">
+                    <p className="text-xs font-medium text-violet-deep bg-buttercup/20 px-3 py-1.5 rounded-full">
                       JPG, PNG, or WebP · clear face · one child · up to 3 MB
                     </p>
                   </div>
@@ -549,8 +547,8 @@ export function StoryGenerator() {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-serif font-bold text-stone-900">What&apos;s the Adventure?</h2>
-                <p className="text-stone-500 mt-2">Choose a theme or write your own story idea</p>
+                <h2 className="text-3xl font-display font-bold text-violet-deep">What&apos;s the Adventure?</h2>
+                <p className="text-muted-foreground mt-2">Choose a theme or write your own story idea</p>
               </div>
 
               <div className="space-y-3">
@@ -560,14 +558,13 @@ export function StoryGenerator() {
                     <button
                       key={starter.id}
                       onClick={() => { setTheme(starter.theme); setCategory(starter.category); }}
-                      className={`p-3 rounded-xl border-2 text-left transition-all ${
-                        theme === starter.theme
-                          ? "border-amber-500 bg-amber-50"
-                          : "border-stone-200 hover:border-stone-300"
-                      }`}
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${theme === starter.theme
+                        ? "border-primary bg-buttercup/10"
+                        : "border-border hover:border-border"
+                        }`}
                     >
                       <span className="text-2xl block mb-1">{starter.icon}</span>
-                      <span className="text-sm font-medium text-stone-900">{starter.title}</span>
+                      <span className="text-sm font-medium text-violet-deep">{starter.title}</span>
                     </button>
                   ))}
                 </div>
@@ -613,7 +610,7 @@ export function StoryGenerator() {
               </div>
 
               <div className="space-y-2">
-                <Label>Dedication <span className="text-stone-400">(optional)</span></Label>
+                <Label>Dedication <span className="text-muted-foreground">(optional)</span></Label>
                 <Input
                   value={dedication}
                   onChange={(e) => setDedication(e.target.value)}
@@ -633,36 +630,36 @@ export function StoryGenerator() {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-serif font-bold text-stone-900">Ready to Create Magic?</h2>
-                <p className="text-stone-500 mt-2">Review your choices and generate your personalized storybook</p>
+                <h2 className="text-3xl font-display font-bold text-violet-deep">Ready to Create Magic?</h2>
+                <p className="text-muted-foreground mt-2">Review your choices and generate your personalized storybook</p>
               </div>
 
               {/* Summary */}
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 space-y-4">
+              <div className="bg-gradient-to-br from-buttercup/15 to-blush/40 rounded-2xl p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <span className="text-xs uppercase tracking-wide text-stone-500">Hero</span>
-                    <p className="font-medium text-stone-900 text-lg">{childName}, age {childAge}</p>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Hero</span>
+                    <p className="font-medium text-violet-deep text-lg">{childName}, age {childAge}</p>
                   </div>
                   <div>
-                    <span className="text-xs uppercase tracking-wide text-stone-500">Story Length</span>
-                    <p className="font-medium text-stone-900">{STORY_LENGTH_CONFIG[storyLength].label}</p>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Story Length</span>
+                    <p className="font-medium text-violet-deep">{STORY_LENGTH_CONFIG[storyLength].label}</p>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-xs uppercase tracking-wide text-stone-500">Adventure Theme</span>
-                    <p className="font-medium text-stone-900">{theme}</p>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Adventure Theme</span>
+                    <p className="font-medium text-violet-deep">{theme}</p>
                   </div>
                   {dedication.trim() && (
                     <div className="col-span-2">
-                      <span className="text-xs uppercase tracking-wide text-stone-500">Dedication</span>
-                      <p className="font-medium text-stone-900">{dedication.trim()}</p>
+                      <span className="text-xs uppercase tracking-wide text-muted-foreground">Dedication</span>
+                      <p className="font-medium text-violet-deep">{dedication.trim()}</p>
                     </div>
                   )}
                   {childImagePreview && (
                     <div>
-                      <span className="text-xs uppercase tracking-wide text-stone-500">Hero Photo</span>
+                      <span className="text-xs uppercase tracking-wide text-muted-foreground">Hero Photo</span>
                       <div className="flex items-center gap-2 mt-1">
-                        <Image src={childImagePreview} alt="Hero" width={40} height={40} className="w-10 h-10 rounded-full object-cover border-2 border-amber-300" onError={handleImageError} />
+                        <Image src={childImagePreview} alt="Hero" width={40} height={40} className="w-10 h-10 rounded-full object-cover border-2 border-buttercup/50" onError={handleImageError} />
                         <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                       </div>
                     </div>
@@ -687,12 +684,12 @@ export function StoryGenerator() {
         </AnimatePresence>
 
         {/* Navigation */}
-        <div className="flex justify-between pt-8 mt-8 border-t border-stone-100">
+        <div className="flex justify-between pt-8 mt-8 border-t border-border">
           <Button
             variant="ghost"
             onClick={prevStep}
             disabled={step === 0 || loading}
-            className="text-stone-500"
+            className="text-muted-foreground"
           >
             <ChevronLeft className="w-4 h-4 mr-1" /> Back
           </Button>
@@ -701,7 +698,7 @@ export function StoryGenerator() {
             <Button
               onClick={nextStep}
               disabled={!canProceed()}
-              className="bg-stone-900 text-white hover:bg-stone-800"
+              className="bg-primary text-white hover:bg-violet-deep"
             >
               Continue <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
@@ -709,7 +706,7 @@ export function StoryGenerator() {
             <Button
               onClick={handleGenerate}
               disabled={loading || !canProceed()}
-              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:opacity-90 shadow-lg shadow-amber-200"
+              className="bg-gradient-to-r from-primary to-violet-deep text-white hover:opacity-90 shadow-lg shadow-primary/20"
             >
               {loading ? (
                 <>

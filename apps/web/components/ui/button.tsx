@@ -10,18 +10,18 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-stone-900 text-white shadow-md shadow-stone-500/20 hover:bg-stone-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0",
+          "bg-primary text-primary-foreground shadow-md shadow-primary/25 hover:bg-violet-deep hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0",
         destructive:
           "bg-red-500 text-white shadow-sm hover:bg-red-600 focus-visible:ring-red-500/30",
         outline:
-          "border border-stone-200 bg-white shadow-sm hover:bg-stone-50 hover:border-stone-300 text-stone-700",
+          "border border-border bg-background shadow-sm hover:bg-muted hover:border-foreground/20 text-foreground/90",
         secondary:
-          "bg-amber-100 text-amber-900 shadow-sm hover:bg-amber-200",
+          "bg-secondary text-foreground shadow-sm hover:bg-blush",
         ghost:
-          "hover:bg-stone-100 hover:text-stone-900 text-stone-500",
-        link: "text-stone-900 underline-offset-4 hover:underline",
+          "hover:bg-muted hover:text-foreground text-muted-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
         gradient: 
-          "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 border-none",
+          "bg-gradient-to-r from-primary to-violet-deep text-white shadow-lg shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 border-none",
       },
       size: {
         default: "h-10 px-5 py-2 has-[>svg]:px-4",

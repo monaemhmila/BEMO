@@ -37,8 +37,8 @@ const STAGE_INFO = {
     title: "Illustrating Pages",
     description: "Creating beautiful, face-consistent illustrations...",
     icon: ImageIcon,
-    color: "text-amber-500",
-    bgColor: "bg-amber-50",
+    color: "text-primary",
+    bgColor: "bg-buttercup/10",
   },
   audio: {
     title: "Recording Narration",
@@ -134,19 +134,19 @@ export function GenerationProgress({
         </div>
 
         {/* Title and description */}
-        <h2 className="text-2xl font-serif font-bold text-stone-900 mb-2">
+        <h2 className="text-2xl font-display font-bold text-violet-deep mb-2">
           {stageInfo.title}
         </h2>
-        <p className="text-stone-600 mb-6">{stageInfo.description}</p>
+        <p className="text-muted-foreground mb-6">{stageInfo.description}</p>
 
         {/* Progress bar */}
         {currentStage !== "complete" && (
           <div className="space-y-2 mb-6">
             <Progress
               value={animatedProgress}
-              className="h-3 bg-white/50 [&>div]:bg-gradient-to-r [&>div]:from-amber-400 [&>div]:to-orange-500"
+              className="h-3 bg-white/50 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-violet-deep"
             />
-            <div className="flex justify-between text-sm text-stone-500">
+            <div className="flex justify-between text-sm text-muted-foreground">
               <span>
                 {completedPages} of {totalPages} pages
               </span>
@@ -169,7 +169,7 @@ export function GenerationProgress({
                     ? "bg-emerald-100 text-emerald-600"
                     : i < completedPages + failedPages
                     ? "bg-red-100 text-red-600"
-                    : "bg-white text-stone-400"
+                    : "bg-white text-muted-foreground"
                 }`}
               >
                 {i < completedPages ? (
@@ -188,7 +188,7 @@ export function GenerationProgress({
         {currentStage === "error" && failedPages > 0 && onRetry && (
           <Button
             onClick={() => onRetry(storyId)}
-            className="bg-stone-900 text-white hover:bg-stone-800"
+            className="bg-primary text-white hover:bg-violet-deep"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Retry Failed Pages
@@ -203,7 +203,7 @@ export function GenerationProgress({
             transition={{ delay: 0.5 }}
           >
             <Button
-              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg"
+              className="bg-gradient-to-r from-primary to-violet-deep text-white shadow-lg"
               size="lg"
             >
               <BookOpen className="w-5 h-5 mr-2" />
@@ -218,7 +218,7 @@ export function GenerationProgress({
             key={Math.floor(Date.now() / 5000)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-xs text-stone-400 mt-4"
+            className="text-xs text-muted-foreground mt-4"
           >
             ✨ Did you know? Each illustration is crafted with your child&apos;s actual
             face for perfect consistency!

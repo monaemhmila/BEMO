@@ -15,7 +15,7 @@ export function BrowseByAge() {
           {ageGroups.map((group) => (
             <Link
               key={group.range}
-              href={`/books?age=${group.range.replace("Age ", "")}`}
+              href={`/books?age=${encodeURIComponent(group.range)}`}
               className="group relative block overflow-hidden rounded-[1.75rem] ring-1 ring-border transition-shadow hover:shadow-[0_20px_44px_-24px_rgba(31,22,54,.5)]"
             >
               <div className="aspect-[4/5]">

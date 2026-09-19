@@ -230,3 +230,40 @@ export const footerColumns = [
     ],
   },
 ];
+
+export const allBooks: Book[] = [
+  ...bestsellers,
+  ...newReleases,
+  ...girlsBooks,
+  ...boysBooks,
+].filter((book, i, arr) => arr.findIndex((b) => b.slug === book.slug) === i);
+
+export function getBook(slug: string) {
+  return allBooks.find((book) => book.slug === slug);
+}
+
+const ageKeywords: Record<string, string[]> = {
+  "Age 2-4": ["counts", "abc", "zoo", "forest", "sun", "glowing-flower"],
+  "Age 4-6": [
+    "princess",
+    "fairy",
+    "animals",
+    "dragon",
+    "super-boy",
+    "vroom",
+    "wins-the-race",
+    "legend",
+    "talk-to-animals",
+    "lost-fairy",
+  ],
+  "Age 6-8": ["cosmic", "robot", "legend", "wins-the-race", "dragon", "zoo"],
+};
+
+export function booksForAge(age: string) {
+  const keywords = ageKeywords[age];
+  if (!keywords) return allBooks;
+  const matches = allBooks.filter((book) =>
+    keywords.some((k) => book.slug.includes(k)),
+  );
+  return matches.length > 0 ? matches : allBooks;
+}

@@ -11,11 +11,11 @@ export function PageSkeleton({
   rows?: number;
 }) {
   const isDark = variant === "dark";
-  const block = isDark ? "bg-white/5" : "bg-stone-200/70";
+  const block = isDark ? "bg-white/10" : "bg-muted";
 
   return (
     <div
-      className={`w-full animate-pulse ${isDark ? "text-white" : "text-stone-900"}`}
+      className={`w-full animate-pulse ${isDark ? "text-white" : "text-foreground"}`}
       aria-busy="true"
       aria-live="polite"
     >
@@ -36,7 +36,7 @@ export function PageSkeleton({
           <div
             key={i}
             className={`overflow-hidden rounded-2xl border ${
-              isDark ? "border-white/10 bg-white/5" : "border-stone-200/70 bg-white"
+              isDark ? "border-white/10 bg-white/5" : "border-border bg-card"
             }`}
           >
             <div className={`aspect-video w-full ${block}`} />
@@ -53,16 +53,16 @@ export function PageSkeleton({
 
 export function StoryReaderSkeleton() {
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-stone-900 via-stone-800 to-stone-900">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-violet-deep via-violet-ink to-violet-deep">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="h-8 w-24 animate-pulse rounded-full bg-white/10" />
         <div className="h-8 w-32 animate-pulse rounded-full bg-white/10" />
         <div className="h-8 w-28 animate-pulse rounded-full bg-white/10" />
       </div>
       <div className="flex flex-1 items-center justify-center px-4 pb-6">
-        <div className="flex aspect-[2/1.15] w-full max-w-6xl animate-pulse overflow-hidden rounded-xl bg-stone-100/90 shadow-2xl">
-          <div className="flex-1 border-r border-stone-300/60 bg-[#FFF9F0]" />
-          <div className="flex-1 bg-[#FFF9F0]" />
+        <div className="flex aspect-[2/1.15] w-full max-w-6xl animate-pulse overflow-hidden rounded-xl bg-paper shadow-2xl">
+          <div className="flex-1 border-r border-border/60 bg-paper" />
+          <div className="flex-1 bg-paper" />
         </div>
       </div>
       <div className="pb-8 text-center text-white/30 text-xs">Opening your book…</div>
