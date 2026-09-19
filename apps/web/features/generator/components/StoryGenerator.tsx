@@ -19,11 +19,13 @@ import {
   Download,
   ShoppingBag,
   Package,
+  PenLine,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { handleImageError } from "@/components/ui/image-fallback";
 import { Card } from "@/components/ui/card";
 import { OrderBookModal } from "../../storybook/components/OrderBookModal";
@@ -104,9 +106,22 @@ export function StoryGenerator() {
   const [childImagePreview, setChildImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState("");
   const [category, setCategory] = useState("adventure");
+  const [customMode, setCustomMode] = useState(false);
+  const [customIdea, setCustomIdea] = useState("");
+  const [customSetting, setCustomSetting] = useState("");
+  const [customExtras, setCustomExtras] = useState("");
+  const [customMessage, setCustomMessage] = useState("");
   const [storyLength, setStoryLength] = useState<"short" | "medium" | "long">("short");
   const [storyLanguage, setStoryLanguage] = useState<"english" | "french" | "arabic">("english");
   const [dedication, setDedication] = useState("");
+
+  const buildCustomTheme = () => {
+    const parts = [customIdea.trim()];
+    if (customSetting.trim()) parts.push(`Setting: ${customSetting.trim()}`);
+    if (customExtras.trim()) parts.push(`Include: ${customExtras.trim()}`);
+    if (customMessage.trim()) parts.push(`Message: ${customMessage.trim()}`);
+    return parts.filter(Boolean).join(". ");
+  };
 
   // Pre-fill from ?templateId query param
   useEffect(() => {
@@ -138,7 +153,7 @@ export function StoryGenerator() {
   };
 
   const handleGenerate = async () => {
-    if (!childName || !theme) {
+    if (!childName || !(customMode ? customIdea.trim() : theme)) {
       setError("Please complete all required fields");
       return;
     }
@@ -156,7 +171,7 @@ export function StoryGenerator() {
         {
           childName,
           childAge,
-          theme,
+          theme: customMode ? buildCustomTheme() : theme,
           category,
           storyLength,
           language: storyLanguage,
@@ -213,7 +228,7 @@ export function StoryGenerator() {
   const canProceed = () => {
     switch (step) {
       case 0: return !!childName.trim() && !!childImage;
-      case 1: return !!theme.trim();
+      case 1: return customMode ? !!customIdea.trim() : !!theme.trim();
       case 2: return true;
       default: return false;
     }
@@ -555,12 +570,27 @@ export function StoryGenerator() {
 
               <div className="space-y-3">
                 <Label>Quick Starters</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <button
+                    onClick={() => setCustomMode(true)}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${customMode
+                      ? "border-primary bg-buttercup/10"
+                      : "border-dashed border-primary/50 hover:border-primary"
+                      }`}
+                  >
+                    <span className="block mb-1">
+                      <PenLine className="w-6 h-6 text-primary" />
+                    </span>
+                    <span className="text-sm font-bold text-violet-deep">My Own Story</span>
+                    <span className="block text-[11px] text-muted-foreground mt-0.5">
+                      No template — from your idea
+                    </span>
+                  </button>
                   {STORY_STARTERS.slice(0, 8).map((starter) => (
                     <button
                       key={starter.id}
-                      onClick={() => { setTheme(starter.theme); setCategory(starter.category); }}
-                      className={`p-3 rounded-xl border-2 text-left transition-all ${theme === starter.theme
+                      onClick={() => { setCustomMode(false); setTheme(starter.theme); setCategory(starter.category); }}
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${!customMode && theme === starter.theme
                         ? "border-primary bg-buttercup/10"
                         : "border-border hover:border-border"
                         }`}
@@ -572,15 +602,67 @@ export function StoryGenerator() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Or Write Your Own</Label>
-                <Input
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value)}
-                  placeholder="e.g., Travels to a magical forest and befriends talking animals..."
-                  className="h-12"
-                />
-              </div>
+              {customMode ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="rounded-2xl border-2 border-primary/30 bg-buttercup/5 p-5 space-y-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <PenLine className="w-5 h-5 text-primary" />
+                    <h3 className="font-display font-bold text-violet-deep">
+                      Write your own story from scratch
+                    </h3>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>
+                      Your story idea *
+                    </Label>
+                    <Textarea
+                      value={customIdea}
+                      onChange={(e) => setCustomIdea(e.target.value)}
+                      placeholder="e.g., Leo visits grandma's bakery and secretly helps save the day when the oven breaks before the town festival..."
+                      className="min-h-28"
+                    />
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Setting <span className="text-muted-foreground">(optional)</span></Label>
+                      <Input
+                        value={customSetting}
+                        onChange={(e) => setCustomSetting(e.target.value)}
+                        placeholder="e.g., A snowy mountain village"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Extras to include <span className="text-muted-foreground">(optional)</span></Label>
+                      <Input
+                        value={customExtras}
+                        onChange={(e) => setCustomExtras(e.target.value)}
+                        placeholder="e.g., A fluffy rabbit, a magic sleigh"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>A message to teach <span className="text-muted-foreground">(optional)</span></Label>
+                    <Input
+                      value={customMessage}
+                      onChange={(e) => setCustomMessage(e.target.value)}
+                      placeholder="e.g., Helping others makes us braver"
+                    />
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Or Write Your Own</Label>
+                  <Input
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value)}
+                    placeholder="e.g., Travels to a magical forest and befriends talking animals..."
+                    className="h-12"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -669,7 +751,7 @@ export function StoryGenerator() {
                   </div>
                   <div className="col-span-2">
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Adventure Theme</span>
-                    <p className="font-medium text-violet-deep">{theme}</p>
+                    <p className="font-medium text-violet-deep">{customMode ? buildCustomTheme() : theme}</p>
                   </div>
                   {dedication.trim() && (
                     <div className="col-span-2">
