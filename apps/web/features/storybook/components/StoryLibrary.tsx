@@ -15,6 +15,7 @@ import {
   Play,
   Trash2,
   MoreVertical,
+  PenLine,
 } from "lucide-react";
 import Link from "next/link";
 import { handleImageError } from "@/components/ui/image-fallback";
@@ -157,6 +158,11 @@ export function StoryLibrary() {
           </p>
         </div>
         <div className="flex gap-3">
+          <Link href="/create-custom">
+            <Button variant="outline" className="rounded-full gap-2">
+              <PenLine className="w-4 h-4" /> Write Your Own Story
+            </Button>
+          </Link>
           <Link href="/storybook/create">
             <Button className="bg-primary text-white rounded-full gap-2">
               <Sparkles className="w-4 h-4" /> Create New Story
@@ -233,11 +239,18 @@ export function StoryLibrary() {
               : "Try adjusting your filters"}
           </p>
           {stories.length === 0 && (
-            <Link href="/storybook/create">
-              <Button className="rounded-full bg-primary text-white">
-                <Sparkles className="w-4 h-4 mr-2" /> Create Story
-              </Button>
-            </Link>
+            <div className="flex flex-wrap justify-center gap-3">
+              <Link href="/storybook/create">
+                <Button className="rounded-full bg-primary text-white">
+                  <Sparkles className="w-4 h-4 mr-2" /> Create Story
+                </Button>
+              </Link>
+              <Link href="/create-custom">
+                <Button variant="outline" className="rounded-full">
+                  <PenLine className="w-4 h-4 mr-2" /> Write My Own Story
+                </Button>
+              </Link>
+            </div>
           )}
         </Card>
       ) : (

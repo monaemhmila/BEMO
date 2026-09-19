@@ -4,9 +4,9 @@ import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const AFTER_IMG =
-  "https://resources.wonderwraps.com/47702d06-01a7-457d-9706-9d5ae2e2eed7/img/books/before-after/after.webp";
+  "https://resources.monpetithero.shop/47702d06-01a7-457d-9706-9d5ae2e2eed7/img/books/before-after/after.webp";
 const BEFORE_IMG =
-  "https://resources.wonderwraps.com/47702d06-01a7-457d-9706-9d5ae2e2eed7/img/books/before-after/before.webp";
+  "https://resources.monpetithero.shop/47702d06-01a7-457d-9706-9d5ae2e2eed7/img/books/before-after/before.webp";
 
 export function BeforeAfter() {
   const containerRef = React.useRef<HTMLDivElement>(null);

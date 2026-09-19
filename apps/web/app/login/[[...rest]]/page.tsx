@@ -5,7 +5,7 @@ import { AuthLoading } from "@/components/auth-loading";
 
 export const metadata: Metadata = {
   title: "Sign in",
-  description: "Sign in to WonderWraps to manage your storybooks.",
+  description: "Sign in to Mon Petit Hero to manage your storybooks.",
 };
 
 export default function LoginPage() {

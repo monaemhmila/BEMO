@@ -4,11 +4,22 @@ import Link from "next/link";
 import { Faq } from "@/components/sections/faq";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { faqs } from "@/lib/data";
+
+function faqAnchor(question: string, index: number) {
+  return (
+    question
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || `faq-${index}`
+  );
+}
 
 export const metadata: Metadata = {
   title: "FAQs",
   description:
-    "Answers to the most common questions about ordering, personalising, shipping and refunds for WonderWraps storybooks.",
+    "Answers to the most common questions about ordering, personalising, shipping and refunds for Mon Petit Hero storybooks.",
 };
 
 export default function FaqsPage() {
@@ -24,9 +35,30 @@ export default function FaqsPage() {
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
             Everything you need to know about personalising, ordering and
-            receiving your WonderWraps books.
+            receiving your Mon Petit Hero books.
           </p>
         </div>
+
+        <section className="shell max-w-[880px] pb-4">
+          <Card className="p-6">
+            <h2 className="font-display text-lg font-bold text-violet-deep">
+              Topics in this page
+            </h2>
+            <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+              {faqs.map((faq, i) => (
+                <li key={faq.q}>
+                  <a
+                    href={`#${faqAnchor(faq.q, i)}`}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    {faq.q}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
 
         <Faq />
 

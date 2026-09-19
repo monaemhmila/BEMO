@@ -46,10 +46,10 @@ export default function ContactPage() {
                   <div>
                     <p className="font-display font-semibold text-violet-deep">Email us</p>
                     <a
-                      href="mailto:support@wonderwraps.com"
+                      href="mailto:support@monpetithero.shop"
                       className="text-sm text-primary hover:underline"
                     >
-                      support@wonderwraps.com
+                      support@monpetithero.shop
                     </a>
                   </div>
                 </div>

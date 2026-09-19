@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input";
 import { footerColumns } from "@/lib/data";
 
 const socials = [
-  { label: "Facebook", href: "https://www.facebook.com/WonderWrapss", Icon: Facebook },
-  { label: "Instagram", href: "https://www.instagram.com/wonderwraps/", Icon: Instagram },
-  { label: "TikTok", href: "https://www.tiktok.com/@wonderwraps.com", Icon: Music2 },
+  { label: "Facebook", href: "https://www.facebook.com/MonPetitHero", Icon: Facebook },
+  { label: "Instagram", href: "https://www.instagram.com/monpetithero/", Icon: Instagram },
+  { label: "TikTok", href: "https://www.tiktok.com/@monpetithero.shop", Icon: Music2 },
 ];
 
 const payments = ["Visa", "Mastercard", "Amex", "PayPal", "Apple Pay"];
@@ -29,7 +29,7 @@ export function SiteFooter() {
               <BookOpen className="size-5" aria-hidden />
             </span>
             <span className="font-display text-xl font-semibold text-white">
-              WonderWraps
+              Mon Petit Hero
             </span>
           </div>
           <p className="mt-4 max-w-[38ch] text-sm leading-relaxed">
@@ -112,7 +112,7 @@ export function SiteFooter() {
             </li>
           ))}
         </ul>
-        <p className="text-sm">WonderWraps © {new Date().getFullYear()} All rights reserved</p>
+        <p className="text-sm">Mon Petit Hero © {new Date().getFullYear()} All rights reserved</p>
       </div>
     </footer>
   );

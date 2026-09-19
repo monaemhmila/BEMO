@@ -186,7 +186,7 @@ export const faqs = [
   },
   {
     q: "Can I get a refund for my order?",
-    a: "Yes, you can receive a full refund if your book hasn't been printed yet, or a partial refund if it has been printed but not yet shipped. Once the book has been printed and shipped, we're unable to offer a refund. To request a refund contact us through our support page or by email at support@wonderwraps.com.",
+    a: "Yes, you can receive a full refund if your book hasn't been printed yet, or a partial refund if it has been printed but not yet shipped. Once the book has been printed and shipped, we're unable to offer a refund. To request a refund contact us through our support page or by email at support@monpetithero.shop.",
   },
   {
     q: "How long does shipping take?",
@@ -202,7 +202,7 @@ export const faqs = [
   },
   {
     q: "How can I reach customer support?",
-    a: "You can contact our customer support team anytime through our support page or by emailing support@wonderwraps.com.",
+    a: "You can contact our customer support team anytime through our support page or by emailing support@monpetithero.shop.",
   },
   {
     q: "What languages are your books available in?",
@@ -212,7 +212,7 @@ export const faqs = [
 
 export const footerColumns = [
   {
-    heading: "About WonderWraps",
+    heading: "About Mon Petit Hero",
     links: [
       { label: "Contact us", href: "/contact" },
       { label: "FAQs", href: "/faqs" },

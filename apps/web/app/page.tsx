@@ -6,6 +6,7 @@ import { BeforeAfter } from "@/components/sections/before-after";
 import { CharacterShowcase } from "@/components/sections/character-showcase";
 import { CareerDreams } from "@/components/sections/career-dreams";
 import { BrowseByAge } from "@/components/sections/browse-by-age";
+import { CustomStoryBanner } from "@/components/sections/custom-story-banner";
 import { Faq } from "@/components/sections/faq";
 import { FinalCta } from "@/components/sections/final-cta";
 import { SiteFooter } from "@/components/sections/site-footer";
@@ -53,6 +54,7 @@ export default function HomePage() {
 
       <CareerDreams />
       <BrowseByAge />
+      <CustomStoryBanner />
       <Faq />
       <FinalCta />
 

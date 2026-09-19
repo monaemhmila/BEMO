@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: "%s | Wonder Wraps",
   },
   description:
-    "Create unique kids' storybooks with WonderWraps. Upload photos and watch them become part of personalized stories your child will treasure forever.",
+    "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.",
   keywords: [
     "personalized storybooks",
     "custom books for kids",
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Personalized Books for Kids | Custom Storybooks - Wonder Wraps",
     description:
-      "Create unique kids' storybooks with WonderWraps. Upload photos and watch them become part of personalized stories your child will treasure forever.",
+      "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.",
     type: "website",
     siteName: "Wonderwraps",
   },

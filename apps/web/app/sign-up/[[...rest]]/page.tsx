@@ -5,7 +5,7 @@ import { AuthLoading } from "@/components/auth-loading";
 
 export const metadata: Metadata = {
   title: "Create account",
-  description: "Create your free WonderWraps account.",
+  description: "Create your free Mon Petit Hero account.",
 };
 
 export default function SignUpPage() {

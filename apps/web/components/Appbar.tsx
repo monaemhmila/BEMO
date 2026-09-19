@@ -40,7 +40,7 @@ export function Appbar() {
 
   // Immersive routes draw their own chrome: /admin (full-screen control center)
   // and /stories/<id> (full-screen book reader). The homepage is a storefront
-  // with its own sticky header (WonderWraps design). Skip the app bar there.
+  // with its own sticky header (Mon Petit Hero design). Skip the app bar there.
   const segments = (pathname ?? "").split("/").filter(Boolean);
   const isReader = segments[0] === "stories" && segments.length === 2 && segments[1] !== "new";
   const isImmersive = pathname === "/admin" || !!pathname?.startsWith("/admin/") || isReader;
@@ -71,7 +71,7 @@ export function Appbar() {
         <span className="rounded-md bg-white/15 px-1.5 py-0.5">EXTRA20</span>
       </div>
 
-      {/* Sticky WonderWraps header */}
+      {/* Sticky Mon Petit Hero header */}
       <div
         className={cn(
           "border-b border-border bg-white/90 backdrop-blur-md transition-shadow",
@@ -79,12 +79,12 @@ export function Appbar() {
         )}
       >
         <div className="shell flex h-[72px] items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2" aria-label="WonderWraps home">
+          <Link href="/" className="flex items-center gap-2" aria-label="Mon Petit Hero home">
             <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
               <BookOpen className="size-5" aria-hidden />
             </span>
             <span className="font-display text-xl font-semibold text-violet-deep">
-              WonderWraps
+              Mon Petit Hero
             </span>
           </Link>
 
@@ -159,7 +159,7 @@ export function Appbar() {
               <SheetContent side="right" className="w-[300px]">
                 <SheetHeader>
                   <SheetTitle className="font-display text-violet-deep">
-                    WonderWraps
+                    Mon Petit Hero
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col gap-1 px-4" aria-label="Mobile">

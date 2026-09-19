@@ -44,7 +44,7 @@ export default function StickersPage() {
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground">
               Colourful, durable stickers starring your child&apos;s world — the
-              perfect extra sprinkle on any WonderWraps order.
+              perfect extra sprinkle on any Mon Petit Hero order.
             </p>
           </div>
 

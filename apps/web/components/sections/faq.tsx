@@ -9,6 +9,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { faqs } from "@/lib/data";
 
+function faqAnchor(question: string, index: number) {
+  return (
+    question
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || `faq-${index}`
+  );
+}
+
 export function Faq() {
   return (
     <section className="bg-paper py-16 lg:py-20">
@@ -17,14 +26,20 @@ export function Faq() {
           Frequently asked questions
         </h2>
 
-        <Accordion type="single" collapsible className="mt-10 space-y-3">
+        <Accordion
+          type="single"
+          collapsible
+          defaultValue="item-0"
+          className="mt-10 space-y-3"
+        >
           {faqs.map((faq, i) => (
             <AccordionItem
               key={faq.q}
               value={`item-${i}`}
-              className="rounded-2xl border-0 bg-white px-5 shadow-[0_2px_0_0_rgba(31,22,54,.06)]"
+              id={faqAnchor(faq.q, i)}
+              className="rounded-2xl border-0 bg-white px-5 shadow-[0_2px_0_0_rgba(31,22,54,.06)] scroll-mt-28"
             >
-              <AccordionTrigger className="py-5 text-left font-display text-base font-semibold text-violet-deep hover:no-underline">
+              <AccordionTrigger className="py-5 text-left font-display text-base font-semibold text-violet-deep">
                 {faq.q}
               </AccordionTrigger>
               <AccordionContent className="pb-5 text-[15px] leading-relaxed text-muted-foreground">

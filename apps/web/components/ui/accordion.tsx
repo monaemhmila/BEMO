@@ -18,9 +18,15 @@ const AccordionItemContext = React.createContext<{ value: string }>({ value: "" 
 
 const Accordion = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { type?: "single"; collapsible?: boolean }
->(({ className, type, collapsible, children }, ref) => {
-  const [expanded, setExpanded] = React.useState<string | undefined>(undefined);
+  React.HTMLAttributes<HTMLDivElement> & {
+    type?: "single";
+    collapsible?: boolean;
+    defaultValue?: string;
+  }
+>(({ className, type, collapsible, defaultValue, children }, ref) => {
+  const [expanded, setExpanded] = React.useState<string | undefined>(
+    defaultValue
+  );
   const single = type === "single";
   const collapsibleMode = collapsible ?? true;
 
@@ -65,10 +71,11 @@ const AccordionTrigger = React.forwardRef<
           setExpanded(isOpen ? undefined : value);
         }}
         className={cn(
-          "flex flex-1 items-center justify-between py-4 font-medium transition-all hover:underline",
+          "flex flex-1 items-center justify-between py-4 font-medium transition-all cursor-pointer",
           className
         )}
         data-state={isOpen ? "open" : "closed"}
+        aria-expanded={isOpen}
         {...props}
         type="button"
       >

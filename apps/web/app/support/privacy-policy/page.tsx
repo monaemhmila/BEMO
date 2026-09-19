@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/sections/site-footer";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "How WonderWraps collects, uses and protects the personal details and photos you share with us.",
+    "How Mon Petit Hero collects, uses and protects the personal details and photos you share with us.",
 };
 
 export default function PrivacyPage() {
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
               </h2>
               <p className="mt-2">
                 You may request a copy, correction or deletion of your personal
-                data at any time by emailing support@wonderwraps.com.
+                data at any time by emailing support@monpetithero.shop.
               </p>
             </section>
           </div>

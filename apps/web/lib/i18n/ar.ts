@@ -2,13 +2,13 @@ export const arStorefront: Record<string, string> = {
   // ── Global / metadata ──────────────────────────────────────────────
   "Personalized Books for Kids | Custom Storybooks - Wonder Wraps":
     "كتب مخصصة للأطفال | قصص مخصصة - Wonder Wraps",
-  "Create unique kids' storybooks with WonderWraps. Upload photos and watch them become part of personalized stories your child will treasure forever.":
-    "أنشئ كتب قصص فريدة لأطفالك مع WonderWraps. ارفع الصور وشاهدها تتحول إلى حكايات مخصصة سيحتفظ بها طفلك إلى الأبد.",
+  "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.":
+    "أنشئ كتب قصص فريدة لأطفالك مع Mon Petit Hero. ارفع الصور وشاهدها تتحول إلى حكايات مخصصة سيحتفظ بها طفلك إلى الأبد.",
   Wonderwraps: "Wonderwraps",
-  "Sign in to WonderWraps to manage your storybooks.":
-    "سجّل الدخول إلى WonderWraps لإدارة كتب القصص الخاصة بك.",
-  "Create your free WonderWraps account.":
-    "أنشئ حسابك المجاني في WonderWraps.",
+  "Sign in to Mon Petit Hero to manage your storybooks.":
+    "سجّل الدخول إلى Mon Petit Hero لإدارة كتب القصص الخاصة بك.",
+  "Create your free Mon Petit Hero account.":
+    "أنشئ حسابك المجاني في Mon Petit Hero.",
 
   // ── Navigation / header ────────────────────────────────────────────
   Home: "الرئيسية",
@@ -50,7 +50,7 @@ export const arStorefront: Record<string, string> = {
   "Upload a photo, pick a story, and your child becomes the main character — printed, bound, and delivered to your door.":
     "ارفع صورة، اختر قصة، وسيصبح طفلك الشخصية الرئيسية — مطبوعة ومجلدة وتصل حتى باب منزلك.",
   "Create your book in minutes": "أنشئ كتابك في دقائق",
-  "How WonderWraps works": "كيف يعمل WonderWraps",
+  "How Mon Petit Hero works": "كيف يعمل Mon Petit Hero",
   "Pick a storybook": "اختر كتاب قصة",
   "Add your child's picture": "أضف صورة طفلك",
   "Preview and order": "معاينة وطلب",
@@ -99,8 +99,8 @@ export const arStorefront: Record<string, string> = {
   "Yes! We ship to over 200 countries and regions, so wherever you are, we'll make sure your order reaches you. Simply enter your shipping details at checkout, and we'll take care of the rest.":
     "نعم! نشحن إلى أكثر من 200 دولة ومنطقة، فأينما كنت سنضمن وصول طلبك إليك. فقط أدخل بيانات الشحن عند إتمام الطلب وسنتكفل بالباقي.",
   "Can I get a refund for my order?": "هل يمكنني استرداد أموالي؟",
-  "Yes, you can receive a full refund if your book hasn't been printed yet, or a partial refund if it has been printed but not yet shipped. Once the book has been printed and shipped, we're unable to offer a refund. To request a refund contact us through our support page or by email at support@wonderwraps.com.":
-    "نعم، يمكنك الحصول على استرداد كامل إذا لم يُطبع كتابك بعد، أو استرداد جزئي إذا طُبع ولم يُشحن بعد. وبمجرد طباعة الكتاب وشحنه، لا يمكننا تقديم استرداد. لطلب استرداد، تواصل معنا عبر صفحة الدعم أو عبر البريد الإلكتروني support@wonderwraps.com.",
+  "Yes, you can receive a full refund if your book hasn't been printed yet, or a partial refund if it has been printed but not yet shipped. Once the book has been printed and shipped, we're unable to offer a refund. To request a refund contact us through our support page or by email at support@monpetithero.shop.":
+    "نعم، يمكنك الحصول على استرداد كامل إذا لم يُطبع كتابك بعد، أو استرداد جزئي إذا طُبع ولم يُشحن بعد. وبمجرد طباعة الكتاب وشحنه، لا يمكننا تقديم استرداد. لطلب استرداد، تواصل معنا عبر صفحة الدعم أو عبر البريد الإلكتروني support@monpetithero.shop.",
   "How long does shipping take?": "كم تستغرق مدة الشحن؟",
   "Shipping times depend on the shipping method you choose at checkout. Standard shipping usually takes 10 to 30 business days, while express shipping typically arrives within 7 to 20 business days. Delivery times include only business days, so holidays or weekends may cause slight delays.":
     "تعتمد مدة الشحن على طريقة الشحن التي تختارها عند إتمام الطلب. يستغرق الشحن العادي عادة من 10 إلى 30 يوم عمل، بينما يصل الشحن السريع عادة خلال 7 إلى 20 يوم عمل. تشمل أوقات التسليم أيام العمل فقط، لذا قد تتسبب العطلات أو عطلات نهاية الأسبوع في تأخيرات بسيطة.",
@@ -113,21 +113,21 @@ export const arStorefront: Record<string, string> = {
   "After payment, you'll review and approve your book. If you're not happy with it, you can request changes, and our dedicated support team will be happy to assist you.":
     "بعد الدفع، ستُراجع كتابك وتوافق عليه. وإذا لم يعجبك، يمكنك طلب تعديلات وسيسعد فريق الدعم المخصص لدينا بمساعدتك.",
   "How can I reach customer support?": "كيف أتواصل مع دعم العملاء؟",
-  "You can contact our customer support team anytime through our support page or by emailing support@wonderwraps.com.":
-    "يمكنك التواصل مع فريق دعم العملاء في أي وقت عبر صفحة الدعم أو عبر البريد الإلكتروني support@wonderwraps.com.",
+  "You can contact our customer support team anytime through our support page or by emailing support@monpetithero.shop.":
+    "يمكنك التواصل مع فريق دعم العملاء في أي وقت عبر صفحة الدعم أو عبر البريد الإلكتروني support@monpetithero.shop.",
   "What languages are your books available in?":
     "بأي لغات تتوفر كتبكم؟",
   "Our books are currently available in English, Spanish, Portuguese (Brazil), Arabic, French, Turkish, German, Italian, Dutch and Albanian. We are actively working on adding more languages soon.":
     "كتبنا متوفرة حاليًا بالإنجليزية والإسبانية والبرتغالية (البرازيل) والعربية والفرنسية والتركية والألمانية والإيطالية والهولندية والألبانية. ونعمل بنشاط على إضافة المزيد من اللغات قريبًا.",
   "Need help?": "هل تحتاج إلى مساعدة؟",
-  "Everything you need to know about personalising, ordering and receiving your WonderWraps books.":
-    "كل ما تحتاج معرفته حول تخصيص وطلب واستلام كتب WonderWraps.",
+  "Everything you need to know about personalising, ordering and receiving your Mon Petit Hero books.":
+    "كل ما تحتاج معرفته حول تخصيص وطلب واستلام كتب Mon Petit Hero.",
   "Still have a question?": "هل ما زال لديك سؤال؟",
   "Our support team is happy to help — reach out any time.":
     "فريق الدعم لدينا يسعد بمساعدتك — تواصل معنا في أي وقت.",
 
   // ── Footer ─────────────────────────────────────────────────────────
-  "About WonderWraps": "عن WonderWraps",
+  "About Mon Petit Hero": "عن Mon Petit Hero",
   "Contact us": "اتصل بنا",
   FAQ: "الأسئلة الشائعة",
   FAQs: "الأسئلة الشائعة",
@@ -159,7 +159,7 @@ export const arStorefront: Record<string, string> = {
   "Personalised Books": "كتب مخصصة",
   "Browse personalised storybooks that make your child the hero. Choose from adventures, princess tales, space journeys and more.":
     "تصفح كتب قصص مخصصة تجعل طفلك البطل. اختر من بين المغامرات وحكايات الأميرات ورحلات الفضاء والمزيد.",
-  "WonderWraps collection": "مجموعة WonderWraps",
+  "Mon Petit Hero collection": "مجموعة Mon Petit Hero",
   "Personalised storybooks": "كتب قصص مخصصة",
   "Your child is the hero of every page. Pick a story, add their photo and name, and receive a beautifully printed book they'll treasure forever.":
     "طفلك هو بطل كل صفحة. اختر قصة، وأضف صورته واسمه، واحصل على كتاب مطبوع جميل سيحتفظ به طفلك إلى الأبد.",
@@ -199,8 +199,8 @@ export const arStorefront: Record<string, string> = {
     "مجموعات ملصقات مخصصة لفتاتك أو صغيرك — مطبوعة بشخصيات طفلك المفضلة وتُوصَل بحب.",
   "Sticker fun": "متعة الملصقات",
   "Personalised sticker packs": "مجموعات ملصقات مخصصة",
-  "Colourful, durable stickers starring your child's world — the perfect extra sprinkle on any WonderWraps order.":
-    "ملصقات ملونة متينة تعرض عالم طفلك — لمسة إضافية مثالية لأي طلب من WonderWraps.",
+  "Colourful, durable stickers starring your child's world — the perfect extra sprinkle on any Mon Petit Hero order.":
+    "ملصقات ملونة متينة تعرض عالم طفلك — لمسة إضافية مثالية لأي طلب من Mon Petit Hero.",
   "Pick a sticker pack": "اختر مجموعة ملصقات",
   "Choose the pack that matches your child's favourite characters.":
     "اختر المجموعة التي تتناسب مع شخصيات طفلك المفضلة.",
@@ -240,14 +240,14 @@ export const arStorefront: Record<string, string> = {
   "Back to support": "العودة إلى الدعم",
   "Last updated: January 2026": "آخر تحديث: يناير 2026",
   "1. The service": "1. الخدمة",
-  "WonderWraps.com sells personalised children's storybooks. Every book is created individually from details you provide, including your child's photo, name and age.":
-    "يبيع WonderWraps.com كتب قصص مخصصة للأطفال. يُنشأ كل كتاب بشكل فردي من التفاصيل التي تقدمها، بما في ذلك صورة طفلك واسمه وعمره.",
+  "monpetithero.shop sells personalised children's storybooks. Every book is created individually from details you provide, including your child's photo, name and age.":
+    "يبيع monpetithero.shop كتب قصص مخصصة للأطفال. يُنشأ كل كتاب بشكل فردي من التفاصيل التي تقدمها، بما في ذلك صورة طفلك واسمه وعمره.",
   "2. Orders & payment": "2. الطلبات والدفع",
   "All prices are shown in the currency you select. Payment is taken at checkout and your book is printed after you approve the preview. Each printed book order unlocks one extra free story generation on your account.":
     "تُعرض جميع الأسعار بالعملة التي تختارها. يُؤخذ الدفع عند إتمام الطلب ويُطبع كتابك بعد موافقتك على المعاينة. كل طلب كتاب مطبوع يفتح توليد قصة إضافية مجانية على حسابك.",
   "3. Refunds": "3. الاسترداد",
-  "You can receive a full refund if your book has not been printed yet, or a partial refund if it has been printed but not yet shipped. Once printed and shipped, we are unable to offer a refund. Contact us at support@wonderwraps.com to request one.":
-    "يمكنك الحصول على استرداد كامل إذا لم يُطبع كتابك بعد، أو استرداد جزئي إذا طُبع ولم يُشحن بعد. وبمجرد الطباعة والشحن، لا يمكننا تقديم استرداد. تواصل معنا على support@wonderwraps.com لطلب استرداد.",
+  "You can receive a full refund if your book has not been printed yet, or a partial refund if it has been printed but not yet shipped. Once printed and shipped, we are unable to offer a refund. Contact us at support@monpetithero.shop to request one.":
+    "يمكنك الحصول على استرداد كامل إذا لم يُطبع كتابك بعد، أو استرداد جزئي إذا طُبع ولم يُشحن بعد. وبمجرد الطباعة والشحن، لا يمكننا تقديم استرداد. تواصل معنا على support@monpetithero.shop لطلب استرداد.",
   "4. Shipping & duties": "4. الشحن والرسوم",
   "Standard shipping usually takes 10–30 business days; express takes 7–20 business days. Prices listed do not include taxes, customs duties or import fees, which are the recipient's responsibility.":
     "يستغرق الشحن العادي عادة من 10 إلى 30 يوم عمل، والشحن السريع من 7 إلى 20 يوم عمل. الأسعار المعروضة لا تشمل الضرائب أو الرسوم الجمركية أو رسوم الاستيراد، وهي مسؤولية المستلم.",
@@ -255,10 +255,10 @@ export const arStorefront: Record<string, string> = {
   "You retain all rights to the photos and details you provide. We only use them to create and print your order and never share them with third parties.":
     "تحتفظ بجميع الحقوق في الصور والبيانات التي تقدمها. نستخدمها فقط لإنشاء وطباعة طلبك ولا نشاركها أبدًا مع أطراف ثالثة.",
   "6. Contact": "6. التواصل",
-  "Questions about these terms? Reach us at support@wonderwraps.com.":
-    "لديك أسئلة حول هذه الشروط؟ تواصل معنا على support@wonderwraps.com.",
-  "The terms and conditions that apply to ordering personalised storybooks from WonderWraps.":
-    "الشروط والأحكام المطبقة على طلب كتب القصص المخصصة من WonderWraps.",
+  "Questions about these terms? Reach us at support@monpetithero.shop.":
+    "لديك أسئلة حول هذه الشروط؟ تواصل معنا على support@monpetithero.shop.",
+  "The terms and conditions that apply to ordering personalised storybooks from Mon Petit Hero.":
+    "الشروط والأحكام المطبقة على طلب كتب القصص المخصصة من Mon Petit Hero.",
 
   // ── Privacy Policy ─────────────────────────────────────────────────
   "1. What we collect": "1. ما الذي نجمعه",
@@ -274,10 +274,10 @@ export const arStorefront: Record<string, string> = {
   "Card payments are processed by trusted third-party payment providers. We do not store your full card details on our servers.":
     "تتم معالجة مدفوعات البطاقات بواسطة مزودي دفع موثوقين من جهات خارجية. لا نخزن بيانات بطاقتك كاملة على خوادمنا.",
   "5. Your rights": "5. حقوقك",
-  "You may request a copy, correction or deletion of your personal data at any time by emailing support@wonderwraps.com.":
-    "يمكنك طلب نسخة أو تصحيح أو حذف بياناتك الشخصية في أي وقت عبر البريد الإلكتروني support@wonderwraps.com.",
-  "How WonderWraps collects, uses and protects the personal details and photos you share with us.":
-    "كيف يجمع WonderWraps ويستخدم ويحمي المعلومات الشخصية والصور التي تشاركها معنا.",
+  "You may request a copy, correction or deletion of your personal data at any time by emailing support@monpetithero.shop.":
+    "يمكنك طلب نسخة أو تصحيح أو حذف بياناتك الشخصية في أي وقت عبر البريد الإلكتروني support@monpetithero.shop.",
+  "How Mon Petit Hero collects, uses and protects the personal details and photos you share with us.":
+    "كيف يجمع Mon Petit Hero ويستخدم ويحمي المعلومات الشخصية والصور التي تشاركها معنا.",
 
   // ── Contact ────────────────────────────────────────────────────────
   "We'd love to hear from you": "يسعدنا التواصل معك",
@@ -301,7 +301,7 @@ export const arStorefront: Record<string, string> = {
   "Send message": "إرسال الرسالة",
 
   // ── Blog ───────────────────────────────────────────────────────────
-  "The WonderWraps blog": "مدونة WonderWraps",
+  "The Mon Petit Hero blog": "مدونة Mon Petit Hero",
   "Stories behind the stories": "القصص وراء القصص",
   "Ideas, tips and behind-the-scenes peeks to help you raise little readers and big dreamers.":
     "أفكار ونصائح ولمحات من خلف الكواليس لتربية قرّاء صغار وحالمين كبار.",

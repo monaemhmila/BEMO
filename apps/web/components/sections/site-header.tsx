@@ -43,12 +43,12 @@ export function SiteHeader() {
       )}
     >
       <div className="shell flex h-[72px] items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2" aria-label="WonderWraps home">
+        <Link href="/" className="flex items-center gap-2" aria-label="Mon Petit Hero home">
           <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
             <BookOpen className="size-5" aria-hidden />
           </span>
           <span className="font-display text-xl font-semibold text-violet-deep">
-            WonderWraps
+            Mon Petit Hero
           </span>
         </Link>
 
@@ -95,7 +95,7 @@ export function SiteHeader() {
             <SheetContent side="right" className="w-[300px]">
               <SheetHeader>
                 <SheetTitle className="font-display text-violet-deep">
-                  WonderWraps
+                  Mon Petit Hero
                 </SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col gap-1 px-4" aria-label="Mobile">

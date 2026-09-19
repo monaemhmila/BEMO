@@ -10,7 +10,7 @@ export function HowItWorks() {
             Create your book in minutes
           </p>
           <h2 className="mt-2 font-display text-3xl font-bold text-violet-deep sm:text-4xl">
-            How WonderWraps works
+            How Mon Petit Hero works
           </h2>
         </div>
 

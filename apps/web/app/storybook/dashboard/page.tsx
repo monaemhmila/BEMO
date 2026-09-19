@@ -14,6 +14,7 @@ import {
   Truck,
   CheckCircle2,
   XCircle,
+  PenLine,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -206,7 +207,7 @@ export default function StorybookDashboardPage() {
       </header>
 
       {/* Quick Actions */}
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="p-6 border-border bg-gradient-to-br from-buttercup/15 to-blush/40">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-white rounded-2xl shadow-sm">
@@ -222,6 +223,27 @@ export default function StorybookDashboardPage() {
               <Link href="/storybook/create">
                 <Button className="mt-4 bg-primary text-white rounded-full">
                   Start Creating <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6 border-border bg-gradient-to-br from-violet-50 to-fuchsia-50">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-white rounded-2xl shadow-sm">
+              <PenLine className="w-6 h-6 text-violet-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display text-xl font-bold text-violet-deep">
+                Write Your Own Story
+              </h3>
+              <p className="text-muted-foreground text-sm mt-1">
+                Describe any idea and watch it become a unique illustrated book.
+              </p>
+              <Link href="/create-custom">
+                <Button className="mt-4 bg-violet-deep text-white rounded-full">
+                  No Template <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             </div>
@@ -361,11 +383,18 @@ export default function StorybookDashboardPage() {
               <p className="text-muted-foreground mb-4">
                 Create your first personalized storybook!
               </p>
-              <Link href="/storybook/create">
-                <Button className="bg-primary text-white rounded-full">
-                  <Sparkles className="w-4 h-4 mr-2" /> Create Story
-                </Button>
-              </Link>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link href="/storybook/create">
+                  <Button className="bg-primary text-white rounded-full">
+                    <Sparkles className="w-4 h-4 mr-2" /> Create Story
+                  </Button>
+                </Link>
+                <Link href="/create-custom">
+                  <Button variant="outline" className="rounded-full">
+                    <PenLine className="w-4 h-4 mr-2" /> Write My Own Story
+                  </Button>
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">

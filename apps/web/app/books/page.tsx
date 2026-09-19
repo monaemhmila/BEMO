@@ -20,7 +20,7 @@ export default async function BooksPage() {
           {/* Header */}
           <div className="pt-14 pb-8 text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
-              WonderWraps collection
+              Mon Petit Hero collection
             </span>
             <h1 className="mt-4 font-display text-4xl font-bold text-violet-deep sm:text-5xl">
               Personalised storybooks

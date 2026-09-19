@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export const metadata: Metadata = {
   title: "Support",
   description:
-    "Get help with your WonderWraps order: contact the team, read the FAQs, or review the terms and privacy policy.",
+    "Get help with your Mon Petit Hero order: contact the team, read the FAQs, or review the terms and privacy policy.",
 };
 
 const CARDS = [
@@ -87,10 +87,10 @@ export default function SupportPage() {
             <p className="text-muted-foreground">
               Need a human? Email us at{" "}
               <a
-                href="mailto:support@wonderwraps.com"
+                href="mailto:support@monpetithero.shop"
                 className="font-bold text-primary hover:underline"
               >
-                support@wonderwraps.com
+                support@monpetithero.shop
               </a>
             </p>
             <Button asChild variant="outline" size="lg" className="mt-5 rounded-full px-8 font-bold">

@@ -63,10 +63,12 @@ function processTextNode(node: Text, locale: Locale) {
   if (!node.parentElement || hasSkipAncestor(node.parentElement)) return;
 
   const current = node.data;
-  if (!current || !LATIN_RE.test(current)) return;
+  if (!current) return;
 
   if (!originalText.has(node)) originalText.set(node, current);
   const original = originalText.get(node) ?? current;
+
+  if (locale !== "en" && !LATIN_RE.test(original)) return;
 
   const record = appliedText.get(node);
   if (record && record.locale === locale && record.text === current) return;
@@ -91,10 +93,12 @@ function processElement(el: Element, locale: Locale) {
 
   for (const attr of ATTRS) {
     const current = el.getAttribute(attr);
-    if (!current || !LATIN_RE.test(current)) continue;
+    if (!current) continue;
 
     if (!originals.has(attr)) originals.set(attr, current);
     const original = originals.get(attr) ?? current;
+
+    if (locale !== "en" && !LATIN_RE.test(original)) continue;
 
     const target =
       locale === "en" ? original : translateText(original ?? "", locale);

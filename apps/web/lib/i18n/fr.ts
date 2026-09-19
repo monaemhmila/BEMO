@@ -2,13 +2,13 @@ export const frStorefront: Record<string, string> = {
   // ── Global / metadata ──────────────────────────────────────────────
   "Personalized Books for Kids | Custom Storybooks - Wonder Wraps":
     "Livres personnalisés pour enfants | Histoires sur mesure - Wonder Wraps",
-  "Create unique kids' storybooks with WonderWraps. Upload photos and watch them become part of personalized stories your child will treasure forever.":
-    "Créez des livres d'histoires uniques avec WonderWraps. Téléchargez des photos et regardez-les devenir des histoires personnalisées que votre enfant chérira pour toujours.",
+  "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.":
+    "Créez des livres d'histoires uniques avec Mon Petit Hero. Téléchargez des photos et regardez-les devenir des histoires personnalisées que votre enfant chérira pour toujours.",
   Wonderwraps: "Wonderwraps",
-  "Sign in to WonderWraps to manage your storybooks.":
-    "Connectez-vous à WonderWraps pour gérer vos livres d'histoires.",
-  "Create your free WonderWraps account.":
-    "Créez votre compte WonderWraps gratuitement.",
+  "Sign in to Mon Petit Hero to manage your storybooks.":
+    "Connectez-vous à Mon Petit Hero pour gérer vos livres d'histoires.",
+  "Create your free Mon Petit Hero account.":
+    "Créez votre compte Mon Petit Hero gratuitement.",
 
   // ── Navigation / header ────────────────────────────────────────────
   Home: "Accueil",
@@ -50,7 +50,7 @@ export const frStorefront: Record<string, string> = {
   "Upload a photo, pick a story, and your child becomes the main character — printed, bound, and delivered to your door.":
     "Téléchargez une photo, choisissez une histoire, et votre enfant devient le personnage principal — imprimé, relié et livré chez vous.",
   "Create your book in minutes": "Créez votre livre en quelques minutes",
-  "How WonderWraps works": "Comment fonctionne WonderWraps",
+  "How Mon Petit Hero works": "Comment fonctionne Mon Petit Hero",
   "Pick a storybook": "Choisissez une histoire",
   "Add your child's picture": "Ajoutez la photo de votre enfant",
   "Preview and order": "Aperçu et commande",
@@ -101,8 +101,8 @@ export const frStorefront: Record<string, string> = {
     "Oui ! Nous livrons dans plus de 200 pays et régions. Où que vous soyez, nous veillerons à ce que votre commande vous parvienne. Saisissez simplement vos coordonnées de livraison au moment du paiement, et nous nous occupons du reste.",
   "Can I get a refund for my order?":
     "Puis-je obtenir un remboursement pour ma commande ?",
-  "Yes, you can receive a full refund if your book hasn't been printed yet, or a partial refund if it has been printed but not yet shipped. Once the book has been printed and shipped, we're unable to offer a refund. To request a refund contact us through our support page or by email at support@wonderwraps.com.":
-    "Oui, vous pouvez obtenir un remboursement intégral si votre livre n'a pas encore été imprimé, ou un remboursement partiel s'il a été imprimé mais pas encore expédié. Une fois le livre imprimé et expédié, nous ne pouvons pas proposer de remboursement. Pour en demander un, contactez-nous via notre page d'assistance ou par e-mail à support@wonderwraps.com.",
+  "Yes, you can receive a full refund if your book hasn't been printed yet, or a partial refund if it has been printed but not yet shipped. Once the book has been printed and shipped, we're unable to offer a refund. To request a refund contact us through our support page or by email at support@monpetithero.shop.":
+    "Oui, vous pouvez obtenir un remboursement intégral si votre livre n'a pas encore été imprimé, ou un remboursement partiel s'il a été imprimé mais pas encore expédié. Une fois le livre imprimé et expédié, nous ne pouvons pas proposer de remboursement. Pour en demander un, contactez-nous via notre page d'assistance ou par e-mail à support@monpetithero.shop.",
   "How long does shipping take?":
     "Quels sont les délais de livraison ?",
   "Shipping times depend on the shipping method you choose at checkout. Standard shipping usually takes 10 to 30 business days, while express shipping typically arrives within 7 to 20 business days. Delivery times include only business days, so holidays or weekends may cause slight delays.":
@@ -117,21 +117,21 @@ export const frStorefront: Record<string, string> = {
     "Après le paiement, vous réviserez et validerez votre livre. S'il ne vous convient pas, vous pouvez demander des modifications et notre équipe d'assistance dédiée se fera un plaisir de vous aider.",
   "How can I reach customer support?":
     "Comment contacter le support client ?",
-  "You can contact our customer support team anytime through our support page or by emailing support@wonderwraps.com.":
-    "Vous pouvez contacter notre équipe de support client à tout moment via notre page d'assistance ou par e-mail à support@wonderwraps.com.",
+  "You can contact our customer support team anytime through our support page or by emailing support@monpetithero.shop.":
+    "Vous pouvez contacter notre équipe de support client à tout moment via notre page d'assistance ou par e-mail à support@monpetithero.shop.",
   "What languages are your books available in?":
     "Dans quelles langues vos livres sont-ils disponibles ?",
   "Our books are currently available in English, Spanish, Portuguese (Brazil), Arabic, French, Turkish, German, Italian, Dutch and Albanian. We are actively working on adding more languages soon.":
     "Nos livres sont actuellement disponibles en anglais, espagnol, portugais (Brésil), arabe, français, turc, allemand, italien, néerlandais et albanais. Nous travaillons activement à l'ajout de nouvelles langues.",
   "Need help?": "Besoin d'aide ?",
-  "Everything you need to know about personalising, ordering and receiving your WonderWraps books.":
-    "Tout ce que vous devez savoir sur la personnalisation, la commande et la réception de vos livres WonderWraps.",
+  "Everything you need to know about personalising, ordering and receiving your Mon Petit Hero books.":
+    "Tout ce que vous devez savoir sur la personnalisation, la commande et la réception de vos livres Mon Petit Hero.",
   "Still have a question?": "Vous avez encore une question ?",
   "Our support team is happy to help — reach out any time.":
     "Notre équipe d'assistance est ravie de vous aider — contactez-nous à tout moment.",
 
   // ── Footer ─────────────────────────────────────────────────────────
-  "About WonderWraps": "À propos de WonderWraps",
+  "About Mon Petit Hero": "À propos de Mon Petit Hero",
   "Contact us": "Contactez-nous",
   FAQ: "FAQ",
   FAQs: "FAQ",
@@ -164,7 +164,7 @@ export const frStorefront: Record<string, string> = {
   "Personalised Books": "Livres personnalisés",
   "Browse personalised storybooks that make your child the hero. Choose from adventures, princess tales, space journeys and more.":
     "Parcourez des livres d'histoires personnalisés qui font de votre enfant le héros. Choisissez parmi les aventures, les contes de princesses, les voyages dans l'espace et plus encore.",
-  "WonderWraps collection": "Collection WonderWraps",
+  "Mon Petit Hero collection": "Collection Mon Petit Hero",
   "Personalised storybooks": "Livres d'histoires personnalisés",
   "Your child is the hero of every page. Pick a story, add their photo and name, and receive a beautifully printed book they'll treasure forever.":
     "Votre enfant est le héros de chaque page. Choisissez une histoire, ajoutez sa photo et son nom, et recevez un magnifique livre imprimé qu'il chérira pour toujours.",
@@ -205,8 +205,8 @@ export const frStorefront: Record<string, string> = {
     "Des packs d'autocollants personnalisés pour votre fille ou votre garçon — imprimés avec les personnages préférés de votre enfant et livrés avec amour.",
   "Sticker fun": "Amusement stickers",
   "Personalised sticker packs": "Packs d'autocollants personnalisés",
-  "Colourful, durable stickers starring your child's world — the perfect extra sprinkle on any WonderWraps order.":
-    "Des autocollants colorés et durables mettant en scène l'univers de votre enfant — la touche parfaite pour toute commande WonderWraps.",
+  "Colourful, durable stickers starring your child's world — the perfect extra sprinkle on any Mon Petit Hero order.":
+    "Des autocollants colorés et durables mettant en scène l'univers de votre enfant — la touche parfaite pour toute commande Mon Petit Hero.",
   "Pick a sticker pack": "Choisissez un pack d'autocollants",
   "Choose the pack that matches your child's favourite characters.":
     "Choisissez le pack qui correspond aux personnages préférés de votre enfant.",
@@ -247,14 +247,14 @@ export const frStorefront: Record<string, string> = {
   "Back to support": "Retour à l'assistance",
   "Last updated: January 2026": "Dernière mise à jour : janvier 2026",
   "1. The service": "1. Le service",
-  "WonderWraps.com sells personalised children's storybooks. Every book is created individually from details you provide, including your child's photo, name and age.":
-    "WonderWraps.com vend des livres d'histoires personnalisés pour enfants. Chaque livre est créé individuellement à partir des informations que vous fournissez, notamment la photo, le nom et l'âge de votre enfant.",
+  "monpetithero.shop sells personalised children's storybooks. Every book is created individually from details you provide, including your child's photo, name and age.":
+    "monpetithero.shop vend des livres d'histoires personnalisés pour enfants. Chaque livre est créé individuellement à partir des informations que vous fournissez, notamment la photo, le nom et l'âge de votre enfant.",
   "2. Orders & payment": "2. Commandes et paiement",
   "All prices are shown in the currency you select. Payment is taken at checkout and your book is printed after you approve the preview. Each printed book order unlocks one extra free story generation on your account.":
     "Tous les prix s'affichent dans la devise que vous choisissez. Le paiement est effectué lors de la commande et votre livre est imprimé après votre validation de l'aperçu. Chaque commande de livre imprimé débloque une génération d'histoire gratuite supplémentaire sur votre compte.",
   "3. Refunds": "3. Remboursements",
-  "You can receive a full refund if your book has not been printed yet, or a partial refund if it has been printed but not yet shipped. Once printed and shipped, we are unable to offer a refund. Contact us at support@wonderwraps.com to request one.":
-    "Vous pouvez obtenir un remboursement intégral si votre livre n'a pas encore été imprimé, ou partiel s'il a été imprimé mais pas encore expédié. Une fois imprimé et expédié, nous ne pouvons pas offrir de remboursement. Contactez-nous à support@wonderwraps.com pour en faire la demande.",
+  "You can receive a full refund if your book has not been printed yet, or a partial refund if it has been printed but not yet shipped. Once printed and shipped, we are unable to offer a refund. Contact us at support@monpetithero.shop to request one.":
+    "Vous pouvez obtenir un remboursement intégral si votre livre n'a pas encore été imprimé, ou partiel s'il a été imprimé mais pas encore expédié. Une fois imprimé et expédié, nous ne pouvons pas offrir de remboursement. Contactez-nous à support@monpetithero.shop pour en faire la demande.",
   "4. Shipping & duties": "4. Expédition et taxes",
   "Standard shipping usually takes 10–30 business days; express takes 7–20 business days. Prices listed do not include taxes, customs duties or import fees, which are the recipient's responsibility.":
     "L'expédition standard prend généralement 10 à 30 jours ouvrés ; l'express 7 à 20 jours ouvrés. Les prix affichés ne comprennent pas les taxes, droits de douane ou frais d'importation, qui relèvent du destinataire.",
@@ -262,10 +262,10 @@ export const frStorefront: Record<string, string> = {
   "You retain all rights to the photos and details you provide. We only use them to create and print your order and never share them with third parties.":
     "Vous conservez tous les droits sur les photos et informations que vous fournissez. Nous ne les utilisons que pour créer et imprimer votre commande et ne les partageons jamais avec des tiers.",
   "6. Contact": "6. Contact",
-  "Questions about these terms? Reach us at support@wonderwraps.com.":
-    "Des questions sur ces conditions ? Contactez-nous à support@wonderwraps.com.",
-  "The terms and conditions that apply to ordering personalised storybooks from WonderWraps.":
-    "Les conditions générales applicables à la commande de livres d'histoires personnalisés chez WonderWraps.",
+  "Questions about these terms? Reach us at support@monpetithero.shop.":
+    "Des questions sur ces conditions ? Contactez-nous à support@monpetithero.shop.",
+  "The terms and conditions that apply to ordering personalised storybooks from Mon Petit Hero.":
+    "Les conditions générales applicables à la commande de livres d'histoires personnalisés chez Mon Petit Hero.",
 
   // ── Privacy Policy ─────────────────────────────────────────────────
   "1. What we collect": "1. Ce que nous collectons",
@@ -281,10 +281,10 @@ export const frStorefront: Record<string, string> = {
   "Card payments are processed by trusted third-party payment providers. We do not store your full card details on our servers.":
     "Les paiements par carte sont traités par des prestataires de paiement tiers de confiance. Nous ne stockons pas l'intégralité des données de votre carte sur nos serveurs.",
   "5. Your rights": "5. Vos droits",
-  "You may request a copy, correction or deletion of your personal data at any time by emailing support@wonderwraps.com.":
-    "Vous pouvez demander une copie, une correction ou la suppression de vos données personnelles à tout moment en envoyant un e-mail à support@wonderwraps.com.",
-  "How WonderWraps collects, uses and protects the personal details and photos you share with us.":
-    "Comment WonderWraps collecte, utilise et protège les informations personnelles et les photos que vous partagez avec nous.",
+  "You may request a copy, correction or deletion of your personal data at any time by emailing support@monpetithero.shop.":
+    "Vous pouvez demander une copie, une correction ou la suppression de vos données personnelles à tout moment en envoyant un e-mail à support@monpetithero.shop.",
+  "How Mon Petit Hero collects, uses and protects the personal details and photos you share with us.":
+    "Comment Mon Petit Hero collecte, utilise et protège les informations personnelles et les photos que vous partagez avec nous.",
 
   // ── Contact ────────────────────────────────────────────────────────
   "We'd love to hear from you": "Nous serions ravis de vous lire",
@@ -310,7 +310,7 @@ export const frStorefront: Record<string, string> = {
   "Send message": "Envoyer le message",
 
   // ── Blog ───────────────────────────────────────────────────────────
-  "The WonderWraps blog": "Le blog WonderWraps",
+  "The Mon Petit Hero blog": "Le blog Mon Petit Hero",
   "Stories behind the stories": "Les histoires derrière les histoires",
   "Ideas, tips and behind-the-scenes peeks to help you raise little readers and big dreamers.":
     "Des idées, des conseils et des aperçus des coulisses pour élever de petits lecteurs et de grands rêveurs.",

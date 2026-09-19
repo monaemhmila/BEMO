@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/sections/site-footer";
 export const metadata: Metadata = {
   title: "Terms & Conditions",
   description:
-    "The terms and conditions that apply to ordering personalised storybooks from WonderWraps.",
+    "The terms and conditions that apply to ordering personalised storybooks from Mon Petit Hero.",
 };
 
 export default function TermsPage() {
@@ -32,7 +32,7 @@ export default function TermsPage() {
                 1. The service
               </h2>
               <p className="mt-2">
-                WonderWraps.com sells personalised children&apos;s storybooks.
+                monpetithero.shop sells personalised children&apos;s storybooks.
                 Every book is created individually from details you provide,
                 including your child&apos;s photo, name and age.
               </p>
@@ -58,7 +58,7 @@ export default function TermsPage() {
                 You can receive a full refund if your book has not been printed
                 yet, or a partial refund if it has been printed but not yet
                 shipped. Once printed and shipped, we are unable to offer a
-                refund. Contact us at support@wonderwraps.com to request one.
+                refund. Contact us at support@monpetithero.shop to request one.
               </p>
             </section>
 
@@ -92,10 +92,10 @@ export default function TermsPage() {
               <p className="mt-2">
                 Questions about these terms? Reach us at{" "}
                 <a
-                  href="mailto:support@wonderwraps.com"
+                  href="mailto:support@monpetithero.shop"
                   className="font-bold text-primary hover:underline"
                 >
-                  support@wonderwraps.com
+                  support@monpetithero.shop
                 </a>
                 .
               </p>
