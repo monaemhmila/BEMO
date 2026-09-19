@@ -183,4 +183,13 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* Auth screens (login/sign-up) must still show their loading animation so
+     users get visible feedback while Clerk mounts and during submission. */
+  [data-auth-page] *,
+  [data-auth-page] *::before,
+  [data-auth-page] *::after {
+    animation-duration: 0.7s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
