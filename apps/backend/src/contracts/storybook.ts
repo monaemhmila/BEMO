@@ -38,6 +38,10 @@ export const STORYBOOK_IMAGE_ASPECT_RATIO = "1:1";
 export const A4_LANDSCAPE_WIDTH_PT = 841.89;
 export const A4_LANDSCAPE_HEIGHT_PT = 595.28;
 
+// Exact square page in PDF points (210 x 210 mm).
+export const STORYBOOK_PAGE_WIDTH_PT = 595.28;
+export const STORYBOOK_PAGE_HEIGHT_PT = 595.28;
+
 // Approximate print resolution: A4 landscape at 300 DPI.
 export const A4_LANDSCAPE_WIDTH_PX = 3508;
 export const A4_LANDSCAPE_HEIGHT_PX = 2480;
@@ -133,24 +137,24 @@ export function getPageComposition(pageNumber: number): PageComposition {
 }
 
 /**
- * Numeric text layout in PDF points for the A4 landscape page, driven only by
- * the page number so PDF and image generation stay perfectly in sync.
+ * Numeric text layout in PDF points for the 210x210 mm square page, driven
+ * only by the page number so PDF and image generation stay perfectly in sync.
  */
 export function getPageTextLayout(pageNumber: number): PageTextLayout {
   const composition = getPageComposition(pageNumber);
-  const width = A4_LANDSCAPE_WIDTH_PT;
-  const height = A4_LANDSCAPE_HEIGHT_PT;
+  const width = STORYBOOK_PAGE_WIDTH_PT;
+  const height = STORYBOOK_PAGE_HEIGHT_PT;
   const margin = 56;
 
   switch (composition.textPosition) {
     case "top-center":
       return {
         x: margin,
-        y: height * 0.12,
+        y: height * 0.1,
         width: width - margin * 2,
         align: "center",
-        fontSize: 62,
-        lineHeight: 66,
+        fontSize: 44,
+        lineHeight: 48,
         maxLines: 3,
         glowOpacity: 0.4,
         shadowOffsetX: 1.2,
@@ -160,11 +164,11 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
     case "bottom-left":
       return {
         x: margin,
-        y: height - 160,
+        y: height - 150,
         width: width * composition.textWidthPercent,
         align: "left",
-        fontSize: 20,
-        lineHeight: 26,
+        fontSize: 15,
+        lineHeight: 19,
         maxLines: 6,
         glowOpacity: 0.34,
         shadowOffsetX: 1.2,
@@ -174,11 +178,11 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
     case "bottom-right":
       return {
         x: width - margin - width * composition.textWidthPercent,
-        y: height - 160,
+        y: height - 150,
         width: width * composition.textWidthPercent,
         align: "left",
-        fontSize: 20,
-        lineHeight: 26,
+        fontSize: 15,
+        lineHeight: 19,
         maxLines: 6,
         glowOpacity: 0.34,
         shadowOffsetX: 1.2,
@@ -188,11 +192,11 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
     case "bottom-center":
       return {
         x: (width - width * composition.textWidthPercent) / 2,
-        y: height - 165,
+        y: height - 155,
         width: width * composition.textWidthPercent,
         align: "center",
-        fontSize: 21,
-        lineHeight: 27,
+        fontSize: 16,
+        lineHeight: 20,
         maxLines: 5,
         glowOpacity: 0.36,
         shadowOffsetX: 1.2,
@@ -202,11 +206,11 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
     case "center":
       return {
         x: (width - width * composition.textWidthPercent) / 2,
-        y: height * 0.6,
+        y: height * 0.58,
         width: width * composition.textWidthPercent,
         align: "center",
-        fontSize: 24,
-        lineHeight: 33,
+        fontSize: 18,
+        lineHeight: 23,
         maxLines: 3,
         glowOpacity: 0.38,
         shadowOffsetX: 1.2,
@@ -216,11 +220,11 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
     default:
       return {
         x: margin,
-        y: height - 160,
+        y: height - 150,
         width: width * 0.5,
         align: "left",
-        fontSize: 20,
-        lineHeight: 26,
+        fontSize: 15,
+        lineHeight: 19,
         maxLines: 6,
         glowOpacity: 0.34,
         shadowOffsetX: 1.2,

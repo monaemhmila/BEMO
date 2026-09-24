@@ -32,7 +32,7 @@ export const GROK_IMAGINE_EDIT_MODEL = "xai/grok-imagine-image/edit";
  * lush, layered environment instead of a sparse background.
  */
 export const RICH_BACKGROUND_DIRECTIVE =
-  "scene with VERY RICH background details: describe the setting, time of day, weather, lighting, colors,  and layered composition (background, midground, foreground) in lush, specific detail, plus any side creatures/characters and scenery elements.";
+  "";
 
 /**
  * Dedicated storybook image configuration so storybook-specific values are

@@ -5,7 +5,7 @@
  * illustrations. The default is photo-realistic (the original Grok Imagine
  * behaviour); the headline addition is the cartoon / Disney-Pixar look and a
  * handful of other child-friendly styles. Every style keeps the shared
- * guarantees (edge-to-edge composition, correct anatomy, textless canvas) that
+ * guarantees (COMPLETELY REPLACE THE REFERENCE BACKGROUND.The reference background is irrelevant and must be completely replaced.Generate the new environment across the entire canvas. composition, correct anatomy, textless canvas) that
  * the PDF layout and the parent experience rely on.
  */
 
@@ -23,7 +23,7 @@ export const DEFAULT_ART_STYLE = "photo-realistic";
  * phrasing, which is both clearer and safer for content checkers.
  */
 export const SUBJECT_IDENTITY_PROMPT =
-  "Use the supplied reference image to preserve the subject's recognizable appearance and identity. Keep the same facial features, skin tone, hair, eyes, age, and overall appearance. Transform the surrounding environment completely according to the scene description.";
+  "Use the supplied reference image to preserve the subject's recognizable appearance and identity. Keep the same facial features, skin tone, hair, eyes, age, and overall appearance.";
 
 /**
  * Style descriptor that leads every image prompt. The scene description is
@@ -83,7 +83,7 @@ const STYLE_MAP: Record<string, ArtStyleOption> = Object.fromEntries(
  * cropped or anatomically broken images.
  */
 export const STYLE_GUARANTEES =
-  "EDGE-TO-EDGE COMPOSITION: the artwork must completely fill the entire square 1:1 canvas from the extreme left edge to the extreme right edge and from the top edge to the bottom edge. No empty areas, no white space, no blank background, no side margins, no borders, no letterboxing, no pillarboxing. Extend the environment naturally all the way to every image edge; important subjects may extend close to or beyond the frame edges. Correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs. Completely textless: absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark. No deformed feet, no extra limbs, no mutated legs. The child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing).";
+  "COMPLETELY REPLACE THE REFERENCE BACKGROUND.The reference background is irrelevant and must be completely replaced.Generate the new environment across the entire canvas. COMPOSITION: the artwork must completely fill the entire square 1:1 canvas from the extreme left edge to the extreme right edge and from the top edge to the bottom edge. No empty areas, no white space, no blank background, no side margins, no borders, no letterboxing, no pillarboxing. Extend the environment naturally all the way to every image edge; important subjects may extend close to or beyond the frame edges. Correct human anatomy, normal well-formed feet and shoes, properly proportioned limbs. Completely textless: absolutely no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark. No deformed feet, no extra limbs, no mutated legs. The child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing).";
 
 export function getArtStyleOption(artStyle?: string): ArtStyleOption {
   return STYLE_MAP[artStyle || DEFAULT_ART_STYLE] ?? STYLE_MAP[DEFAULT_ART_STYLE];
