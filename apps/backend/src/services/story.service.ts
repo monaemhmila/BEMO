@@ -31,7 +31,7 @@ interface StoryPageInput {
   imageDescription: string;
   emotion?: string;
   pageType?: PageType;
-  imageAspectRatio?: "1:1";
+  imageAspectRatio?: "16:9";
 }
 
 interface StoryScript {
@@ -156,7 +156,7 @@ Return ONLY valid JSON:
           ...page,
           pageNumber,
           pageType: getPageType(pageNumber),
-          imageAspectRatio: "1:1" as const,
+          imageAspectRatio: "16:9" as const,
         };
       });
 
@@ -346,7 +346,7 @@ Return ONLY valid JSON:
           {
             prompt: scenePrompt,
             referenceImageUrl: referenceImageUrl || undefined,
-            aspectRatio: "1:1",
+            aspectRatio: "16:9",
             childName: options?.childName,
             position,
             artStyle: options?.artStyle,
@@ -690,7 +690,7 @@ Return ONLY valid JSON:
           emotion:
             page.emotion?.trim() || "curious",
           pageType: getPageType(pageNumber),
-          imageAspectRatio: "1:1" as const,
+          imageAspectRatio: "16:9" as const,
         };
       });
 

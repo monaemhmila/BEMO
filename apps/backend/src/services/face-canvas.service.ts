@@ -195,7 +195,7 @@ export class FaceCanvasService {
     const detected = await detectFaceWithScore(buffer);
     const faceCrop = await cropFaceWithMargin(buffer, detected);
 
-    // 210 x 210 mm square reference canvas at 300 DPI (matches the 1:1 PDF page).
+    // 210 x 210 mm square reference canvas at 300 DPI (matches the 16:9 PDF page).
     const canvasWidth = 2480;
     const canvasHeight = 2480;
 
@@ -208,16 +208,16 @@ export class FaceCanvasService {
     return {
       detection: detected
         ? {
-            found: true,
-            box: {
-              x: detected.x,
-              y: detected.y,
-              width: detected.width,
-              height: detected.height,
-            },
-            score: detected.score,
-            imageSize: { width: detected.imgW, height: detected.imgH },
-          }
+          found: true,
+          box: {
+            x: detected.x,
+            y: detected.y,
+            width: detected.width,
+            height: detected.height,
+          },
+          score: detected.score,
+          imageSize: { width: detected.imgW, height: detected.imgH },
+        }
         : { found: false },
       references: {
         center: `data:image/jpeg;base64,${centerBuf.toString("base64")}`,

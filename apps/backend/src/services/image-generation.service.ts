@@ -39,7 +39,7 @@ export const RICH_BACKGROUND_DIRECTIVE =
  * not scattered across the codebase.
  */
 export const STORYBOOK_IMAGE_CONFIG = {
-  aspectRatio: STORYBOOK_IMAGE_ASPECT_RATIO as "1:1",
+  aspectRatio: STORYBOOK_IMAGE_ASPECT_RATIO as "16:9",
   resolution: "2k" as const,
   outputFormat: "jpeg" as const,
   quality: "best" as const,
@@ -236,7 +236,7 @@ export class ImageGenerationService {
 
       num_images: 1,
 
-      // Square 1:1 frame (210x210 mm page); rendered directly by the PDF service.
+      // Square 16:9 frame (210x210 mm page); rendered directly by the PDF service.
       aspect_ratio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
 
       resolution: STORYBOOK_IMAGE_CONFIG.resolution,
