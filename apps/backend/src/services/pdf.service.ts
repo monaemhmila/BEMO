@@ -1,18 +1,31 @@
 import PDFDocument from "pdfkit";
-import sharp from "sharp";
 import path from "path";
 import { existsSync } from "fs";
 import {
-  A4_LANDSCAPE_WIDTH_PX,
-  A4_LANDSCAPE_HEIGHT_PX,
   getPageType,
   getPageTextLayout,
 } from "../contracts/storybook";
+import {
+  split16x9IntoTwoSquares,
+  SplitSquareImage,
+} from "../utils/split16x9IntoTwoSquares";
 
 interface StoryPagePayload {
   pageNumber: number;
   content: string;
   imageUrl?: string | null;
+}
+
+/**
+ * One PDF leaf rendered for a story page. A story page whose 16:9 image is
+ * available produces TWO leaves (left square then right square); a page
+ * without an image produces a single fallback leaf.
+ */
+interface PdfLeaf {
+  pageNumber: number;
+  content: string;
+  image: Buffer | null;
+  renderText: boolean;
 }
 
 interface StoryPayload {
@@ -72,15 +85,13 @@ const FONTS = {
 };
 
 /**
- * Download the URL and prepare it for full-bleed print:
- * - auto-rotate
- * - cover-crop to exactly 3508 x 2480 px (300 DPI A4 landscape) so the
- *   image fills the whole page with zero distortion or letterboxing
- * - upscale gracefully when the source is smaller than the print target
- * - center-of-attention cropping keeps the child (and the text-safe area,
- *   which image generation reserves) inside the final frame
+ * Download the already-generated 16:9 image and split it into two equal square
+ * crops (left + right), vertically centered, using the shared utility. The
+ * source image itself is never modified and no stretching/distortion happens:
+ * each square keeps the full original width and uses only square size worth of
+ * the vertical center. Cropping happens before any optional resizing.
  */
-async function fetchImageBuffer(url: string): Promise<Buffer | null> {
+async function fetchSplitPageImages(url: string): Promise<SplitSquareImage | null> {
   try {
     let rawBuffer: Buffer;
     if (url.startsWith("data:")) {
@@ -93,22 +104,9 @@ async function fetchImageBuffer(url: string): Promise<Buffer | null> {
       rawBuffer = Buffer.from(await response.arrayBuffer());
     }
 
-    const pipeline = sharp(rawBuffer)
-      .rotate()
-      .resize({
-        width: A4_LANDSCAPE_WIDTH_PX,
-        height: A4_LANDSCAPE_HEIGHT_PX,
-        fit: "cover",
-        position: "attention",
-        withoutEnlargement: false,
-        kernel: sharp.kernel.lanczos3,
-      });
-
-    return await pipeline
-      .jpeg({ quality: 90, mozjpeg: true })
-      .toBuffer();
+    return await split16x9IntoTwoSquares(rawBuffer);
   } catch (error) {
-    console.error("Failed to prepare story image for PDF:", error);
+    console.error("Failed to split story image into squares for PDF:", error);
     return null;
   }
 }
@@ -142,13 +140,27 @@ export class PDFService {
       }
     );
 
-    const images = await Promise.all(
-      sortedPages.map((page) => (page.imageUrl ? fetchImageBuffer(page.imageUrl) : Promise.resolve(null)))
+    const splitImages = await Promise.all(
+      sortedPages.map((page) => (page.imageUrl ? fetchSplitPageImages(page.imageUrl) : Promise.resolve(null)))
     );
+
+    // One story page becomes two PDF leaves (left square, then right square)
+    // when its 16:9 image is available. Pages without an image collapse to a
+    // single fallback leaf.
+    const leaves: PdfLeaf[] = [];
+    sortedPages.forEach((page, index) => {
+      const split = splitImages[index];
+      if (split) {
+        leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.left, renderText: true });
+        leaves.push({ pageNumber: page.pageNumber, content: "", image: split.right, renderText: false });
+      } else {
+        leaves.push({ pageNumber: page.pageNumber, content: page.content, image: null, renderText: true });
+      }
+    });
 
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
-        size: [PAGE_WIDTH, PAGE_HEIGHT], // horizontal A4 landscape
+        size: [PAGE_WIDTH, PAGE_HEIGHT], // 210mm square page
         margin: 0,
         bufferPages: true,
         info: {
@@ -166,24 +178,25 @@ export class PDFService {
       this.registerFonts(doc);
       // Page 1 is the full-bleed cover; page 15 the emotional ending and
       // page 16 the closing have their own centered layouts. Everything in
-      // between is a regular story page.
-      sortedPages.forEach((page, index) => {
+      // between is a regular story page. Each leaf uses a square crop of the
+      // generated 16:9 image drawn full-bleed into the square page.
+      leaves.forEach((leaf, index) => {
         if (index > 0) {
           doc.addPage();
         }
-        const pageType = getPageType(page.pageNumber);
+        const pageType = getPageType(leaf.pageNumber);
         switch (pageType) {
           case "cover":
-            this.renderCoverPage(doc, page, images[index], story.title);
+            this.renderCoverPage(doc, leaf, story.title);
             break;
           case "ending":
-            this.renderEndingPage(doc, page, images[index]);
+            this.renderEndingPage(doc, leaf);
             break;
           case "closing":
-            this.renderClosingPage(doc, page, images[index]);
+            this.renderClosingPage(doc, leaf);
             break;
           default:
-            this.renderStoryPage(doc, page, images[index]);
+            this.renderStoryPage(doc, leaf);
         }
       });
       doc.end();
@@ -238,59 +251,59 @@ export class PDFService {
    */
   private renderCoverPage(
     doc: PDFKit.PDFDocument,
-    page: StoryPagePayload,
-    image: Buffer | null,
+    leaf: PdfLeaf,
     title: string
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "cover");
-    this.drawPageImage(doc, image, width, height);
-    this.drawCoverTitle(doc, title, width);
+    this.drawPageImage(doc, leaf.image, width, height);
+    if (leaf.renderText) {
+      this.drawCoverTitle(doc, title, width);
+    }
   }
 
   /**
-   * Regular story page (pages 2-14): full-bleed illustration, story text
-   * placed in the deterministic text-safe area for this page number.
+   * Regular story page (pages 2-14): full-bleed square illustration, story
+   * text placed in the deterministic text-safe area for this page number.
    */
   private renderStoryPage(
     doc: PDFKit.PDFDocument,
-    page: StoryPagePayload,
-    image: Buffer | null
+    leaf: PdfLeaf
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
-    this.drawPageImage(doc, image, width, height);
-    this.drawStoryText(doc, page.pageNumber, page.content);
+    this.drawPageImage(doc, leaf.image, width, height);
+    if (leaf.renderText) {
+      this.drawStoryText(doc, leaf.pageNumber, leaf.content);
+    }
   }
 
   /**
-   * Emotional ending (page 15): full-bleed illustration with the closing
+   * Emotional ending (page 15): full-bleed square illustration with the closing
    * thought placed at the bottom-center text-safe area.
    */
   private renderEndingPage(
     doc: PDFKit.PDFDocument,
-    page: StoryPagePayload,
-    image: Buffer | null
+    leaf: PdfLeaf
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
-    this.drawPageImage(doc, image, width, height);
-    this.drawStoryText(doc, page.pageNumber, page.content);
+    this.drawPageImage(doc, leaf.image, width, height);
+    this.drawStoryText(doc, leaf.pageNumber, leaf.content);
   }
 
   /**
-   * Closing page (page 16): full-bleed illustration with a short, warm
+   * Closing page (page 16): full-bleed square illustration with a short, warm
    * goodbye centered in the lower middle of the page.
    */
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
-    page: StoryPagePayload,
-    image: Buffer | null
+    leaf: PdfLeaf
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
-    this.drawPageImage(doc, image, width, height);
-    this.drawStoryText(doc, page.pageNumber, page.content);
+    this.drawPageImage(doc, leaf.image, width, height);
+    this.drawStoryText(doc, leaf.pageNumber, leaf.content);
   }
 
   /**
