@@ -1,4 +1,6 @@
 import { Router } from "express";
+import fs from "fs";
+import path from "path";
 import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { adminAuthMiddleware } from "../middleware/adminAuth";
@@ -172,8 +174,11 @@ router.delete("/users/:id", async (req, res) => {
     // Delete in order to respect FK constraints
     const userStories = await prismaClient.story.findMany({ where: { userId: id }, select: { id: true } });
     for (const story of userStories) {
+      await prismaClient.order.deleteMany({ where: { storyId: story.id } });
+      await prismaClient.storyAnalytics.deleteMany({ where: { storyId: story.id } });
       await prismaClient.storyPage.deleteMany({ where: { storyId: story.id } });
     }
+    await prismaClient.order.deleteMany({ where: { userId: id } });
     await prismaClient.story.deleteMany({ where: { userId: id } });
     await prismaClient.model.deleteMany({ where: { userId: id } });
     await prismaClient.user.delete({ where: { id } });
@@ -331,8 +336,15 @@ router.get("/stories", async (req, res) => {
 router.delete("/story/:id", async (req, res) => {
   const storyId = req.params.id;
   try {
+    await prismaClient.order.deleteMany({ where: { storyId } });
+    await prismaClient.storyAnalytics.deleteMany({ where: { storyId } });
     await prismaClient.storyPage.deleteMany({ where: { storyId } });
     await prismaClient.story.delete({ where: { id: storyId } });
+    try {
+      fs.unlinkSync(path.join(process.cwd(), "assets", "pdfs", `${storyId}.pdf`));
+    } catch {
+      // PDF may not exist on disk; nothing to clean up
+    }
     logger.info({ storyId }, "Admin deleted story");
     res.json({ success: true });
   } catch (error) {

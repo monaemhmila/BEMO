@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import cors from "cors";
 import compression from "compression";
 import helmet from "helmet";
@@ -105,6 +106,9 @@ export function createApp() {
   app.use("/simple-storybook", simpleStorybookRouter);
   app.use("/custom-story", customStoryRouter);
   app.use("/analytics", analyticsRouter);
+
+  // Serve generated PDFs saved to assets/pdfs (e.g. /assets/pdfs/{storyId}.pdf)
+  app.use("/assets/pdfs", express.static(path.join(process.cwd(), "assets", "pdfs")));
 
   app.use(notFoundHandler);
   app.use(sentryErrorHandler());

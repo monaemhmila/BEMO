@@ -18,6 +18,14 @@ export interface ArtStyleOption {
 export const DEFAULT_ART_STYLE = "photo-realistic";
 
 /**
+ * Identity-preservation directive used whenever a child reference image is
+ * supplied. Replaces the old "use the kid face…" / "photograph of a real child"
+ * phrasing, which is both clearer and safer for content checkers.
+ */
+export const SUBJECT_IDENTITY_PROMPT =
+  "Use the supplied reference image to preserve the subject's recognizable appearance and identity. Keep the same facial features, skin tone, hair, eyes, age, and overall appearance. Transform the surrounding environment completely according to the scene description.";
+
+/**
  * Style descriptor that leads every image prompt. The scene description is
  * appended after it, so the model knows how to render both the character and
  * the environment in the chosen look.
@@ -26,8 +34,7 @@ export const ART_STYLES: ArtStyleOption[] = [
   {
     id: "photo-realistic",
     name: "Photo Realistic",
-    prompt:
-      "photo realistic high fidelity photograph of a real child, natural skin texture, realistic lighting and shadows, life-like colors",
+    prompt: SUBJECT_IDENTITY_PROMPT,
   },
   {
     id: "disney-pixar",

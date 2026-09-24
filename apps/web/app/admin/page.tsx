@@ -237,7 +237,7 @@ function TrialsEditor({ user, onSave, onClose }: { user: AdminUser; onSave: (id:
 
 // ─── User Detail Drawer ───────────────────────────────────────────────────────
 
-function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: AdminUser; onClose: () => void; onDeleteUser: (id: string) => void; onEditTrials: (user: AdminUser) => void }) {
+function UserDrawer({ user, onClose, onDeleteUser, onEditTrials, onDownloadPdf }: { user: AdminUser; onClose: () => void; onDeleteUser: (id: string) => void; onEditTrials: (user: AdminUser) => void; onDownloadPdf: (id: string, title: string) => void }) {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 flex justify-end" onClick={onClose}>
       <div className="w-full max-w-lg bg-white h-full shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
@@ -305,9 +305,6 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: Admin
               </h4>
               <div className="space-y-2">
                 {user.stories.map((s) => {
-                  const pdfLink = s.pdfUrl
-                    ? (s.pdfUrl.startsWith("http") ? s.pdfUrl : `${BACKEND_URL}${s.pdfUrl}`)
-                    : `${BACKEND_URL}/admin/story/${s.id}/pdf`;
                   return (
                     <div key={s.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
                       <div>
@@ -316,16 +313,13 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials }: { user: Admin
                       </div>
                       <div className="flex items-center gap-2">
                         <StatusBadge status={s.status} />
-                        <a
-                          href={pdfLink}
-                          target="_blank"
-                          rel="noreferrer"
-                          download
+                        <button
+                          onClick={() => onDownloadPdf(s.id, s.title)}
                           className="px-2 py-1 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors"
                           title="Download Full Story PDF"
                         >
                           <Download className="w-3 h-3" /> PDF
-                        </a>
+                        </button>
                       </div>
                     </div>
                   );
@@ -1035,11 +1029,12 @@ function PaymentBadge({ status }: { status: string }) {
   );
 }
 
-function OrdersTab({ orders, summary, authHeaders, onChanged }: {
+function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
   orders: AdminOrder[];
   summary: OrdersSummary | null;
   authHeaders: () => Promise<Record<string, string>>;
   onChanged: () => void;
+  onDownloadPdf: (id: string, title: string) => void;
 }) {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -1130,16 +1125,13 @@ function OrdersTab({ orders, summary, authHeaders, onChanged }: {
                       <a href={`/stories/${o.story.id}`} target="_blank" rel="noreferrer" className="text-white/80 hover:text-white text-xs font-medium underline-offset-2 hover:underline">
                         {o.story.title}
                       </a>
-                      <a
-                        href={o.story.pdfUrl ? (o.story.pdfUrl.startsWith("http") ? o.story.pdfUrl : `${BACKEND_URL}${o.story.pdfUrl}`) : `${BACKEND_URL}/admin/story/${o.story.id}/pdf`}
-                        target="_blank"
-                        rel="noreferrer"
-                        download
+                      <button
+                        onClick={() => onDownloadPdf(o.story.id, o.story.title)}
                         className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded text-[10px] font-bold flex items-center gap-1 transition-colors"
                         title="Download Order PDF"
                       >
                         <Download className="w-3 h-3" /> PDF
-                      </a>
+                      </button>
                     </div>
                     {o.story.childName && <p className="text-white/30 text-xs">For: {o.story.childName}</p>}
                   </td>
@@ -1284,6 +1276,28 @@ export default function AdminPage() {
       console.error(error);
     } finally {
       setPdfPreviewLoading(false);
+    }
+  };
+
+  const handleDownloadStoryPdf = async (storyId: string, title: string) => {
+    try {
+      const headers = await authHeaders();
+      const response = await axios.get(`${BACKEND_URL}/admin/story/${storyId}/pdf`, {
+        headers,
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${title.replace(/[\\/:*?"<>|]+/g, "-").trim() || "storybook"}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Failed to download story PDF");
+      console.error(error);
     }
   };
 
@@ -1460,6 +1474,7 @@ export default function AdminPage() {
           onClose={() => setSelectedUser(null)}
           onDeleteUser={handleDeleteUser}
           onEditTrials={(u) => { setSelectedUser(null); setTrialEditorUser(u); }}
+          onDownloadPdf={handleDownloadStoryPdf}
         />
       )}
       {editingStoryId && (
@@ -1887,17 +1902,14 @@ export default function AdminPage() {
                             <td className="py-3.5 px-4 text-white/40 text-xs">{timeAgo(s.createdAt)}</td>
                             <td className="py-3.5 px-4">
                               <div className="flex items-center justify-end gap-2">
-                                <a
-                                  href={s.pdfUrl ? (s.pdfUrl.startsWith("http") ? s.pdfUrl : `${BACKEND_URL}${s.pdfUrl}`) : `${BACKEND_URL}/admin/story/${s.id}/pdf`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  download
+                                <button
+                                  onClick={() => handleDownloadStoryPdf(s.id, s.title)}
                                   className="px-2.5 py-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold"
                                   title="Download Generated Story PDF"
                                 >
                                   <Download className="w-3.5 h-3.5" />
                                   PDF
-                                </a>
+                                </button>
                                 <button onClick={() => setEditingStoryId(s.id)} className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors" title="Edit Story">
                                   <PencilLine className="w-3.5 h-3.5" />
                                 </button>
@@ -1934,6 +1946,7 @@ export default function AdminPage() {
                 summary={orderSummary}
                 authHeaders={authHeaders}
                 onChanged={fetchAll}
+                onDownloadPdf={handleDownloadStoryPdf}
               />
             )}
 

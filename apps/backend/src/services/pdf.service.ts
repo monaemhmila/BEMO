@@ -7,7 +7,6 @@ import {
   A4_LANDSCAPE_HEIGHT_PT,
   A4_LANDSCAPE_WIDTH_PX,
   A4_LANDSCAPE_HEIGHT_PX,
-  STORYBOOK_PAGE_COUNT,
   getPageType,
   getPageTextLayout,
 } from "../contracts/storybook";
@@ -119,10 +118,10 @@ export class PDFService {
   private readonly customFontsAvailable = Object.values(FONTS).every(existsSync);
 
   async generateStorybookPdf(story: StoryPayload, pages: StoryPagePayload[]): Promise<Buffer> {
-    // Always render exactly STORYBOOK_PAGE_COUNT pages: keep the first page for
-    // each page number 1..16 in order, ignore any extra pages that may exist in
-    // an old story, and pad any gaps with blank placeholders so the book is
-    // always the same 16-page layout.
+    // Render exactly the pages provided for this story: keep the first page for
+    // each page number in order, ignore any duplicate/extra pages that may exist
+    // in an old story, and pad any gaps with blank placeholders so the book layout
+    // always matches the generated story page count.
     const byPageNumber = new Map<number, StoryPagePayload>();
     [...pages]
       .sort((a, b) => a.pageNumber - b.pageNumber)
@@ -131,7 +130,7 @@ export class PDFService {
       });
 
     const sortedPages: StoryPagePayload[] = Array.from(
-      { length: STORYBOOK_PAGE_COUNT },
+      { length: Math.max(0, ...[...byPageNumber.keys()]) },
       (_, index) => {
         const pageNumber = index + 1;
         return (

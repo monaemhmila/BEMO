@@ -132,21 +132,24 @@ Return ONLY valid JSON:
   ]
 }
 `;
-    return this.withPageComposition(await this.invokeFal(prompt));
+    return this.withPageComposition(await this.invokeLLM(prompt));
   }
 
   /**
    * Attach the deterministic page composition so every script page already
    * carries its pageType, textPosition and aspect ratio for image + PDF.
-   * Also normalizes the script to exactly STORYBOOK_PAGE_COUNT pages: any
+   * Also normalizes the script to exactly `expectedPageCount` pages: any
    * extra pages from the model are dropped and page numbers are renumbered
-   * 1..16 so the book layout is always identical.
+   * 1..N so the book layout is always identical for a given length.
    */
-  private withPageComposition(script: StoryScript): StoryScript {
+  private withPageComposition(
+    script: StoryScript,
+    expectedPageCount: number = STORYBOOK_PAGE_COUNT
+  ): StoryScript {
     const ordered = [...script.pages]
       .slice()
       .sort((a, b) => a.pageNumber - b.pageNumber)
-      .slice(0, STORYBOOK_PAGE_COUNT)
+      .slice(0, expectedPageCount)
       .map((page, index) => {
         const pageNumber = index + 1;
         return {
@@ -227,7 +230,10 @@ Return ONLY valid JSON:
   ]
 }
 `;
-    return this.withPageComposition(await this.invokeFal(prompt));
+    return this.withPageComposition(
+      await this.invokeLLM(prompt),
+      pageCount
+    );
   }
 
   /**
@@ -495,86 +501,24 @@ Return ONLY valid JSON:
   }
 
   /**
-   * Invoke LLM for story generation.
-   * OpenAI is used first, Fal.ai is the fallback.
+   * Invoke LLM for story generation via OpenAI only.
    */
-  private async invokeFal(
+  private async invokeLLM(
     prompt: string
   ): Promise<StoryScript> {
     const openAiKey = env.OPENAI_API_KEY;
 
-    if (openAiKey) {
-      try {
-        return await this.invokeOpenAI(
-          prompt,
-          openAiKey
-        );
-      } catch (err) {
-        logger.warn(
-          { error: err },
-          "OpenAI generation failed, falling back to Fal.ai LLM"
-        );
-      }
-    }
-
-    try {
-      logger.info(
-        "Generating story script with Fal.ai LLM"
-      );
-
-      const result = await fal.subscribe(
-        "fal-ai/any-llm",
-        {
-          input: {
-            prompt,
-            max_tokens: 3000,
-            temperature: 0.7,
-          } as any,
-        }
-      );
-
-      const rawOutput =
-        (result.data as any).output ||
-        (result.data as any).text ||
-        (result.data as any).response ||
-        "";
-
-      const jsonMatch =
-        rawOutput.match(
-          /```json\s*([\s\S]*?)\s*```/
-        ) ||
-        rawOutput.match(
-          /```\s*([\s\S]*?)\s*```/
-        ) || [null, rawOutput];
-
-      const jsonPayload = (jsonMatch[1] || rawOutput)
-        .replace(/```json\n?|```/g, "")
-        .trim();
-
-      const parsed = JSON.parse(
-        jsonPayload
-      ) as StoryScript;
-
-      if (
-        !parsed.title ||
-        !Array.isArray(parsed.pages)
-      ) {
-        throw new Error(
-          "Invalid story structure from Fal.ai LLM"
-        );
-      }
-
-      return parsed;
-    } catch (error) {
+    if (!openAiKey) {
       logger.error(
-        { error },
-        "Story script generation failed on both OpenAI and Fal.ai"
+        "Story generation: OPENAI_API_KEY is not configured"
       );
 
       throw new Error(
-        "Story generation failed - OpenAI and Fal.ai LLM both unavailable"
+        "OpenAI API key is not configured"
       );
     }
+
+    return await this.invokeOpenAI(prompt, openAiKey);
   }
 
   /**
@@ -680,15 +624,19 @@ Return ONLY valid JSON:
   }
 
   /**
-     * Every story is a fixed landscape book with exactly 16 pages: page 1 is
-     * the cover, pages 2-14 carry the story, page 15 the emotional ending and
-     * page 16 the closing. The selected story length no longer affects the
-     * number of pages.
-     */
+   * Page count for a selected story length.
+   */
   private getPageCount(
-    _length: PersonalizedStoryInput["storyLength"]
+    length: PersonalizedStoryInput["storyLength"]
   ): number {
-    return STORYBOOK_PAGE_COUNT;
+    switch (length) {
+      case "medium":
+        return 8;
+      case "long":
+        return 12;
+      default:
+        return STORYBOOK_PAGE_COUNT; // short = 5
+    }
   }
 
   /**

@@ -10,7 +10,6 @@
  * prompt is defined below so the two generation paths stay independent.
  */
 
-import { fal } from "@fal-ai/client";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { getPageType, PageType } from "../contracts/storybook";
@@ -87,7 +86,7 @@ The "imageDescription" field must ALWAYS be written in English (it is used later
 
 For every page:
 - Write the story text with warmth, charm and age-appropriate vocabulary for a ${input.childAge}-year-old.
-- Write a clear, visual "imageDescription" of the ENVIRONMENT and any side creatures/characters (vibrant colors, beautiful lighting, engaging scenery). Put ${input.childName} in the middle of the action, actively doing things in the scene.
+- Write a clear, visual "imageDescription" of the scene with VERY RICH background details: describe the setting, time of day, weather, lighting, colors,  and layered composition (background, midground, foreground) in lush, specific detail, plus any side creatures/characters and scenery elements. Put ${input.childName} in the middle of the action, actively doing things in the scene.
 - Do NOT include text, letters, signs, billboards, book titles, logos or speech bubbles in the imageDescription, and never render any story text inside the image.
 - Never use the child's name inside the imageDescription.
 - Keep the hero fully clothed with long trousers/pants (never shorts or bare legs).
@@ -132,8 +131,8 @@ function withPageComposition(script: CustomStoryScript): CustomStoryScript {
 }
 
 /**
- * Generate a template-free story script from the parent's free-form brief.
- * OpenAI is tried first; Fal.ai LLM is the automatic fallback.
+ * Generate a template-free story script from the parent's free-form brief
+ * using OpenAI only.
  */
 export async function generateCustomStoryScript(
   input: CustomStoryInput
@@ -141,51 +140,12 @@ export async function generateCustomStoryScript(
   const prompt = buildCustomStoryPrompt(input);
   const openAiKey = env.OPENAI_API_KEY;
 
-  if (openAiKey) {
-    try {
-      return withPageComposition(await invokeOpenAI(prompt, openAiKey));
-    } catch (err) {
-      logger.warn({ error: err }, "Custom story: OpenAI failed, falling back to Fal.ai LLM");
-    }
+  if (!openAiKey) {
+    logger.error("Custom story: OPENAI_API_KEY is not configured");
+    throw new Error("OpenAI API key is not configured");
   }
 
-  try {
-    logger.info("Custom story: generating script with Fal.ai LLM");
-
-    const result = await fal.subscribe("fal-ai/any-llm", {
-      input: {
-        prompt,
-        max_tokens: 3000,
-        temperature: 0.7,
-      } as any,
-    });
-
-    const rawOutput =
-      (result.data as any).output ||
-      (result.data as any).text ||
-      (result.data as any).response ||
-      "";
-
-    const jsonMatch =
-      rawOutput.match(/```json\s*([\s\S]*?)\s*```/) ||
-      rawOutput.match(/```\s*([\s\S]*?)\s*```/) ||
-      [null, rawOutput];
-
-    const jsonPayload = (jsonMatch[1] || rawOutput)
-      .replace(/```json\n?|```/g, "")
-      .trim();
-
-    const parsed = JSON.parse(jsonPayload) as CustomStoryScript;
-
-    if (!parsed.title || !Array.isArray(parsed.pages)) {
-      throw new Error("Invalid story structure from Fal.ai LLM");
-    }
-
-    return withPageComposition(parsed);
-  } catch (error) {
-    logger.error({ error }, "Custom story script generation failed on all providers");
-    throw new Error("Custom story generation failed - OpenAI and Fal.ai LLM both unavailable");
-  }
+  return withPageComposition(await invokeOpenAI(prompt, openAiKey));
 }
 
 /**

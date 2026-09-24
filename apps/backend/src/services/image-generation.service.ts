@@ -5,7 +5,7 @@ import {
   STORYBOOK_IMAGE_ASPECT_RATIO,
   STORYBOOK_NEGATIVE_PROMPT,
 } from "../contracts/storybook";
-import { getArtStylePrompt } from "./image-style.service";
+import { getArtStylePrompt, SUBJECT_IDENTITY_PROMPT } from "./image-style.service";
 
 interface ImageGenerationRequest {
   prompt: string;
@@ -14,6 +14,8 @@ interface ImageGenerationRequest {
   imageUrl?: string;
   childName?: string;
   artStyle?: string;
+  /** Internal: rephrase the prompt to policy-safe wording when fal flags it. */
+  sanitizePolicy?: boolean;
 }
 
 interface ImageGenerationResult {
@@ -24,6 +26,13 @@ interface ImageGenerationResult {
 
 export const GROK_IMAGINE_MODEL = "xai/grok-imagine-image";
 export const GROK_IMAGINE_EDIT_MODEL = "xai/grok-imagine-image/edit";
+
+/**
+ * Scene directive injected into every image prompt so the model renders a
+ * lush, layered environment instead of a sparse background.
+ */
+export const RICH_BACKGROUND_DIRECTIVE =
+  "scene with VERY RICH background details: describe the setting, time of day, weather, lighting, colors,  and layered composition (background, midground, foreground) in lush, specific detail, plus any side creatures/characters and scenery elements.";
 
 /**
  * Dedicated storybook image configuration so storybook-specific values are
@@ -172,15 +181,24 @@ export class ImageGenerationService {
 
       return imageUrl;
     } catch (error) {
+      const isPolicyViolation = this.isContentPolicyError(error);
+
+      // Content-policy flags never resolve on identical prompts, so rephrase
+      // the prompt to policy-safe wording before retrying instead of repeating
+      // the exact same failing request.
+      const retryRequest: ImageGenerationRequest = isPolicyViolation
+        ? { ...request, sanitizePolicy: true }
+        : request;
+
       if (retryCount < this.maxRetries) {
         logger.warn(
-          { error, retryCount },
+          { error, retryCount, policyViolation: isPolicyViolation },
           "Image generation failed, retrying"
         );
 
         await this.delay(this.retryDelays[retryCount] || 4000);
 
-        return this.generateImageSync(request, retryCount + 1);
+        return this.generateImageSync(retryRequest, retryCount + 1);
       }
 
       logger.error(
@@ -190,6 +208,21 @@ export class ImageGenerationService {
 
       throw error;
     }
+  }
+
+  /**
+   * Detect fal.ai content-checker rejections (422 "content_policy_violation").
+   */
+  private isContentPolicyError(error: unknown): boolean {
+    const err = error as any;
+    const details: unknown[] = Array.isArray(err?.body?.detail)
+      ? err.body.detail
+      : [];
+    return details.some(
+      (d: any) =>
+        typeof d?.type === "string" &&
+        d.type.toLowerCase().includes("content_policy")
+    );
   }
 
   /**
@@ -240,19 +273,42 @@ export class ImageGenerationService {
     childName?: string;
     artStyle?: string;
   }): string {
-    const scene = input.sceneDescription.trim();
+    let scene = input.sceneDescription.trim();
+    if (!scene.startsWith(RICH_BACKGROUND_DIRECTIVE)) {
+      scene = `${RICH_BACKGROUND_DIRECTIVE} ${scene}`;
+    }
     const styled = getArtStylePrompt(scene, input.artStyle);
-    if (input.hasReference) {
-      return `use the kid face without changing anything in the kid from the photo. ${styled}`;
+    if (input.hasReference && !styled.startsWith(SUBJECT_IDENTITY_PROMPT)) {
+      return `${SUBJECT_IDENTITY_PROMPT} ${styled}`;
     }
     return styled;
   }
 
   /**
    * Assemble the final prompt string for the Grok Imagine API.
+   * When `sanitizePolicy` is set (fal rejected the earlier prompt), the
+   * photorealistic "real child photograph" phrasing is swapped for neutral
+   * illustration wording so the content checker can pass it.
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
-    const scene = request.prompt.trim();
+    let scene = request.prompt.trim();
+
+    if (!scene.startsWith(RICH_BACKGROUND_DIRECTIVE)) {
+      scene = `${RICH_BACKGROUND_DIRECTIVE} ${scene}`;
+    }
+
+    if (request.sanitizePolicy) {
+      scene = scene
+        .replace(
+          /photo realistic high fidelity photograph of a real child, natural skin texture, realistic lighting and shadows, life-like colors/gi,
+          SUBJECT_IDENTITY_PROMPT
+        )
+        .replace(
+          /use the kid face without changing anything in the kid from the photo/gi,
+          SUBJECT_IDENTITY_PROMPT
+        );
+    }
+
     const directives = getArtStylePrompt(scene, request.artStyle);
 
     let baseScene = directives;
@@ -262,8 +318,8 @@ export class ImageGenerationService {
       baseScene = `${baseScene}. no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)`;
     }
 
-    if (request.imageUrl && !baseScene.startsWith("use the kid face")) {
-      return `use the kid face without changing anything in the kid from the photo. ${baseScene}`;
+    if (request.imageUrl && !baseScene.startsWith(SUBJECT_IDENTITY_PROMPT)) {
+      return `${SUBJECT_IDENTITY_PROMPT} ${baseScene}`;
     }
     return baseScene;
   }

@@ -28,7 +28,7 @@ export const CARTOON_ART_STYLES: ArtStyleOption[] = [
     name: "Photo Realistic",
     emoji: "📸",
     prompt:
-      "photo realistic high fidelity photograph of a real child, natural skin texture, realistic lighting and shadows, life-like colors",
+      "Use the supplied reference image to preserve the subject's recognizable appearance and identity. Keep the same facial features, skin tone, hair, eyes, age, and overall appearance. Transform the surrounding environment completely according to the scene description.",
     description: "True-to-life photos that look just like your child",
   },
   {

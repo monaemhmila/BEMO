@@ -40,30 +40,30 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
-import { STORY_CATEGORIES, STORY_LANGUAGES, STORY_LENGTH_CONFIG } from "../../../services/fal/storyGeneration";
+import { STORY_LANGUAGES, STORY_LENGTH_CONFIG } from "../../../services/fal/storyGeneration";
 import { CARTOON_ART_STYLES, DEFAULT_ART_STYLE, getArtStyle } from "../../../services/fal/cartoonGeneration";
 import { STORY_STARTERS } from "../../../utils/prompts/storyPrompts";
 
 // Templates matching the ones defined on the backend
-const TEMPLATES: Record<string, { theme: string; category: string }> = {
-  "magical-adventure": { theme: "discovers a magical portal and goes on an amazing adventure", category: "adventure" },
-  "brave-explorer": { theme: "becomes a brave explorer and discovers hidden treasures", category: "adventure" },
-  "kind-friend": { theme: "helps a lost animal find its way home and makes a new friend", category: "friendship" },
-  "space-adventure": { theme: "blasts off in a rocket ship and meets friendly aliens", category: "space" },
-  "bedtime-dream": { theme: "floats up to the clouds and has a magical dream adventure", category: "bedtime" },
-  "animal-friends": { theme: "visits a magical forest and befriends talking animals", category: "animals" },
-  "superhero-day": { theme: "wakes up with super powers and saves the day", category: "superhero" },
-  "ocean-adventure": { theme: "dives under the ocean and discovers a mermaid kingdom", category: "ocean" },
+const TEMPLATES: Record<string, { theme: string }> = {
+  "magical-adventure": { theme: "discovers a magical portal and goes on an amazing adventure" },
+  "brave-explorer": { theme: "becomes a brave explorer and discovers hidden treasures" },
+  "kind-friend": { theme: "helps a lost animal find its way home and makes a new friend" },
+  "space-adventure": { theme: "blasts off in a rocket ship and meets friendly aliens" },
+  "bedtime-dream": { theme: "floats up to the clouds and has a magical dream adventure" },
+  "animal-friends": { theme: "visits a magical forest and befriends talking animals" },
+  "superhero-day": { theme: "wakes up with super powers and saves the day" },
+  "ocean-adventure": { theme: "dives under the ocean and discovers a mermaid kingdom" },
   // Home page story gallery templates
-  "rocket-to-the-stars": { theme: "builds a rocket with tools from the shed, blasts off to the moon and befriends a tiny alien named Fizz who needs help finding his way back to his star", category: "space" },
-  "the-ocean-kingdom": { theme: "puts on a magic diving helmet, explores the deep sea and helps princess coral find her lost pearl-that-holds-the-sunset before the tide goes out", category: "ocean" },
-  "the-enchanted-forest": { theme: "steps into a glowing forest where animals can talk and solves the riddle of the sleeping waterfall to bring the magic back to the woods", category: "animals" },
-  "the-lost-puppy": { theme: "finds a scared lost puppy in the rain, comforts it with patience and gentleness, and helps it find its way back to its family", category: "animals" },
-  "the-bravest-hug": { theme: "has butterflies before the first day of a new school and learns from the people who love them that the bravest thing is to share their feelings and ask for a hug", category: "bedtime" },
-  "grandmas-moonlight-garden": { theme: "spends a quiet evening with grandma in the moonlight garden, hears the story of every flower and learns that family love stays with us forever", category: "bedtime" },
-  "the-planet-hop": { theme: "joins professor Zuzu the teacher alien on a solar-system scavenger hunt and learns the order of the planets by visiting every one", category: "space" },
-  "a-world-of-words": { theme: "discovers a magic library where letters come alive, learns to recognize them and sound out first words to help them get back into their books", category: "bedtime" },
-  "the-tiny-gardeners": { theme: "plants seeds in the family garden with grandma, learns what plants need to grow - soil, water, sunlight and patience - and watches a tiny garden come to life", category: "animals" },
+  "rocket-to-the-stars": { theme: "builds a rocket with tools from the shed, blasts off to the moon and befriends a tiny alien named Fizz who needs help finding his way back to his star" },
+  "the-ocean-kingdom": { theme: "puts on a magic diving helmet, explores the deep sea and helps princess coral find her lost pearl-that-holds-the-sunset before the tide goes out" },
+  "the-enchanted-forest": { theme: "steps into a glowing forest where animals can talk and solves the riddle of the sleeping waterfall to bring the magic back to the woods" },
+  "the-lost-puppy": { theme: "finds a scared lost puppy in the rain, comforts it with patience and gentleness, and helps it find its way back to its family" },
+  "the-bravest-hug": { theme: "has butterflies before the first day of a new school and learns from the people who love them that the bravest thing is to share their feelings and ask for a hug" },
+  "grandmas-moonlight-garden": { theme: "spends a quiet evening with grandma in the moonlight garden, hears the story of every flower and learns that family love stays with us forever" },
+  "the-planet-hop": { theme: "joins professor Zuzu the teacher alien on a solar-system scavenger hunt and learns the order of the planets by visiting every one" },
+  "a-world-of-words": { theme: "discovers a magic library where letters come alive, learns to recognize them and sound out first words to help them get back into their books" },
+  "the-tiny-gardeners": { theme: "plants seeds in the family garden with grandma, learns what plants need to grow - soil, water, sunlight and patience - and watches a tiny garden come to life" },
 };
 
 const STEPS = [
@@ -82,7 +82,7 @@ interface GeneratedStoryResult {
   storyId: string;
   title: string;
   childName: string;
-  pdfUrl: string;
+  pdfUrl?: string;
   pages: StoryPageData[];
 }
 
@@ -106,7 +106,6 @@ export function StoryGenerator() {
   const [childImage, setChildImage] = useState<string | null>(null);
   const [childImagePreview, setChildImagePreview] = useState<string | null>(null);
   const [theme, setTheme] = useState("");
-  const [category, setCategory] = useState("adventure");
   const [customMode, setCustomMode] = useState(false);
   const [customIdea, setCustomIdea] = useState("");
   const [customSetting, setCustomSetting] = useState("");
@@ -130,7 +129,6 @@ export function StoryGenerator() {
     const templateId = searchParams?.get("templateId");
     if (templateId && TEMPLATES[templateId]) {
       setTheme(TEMPLATES[templateId].theme);
-      setCategory(TEMPLATES[templateId].category);
     }
   }, [searchParams]);
 
@@ -174,7 +172,6 @@ export function StoryGenerator() {
           childName,
           childAge,
           theme: customMode ? buildCustomTheme() : theme,
-          category,
           storyLength,
           language: storyLanguage,
           artStyle,
@@ -267,9 +264,6 @@ export function StoryGenerator() {
   // Show 2-page preview UI after generation
   if (generatedStory) {
     const previewPages = generatedStory.pages.slice(0, 2);
-    const pdfDownloadUrl = generatedStory.pdfUrl.startsWith("http")
-      ? generatedStory.pdfUrl
-      : `${BACKEND_URL}${generatedStory.pdfUrl}`;
 
     return (
       <div className="max-w-5xl mx-auto space-y-8 pb-12">
@@ -592,7 +586,7 @@ export function StoryGenerator() {
                   {STORY_STARTERS.slice(0, 8).map((starter) => (
                     <button
                       key={starter.id}
-                      onClick={() => { setCustomMode(false); setTheme(starter.theme); setCategory(starter.category); }}
+                      onClick={() => { setCustomMode(false); setTheme(starter.theme); }}
                       className={`p-3 rounded-xl border-2 text-left transition-all ${!customMode && theme === starter.theme
                         ? "border-primary bg-buttercup/10"
                         : "border-border hover:border-border"
@@ -714,19 +708,6 @@ export function StoryGenerator() {
                   <p className="text-xs text-muted-foreground mt-1.5">
                     {getArtStyle(artStyle).description}
                   </p>
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Category</Label>
-                  <Select value={category} onValueChange={setCategory}>
-                    <SelectTrigger className="mt-1 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STORY_CATEGORIES.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.icon} {cat.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 

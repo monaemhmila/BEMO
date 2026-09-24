@@ -15,7 +15,6 @@ import {
   getReferenceForPage,
 } from "../services/face-canvas.service";
 import { logger } from "../lib/logger";
-import { normalizeStoryCategory } from "../contracts/storybook";
 import { z } from "zod";
 
 const router = Router();
@@ -46,7 +45,6 @@ const SimplePDFSchema = z.object({
   skinTone: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   hairDescription: z.string().trim().max(120).optional().nullable().or(z.literal("")),
   theme: z.string().trim().min(1, "Theme is required"),
-  category: z.string().optional().nullable().or(z.literal("")).transform((v) => v || "adventure"),
   storyLength: z.enum(["short", "medium", "long"]).optional().nullable().transform((v) => v || "short"),
   dedication: z.string().optional().nullable().or(z.literal("")),
   childImage: z.string().optional().nullable().or(z.literal("")),
@@ -670,7 +668,6 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
   const skinTone = validation.data.skinTone || undefined;
   const hairDescription = validation.data.hairDescription || undefined;
   const theme = validation.data.theme;
-  const category = validation.data.category || undefined;
   const storyLength = validation.data.storyLength || undefined;
   const dedication = validation.data.dedication || undefined;
   const childImage = validation.data.childImage || undefined;
@@ -738,7 +735,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         childName,
         childAge,
         theme,
-        category: category || "adventure",
+        category: "adventure",
         storyLength,
         dedication,
         language,
@@ -810,7 +807,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         childName,
         childAge,
         storyLength,
-        category: normalizeStoryCategory(category),
+        category: "adventure",
         dedication,
       },
     });
