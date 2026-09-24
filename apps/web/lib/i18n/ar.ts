@@ -1,7 +1,7 @@
 export const arStorefront: Record<string, string> = {
   // ── Global / metadata ──────────────────────────────────────────────
-  "Personalized Books for Kids | Custom Storybooks - Wonder Wraps":
-    "كتب مخصصة للأطفال | قصص مخصصة - Wonder Wraps",
+  "Personalized Books for Kids | Custom Storybooks - mon petit hero":
+    "كتب مخصصة للأطفال | قصص مخصصة - mon petit hero",
   "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.":
     "أنشئ كتب قصص فريدة لأطفالك مع Mon Petit Hero. ارفع الصور وشاهدها تتحول إلى حكايات مخصصة سيحتفظ بها طفلك إلى الأبد.",
   Wonderwraps: "Wonderwraps",

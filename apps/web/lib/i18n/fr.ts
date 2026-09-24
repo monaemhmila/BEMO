@@ -1,7 +1,7 @@
 export const frStorefront: Record<string, string> = {
   // ── Global / metadata ──────────────────────────────────────────────
-  "Personalized Books for Kids | Custom Storybooks - Wonder Wraps":
-    "Livres personnalisés pour enfants | Histoires sur mesure - Wonder Wraps",
+  "Personalized Books for Kids | Custom Storybooks - mon petit hero":
+    "Livres personnalisés pour enfants | Histoires sur mesure - mon petit hero",
   "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.":
     "Créez des livres d'histoires uniques avec Mon Petit Hero. Téléchargez des photos et regardez-les devenir des histoires personnalisées que votre enfant chérira pour toujours.",
   Wonderwraps: "Wonderwraps",

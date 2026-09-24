@@ -21,8 +21,8 @@ const fredoka = Fredoka({
 
 export const metadata: Metadata = {
   title: {
-    default: "Personalized Books for Kids | Custom Storybooks - Wonder Wraps",
-    template: "%s | Wonder Wraps",
+    default: "Personalized Books for Kids | Custom Storybooks - mon petit hero",
+    template: "%s | mon petit hero",
   },
   description:
     "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.",
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     "kids storybooks",
   ],
   openGraph: {
-    title: "Personalized Books for Kids | Custom Storybooks - Wonder Wraps",
+    title: "Personalized Books for Kids | Custom Storybooks - mon petit hero",
     description:
       "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.",
     type: "website",
