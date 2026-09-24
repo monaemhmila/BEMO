@@ -32,7 +32,7 @@ export type CharacterSide = "left" | "right";
 
 export const STORYBOOK_PAGE_COUNT = 5;
 
-export const STORYBOOK_IMAGE_ASPECT_RATIO = "16:9";
+export const STORYBOOK_IMAGE_ASPECT_RATIO = "1:1";
 
 // Exact A4 landscape page in PDF points (297 x 210 mm).
 export const A4_LANDSCAPE_WIDTH_PT = 841.89;
@@ -47,7 +47,7 @@ export interface PageComposition {
   pageType: PageType;
   textPosition: TextPosition;
   alignment: "left" | "center";
-  imageAspectRatio: "16:9";
+  imageAspectRatio: "1:1";
   textSafeArea: string;
   characterSide: CharacterSide;
   sideCharacterArea: string;

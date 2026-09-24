@@ -136,7 +136,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
 
         const imageUrl = await imageService.generateImageSync({
           prompt: scenePrompt,
-          aspectRatio: "16:9",
+          aspectRatio: "1:1",
           imageUrl: referenceUrl,
           childName,
         }).catch((err) => {
@@ -238,7 +238,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
 
               const imageUrl = await imageService.generateImageSync({
                 prompt: scenePrompt,
-                aspectRatio: "16:9",
+                aspectRatio: "1:1",
                 imageUrl: referenceUrl,
                 childName,
               }).catch((err) => {

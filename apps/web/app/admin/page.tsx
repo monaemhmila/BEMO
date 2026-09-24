@@ -411,9 +411,9 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
 
   const cards = result
     ? [
-        { label: "Left (25%)", hint: "pages with the character on the left", dataUrl: result.references.left, filename: "face-left-canvas.jpg", accent: "bg-purple-500/20 text-purple-400" },
+        { label: "Left (12%)", hint: "pages with the character on the left", dataUrl: result.references.left, filename: "face-left-canvas.jpg", accent: "bg-purple-500/20 text-purple-400" },
         { label: "Center (50%)", hint: "cover page", dataUrl: result.references.center, filename: "face-center-canvas.jpg", accent: "bg-blue-500/20 text-blue-400" },
-        { label: "Right (75%)", hint: "pages with the character on the right", dataUrl: result.references.right, filename: "face-right-canvas.jpg", accent: "bg-emerald-500/20 text-emerald-400" },
+        { label: "Right (88%)", hint: "pages with the character on the right", dataUrl: result.references.right, filename: "face-right-canvas.jpg", accent: "bg-emerald-500/20 text-emerald-400" },
       ]
     : [];
 
@@ -424,7 +424,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
         <h3 className="font-semibold text-white mb-1">Test Face Detection</h3>
         <p className="text-white/40 text-xs mb-4">
           Upload a child photo — detection runs locally (tiny face detector), then the face is placed on a white
-          canvas at the left (25%), center (50%) and right (75%) positions. No image API is called.
+          canvas at the left (12%), center (50%) and right (88%) positions. No image API is called.
         </p>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-semibold transition-colors">

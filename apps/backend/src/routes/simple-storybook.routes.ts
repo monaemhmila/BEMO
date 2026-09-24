@@ -83,13 +83,13 @@ router.post("/simple", authMiddleware, async (req, res) => {
 
         imageUrl = await imageGenerationService.generateImageSync({
           prompt,
-          aspectRatio: "16:9",
+          aspectRatio: "1:1",
           imageUrl: referenceUrl,
         });
       } else {
         imageUrl = await imageGenerationService.generateImageSync({
           prompt,
-          aspectRatio: "16:9",
+          aspectRatio: "1:1",
         });
       }
       generatedPages.push({

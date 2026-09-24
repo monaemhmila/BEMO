@@ -114,11 +114,12 @@ async function cropFaceWithMargin(
 
 async function placeOnWhiteCanvas(
   faceBuffer: Buffer,
-  canvasWidth = 1920,
-  canvasHeight = 1080,
-  horizontalPercent = 0.5
+  canvasWidth = 2480,
+  canvasHeight = 2480,
+  horizontalPercent = 0.5,
+  targetHeightFactor = 0.42
 ): Promise<Buffer> {
-  const targetHeight = Math.round(canvasHeight * 0.65);
+  const targetHeight = Math.round(canvasHeight * targetHeightFactor);
   const resizedFace = await sharp(faceBuffer)
     .resize({ height: targetHeight, fit: "inside" })
     .toBuffer();
@@ -194,13 +195,14 @@ export class FaceCanvasService {
     const detected = await detectFaceWithScore(buffer);
     const faceCrop = await cropFaceWithMargin(buffer, detected);
 
-    const canvasWidth = 1920;
-    const canvasHeight = 1080;
+    // 210 x 210 mm square reference canvas at 300 DPI (matches the 1:1 PDF page).
+    const canvasWidth = 2480;
+    const canvasHeight = 2480;
 
     const [centerBuf, rightBuf, leftBuf] = await Promise.all([
       placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.50), // center / cover
-      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.75), // 75% right
-      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.25), // 25% left
+      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.88), // 88% right
+      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.12), // 12% left
     ]);
 
     return {

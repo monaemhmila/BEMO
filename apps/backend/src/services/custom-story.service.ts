@@ -35,7 +35,7 @@ export interface CustomStoryPage {
   imageDescription: string;
   emotion?: string;
   pageType?: PageType;
-  imageAspectRatio?: "16:9";
+  imageAspectRatio?: "1:1";
 }
 
 export interface CustomStoryScript {
@@ -121,7 +121,7 @@ function withPageComposition(script: CustomStoryScript): CustomStoryScript {
       ...page,
       pageNumber: index + 1,
       pageType: getPageType(index + 1),
-      imageAspectRatio: "16:9" as const,
+      imageAspectRatio: "1:1" as const,
     }));
 
   return {

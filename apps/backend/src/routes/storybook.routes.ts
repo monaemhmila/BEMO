@@ -761,7 +761,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
 
         const imageUrl = await imageService.generateImageSync({
           prompt: scenePrompt,
-          aspectRatio: "16:9",
+          aspectRatio: "1:1",
           imageUrl: referenceUrl,
           childName,
           artStyle,
@@ -868,7 +868,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
 
               const imageUrl = await imageService.generateImageSync({
                 prompt: scenePrompt,
-                aspectRatio: "16:9",
+                aspectRatio: "1:1",
                 imageUrl: referenceUrl,
                 childName,
                 artStyle,

@@ -49,11 +49,12 @@ const PAGE_WIDTH = 595.28; // 210mm square
 const PAGE_HEIGHT = 595.28; // 210mm square
 
 // --- Fonts -----------------------------------------------------------------
-// Fredoka One = big, bubbly, all-purpose "kids storybook" display font, used
-// for the title. Baloo 2 (multiple weights) is a friendly, rounded font
-// that's still very readable at body-text size, used everywhere else.
+// Fredoka One = big, bubbly display font, used for the cover title only.
+// Georgia Bold Italic (serif) is used for every piece of body text - story
+// pages, ending and closing. PDFKit's bundled fonts are the fallback if the
+// .ttf files are not copied into the deployment.
 //
-// Place the four .ttf files that ship alongside this service in a `fonts/`
+// Place the .ttf files that ship alongside this service in a `fonts/`
 // folder next to this file (or update FONT_DIR below to wherever you keep
 // them). Make sure your build step copies non-.ts assets like fonts into
 // your dist/ output, or the paths below won't resolve at runtime.
@@ -64,10 +65,10 @@ const FONT_DIR = [
 ].find((directory) => existsSync(path.join(directory, "FredokaOne-Regular.ttf"))) || path.join(__dirname, "../fonts");
 const FONTS = {
   title: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
-  bodyRegular: path.join(FONT_DIR, "Baloo2-Regular.ttf"),
-  bodySemiBold: path.join(FONT_DIR, "Baloo2-SemiBold.ttf"),
-  bodyBold: path.join(FONT_DIR, "Baloo2-Bold.ttf"),
-  bodyExtraBold: path.join(FONT_DIR, "Baloo2-ExtraBold.ttf"),
+  bodyRegular: path.join(FONT_DIR, "georgiaz.ttf"),
+  bodySemiBold: path.join(FONT_DIR, "georgiaz.ttf"),
+  bodyBold: path.join(FONT_DIR, "georgiaz.ttf"),
+  bodyExtraBold: path.join(FONT_DIR, "georgiaz.ttf"),
 };
 
 /**
