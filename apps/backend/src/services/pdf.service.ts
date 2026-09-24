@@ -3,8 +3,6 @@ import sharp from "sharp";
 import path from "path";
 import { existsSync } from "fs";
 import {
-  A4_LANDSCAPE_WIDTH_PT,
-  A4_LANDSCAPE_HEIGHT_PT,
   A4_LANDSCAPE_WIDTH_PX,
   A4_LANDSCAPE_HEIGHT_PX,
   getPageType,
@@ -47,8 +45,8 @@ const COVER_TITLE_DEPTH = "#8B5A3C";
 // story ships as exactly 16 pages - page 1 is the full-bleed cover with a
 // PDF-rendered title, pages 2-14 carry the story, page 15 the emotional
 // ending and page 16 the closing.
-const PAGE_WIDTH = A4_LANDSCAPE_WIDTH_PT; // 841.89
-const PAGE_HEIGHT = A4_LANDSCAPE_HEIGHT_PT; // 595.28
+const PAGE_WIDTH = 595.28; // 210mm square
+const PAGE_HEIGHT = 595.28; // 210mm square
 
 // --- Fonts -----------------------------------------------------------------
 // Fredoka One = big, bubbly, all-purpose "kids storybook" display font, used
