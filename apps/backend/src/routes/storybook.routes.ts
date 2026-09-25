@@ -693,20 +693,20 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
     );
 
     // Generate the positioned face references ONCE per story from the uploaded
-    // photo: detect + crop locally (no network), place on a white canvas at
-    // center / 75% / 25%, then upload each canvas to fal storage a single time
-    // so page calls reuse the URL instead of re-uploading the raw photo.
+    // photo: detect + crop locally (no network), place on a wide 16:8 white
+    // canvas at the far left (8%) / far right (92%) edges, then upload each
+    // canvas to fal storage a single time so page calls reuse the URL instead
+    // of re-uploading the raw photo.
     let storyRefs: FaceReferences | null = null;
     if (childImage) {
       const inputImage: string = childImage;
       try {
         const faceRefs = await faceCanvasService.generateFaceReferences(inputImage);
-        const [center, right, left] = await Promise.all([
-          imageService.uploadReferenceImage(faceRefs.center),
-          imageService.uploadReferenceImage(faceRefs.right),
+        const [left, right] = await Promise.all([
           imageService.uploadReferenceImage(faceRefs.left),
+          imageService.uploadReferenceImage(faceRefs.right),
         ]);
-        storyRefs = { center, right, left };
+        storyRefs = { left, right };
         logger.info("Positioned face references generated and uploaded for story");
       } catch (err) {
         logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");

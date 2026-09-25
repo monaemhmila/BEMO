@@ -98,12 +98,11 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     if (childImageData) {
       try {
         const faceRefs = await faceCanvasService.generateFaceReferences(childImageData);
-        const [center, right, left] = await Promise.all([
-          imageService.uploadReferenceImage(faceRefs.center),
-          imageService.uploadReferenceImage(faceRefs.right),
+        const [left, right] = await Promise.all([
           imageService.uploadReferenceImage(faceRefs.left),
+          imageService.uploadReferenceImage(faceRefs.right),
         ]);
-        storyRefs = { center, right, left };
+        storyRefs = { left, right };
         logger.info("Custom story: positioned face references generated and uploaded");
       } catch (err) {
         logger.warn({ err }, "Custom story: face reference generation failed; falling back to raw child photo");

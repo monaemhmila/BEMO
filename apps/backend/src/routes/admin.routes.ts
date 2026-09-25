@@ -676,8 +676,8 @@ const FaceLabSchema = z.object({
 /**
  * POST /admin/face-lab
  * Run local face detection on an uploaded photo (base64 data URL) and build
- * the three positioned white-canvas references (center 50% / right 75% /
- * left 25%). Fully local: no image API is called.
+ * the two positioned white-canvas references (left 8% / right 92% on a wide
+ * 16:8 canvas). Fully local: no image API is called.
  */
 router.post("/face-lab", async (req, res) => {
   const parsed = FaceLabSchema.safeParse(req.body);

@@ -1,0 +1,154 @@
+/* Storybook online reader - premium page & book chrome.
+ *
+ * The page-flip engine owns geometry (sizes, transforms, clip-paths) through
+ * inline styles and `.stf__*` utility classes; everything visual about the
+ * leaves themselves lives here in CSS classes.
+ */
+
+/* Each leaf is its own size container so text scales with the page box. */
+.story-book-page {
+  container-type: inline-size;
+  position: absolute;
+  overflow: hidden;
+  background:
+    linear-gradient(0deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0)),
+    #fffdf7;
+  border-radius: 3px;
+}
+
+/* Hardcover treatment for the front cover leaf. */
+.story-book-page.is-cover {
+  background: linear-gradient(145deg, #f3e8ff 0%, #e9d5ff 55%, #ddd6fe 100%);
+}
+
+.story-book-page.is-cover::after {
+  content: "";
+  position: absolute;
+  inset: 2%;
+  z-index: 5;
+  pointer-events: none;
+  border: max(2px, 0.4cqw) solid rgba(255, 255, 255, 0.6);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 0 0.8cqw rgba(0, 0, 0, 0.22),
+    0 0.15cqw 0.9cqw rgba(0, 0, 0, 0.28);
+}
+
+/* Gutter (spine-adjacent) shading so the fold reads like a real book. */
+.story-book-page.is-left::after,
+.story-book-page.is-right::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 11%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.story-book-page.is-left::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(20, 10, 5, 0.22), transparent);
+}
+
+.story-book-page.is-right::after {
+  left: 0;
+  background: linear-gradient(to right, rgba(20, 10, 5, 0.22), transparent);
+}
+
+/* Page-shaped skeleton shown while an illustration decodes. */
+.story-book-skeleton {
+  background: linear-gradient(
+    110deg,
+    rgba(30, 15, 60, 0.05) 8%,
+    rgba(30, 15, 60, 0.12) 18%,
+    rgba(30, 15, 60, 0.05) 33%
+  );
+  background-size: 220% 100%;
+  animation: storybook-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes storybook-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+.story-book-art-fallback {
+  background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 100%);
+}
+
+/* Story text placed on the page bottom, like the printed pages. */
+.story-book-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  padding: 0 6cqw 1.4cqw;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.66) 0%,
+    rgba(0, 0, 0, 0.32) 55%,
+    transparent 100%
+  );
+}
+
+.story-book-caption p {
+  font-size: clamp(0.6rem, 2.55cqw, 1.35rem);
+  line-height: 1.45;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75);
+  white-space: pre-line;
+}
+
+.story-book-caption.align-left {
+  text-align: left;
+  padding-right: 16cqw;
+}
+
+.story-book-caption.align-right {
+  text-align: right;
+  padding-left: 16cqw;
+}
+
+.story-book-caption.align-center {
+  text-align: center;
+  padding-left: 8cqw;
+  padding-right: 8cqw;
+}
+
+/* Page number in the outer corner, exactly like a printed book. */
+.story-book-page-number {
+  position: absolute;
+  bottom: 1.4cqw;
+  z-index: 5;
+  font-size: clamp(0.45rem, 1.2cqw, 0.8rem);
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.55);
+}
+
+.story-book-page.is-left .story-book-page-number {
+  left: 2.4cqw;
+}
+
+.story-book-page.is-right .story-book-page-number {
+  right: 2.4cqw;
+}
+
+.story-book-page.is-single .story-book-page-number {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Keep tap targets on touch devices comfortably large. */
+@media (hover: none) and (pointer: coarse) {
+  .cx-edge-btn {
+    width: 3rem;
+    height: 3rem;
+  }
+}

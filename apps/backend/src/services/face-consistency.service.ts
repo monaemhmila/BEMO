@@ -35,7 +35,7 @@ export class FaceConsistencyService {
   }
 
   /**
-   * Detect face and generate center, left, right white canvas references (cached per URL).
+   * Detect face and generate the left (8%) / right (92%) white canvas references (cached per URL).
    */
   async getOrGenerateReferences(referenceImageUrl: string): Promise<FaceReferences> {
     if (this.referenceCache.has(referenceImageUrl)) {
@@ -55,8 +55,8 @@ export class FaceConsistencyService {
     if (request.referenceImageUrl) {
       try {
         const refs = await this.getOrGenerateReferences(request.referenceImageUrl);
-        const pos = request.position || "center";
-        processedReferenceUrl = pos === "left" ? refs.left : pos === "right" ? refs.right : refs.center;
+        const pos = request.position || "left";
+        processedReferenceUrl = pos === "left" ? refs.left : refs.right;
       } catch (err) {
         processedReferenceUrl = request.referenceImageUrl;
       }
@@ -86,8 +86,8 @@ export class FaceConsistencyService {
     if (request.referenceImageUrl) {
       try {
         const refs = await this.getOrGenerateReferences(request.referenceImageUrl);
-        const pos = request.position || "center";
-        processedReferenceUrl = pos === "left" ? refs.left : pos === "right" ? refs.right : refs.center;
+        const pos = request.position || "left";
+        processedReferenceUrl = pos === "left" ? refs.left : refs.right;
       } catch (err) {
         processedReferenceUrl = request.referenceImageUrl;
       }

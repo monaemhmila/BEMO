@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { BookFlipbook } from "@/features/storybook";
+import { StoryBookReader } from "@/features/storybook";
 
 export default function StoryPage() {
   const params = useParams<{ id: string }>();
@@ -9,6 +9,6 @@ export default function StoryPage() {
 
   if (!storyId) return null;
 
-  return <BookFlipbook storyId={storyId} />;
+  return <StoryBookReader storyId={storyId} />;
 }
 

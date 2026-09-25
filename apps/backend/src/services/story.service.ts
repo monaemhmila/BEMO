@@ -207,7 +207,9 @@ Vary the setting from page to page so the scenes each feel fresh and beautiful.
 
 For each page:
 - Write the story text with warmth and charm.
-- Create a visual scene description where the ENVIRONMENT and any SIDE CHARACTERS/CREATURES are colorful, imaginative, and detailed.
+- Build the imageDescription by covering the ENTIRE background in four consecutive zones, one after the other: describe what is on the RIGHT side, then the LEFT side, then the TOP, then the BOTTOM, so every part of the backdrop is fully described with absolutely no un-described area.
+- Keep all four zones part of ONE continuous, seamless background scene: same location, same time of day, same weather, same lighting and the same color palette across right/left/top/bottom. The zones must blend smoothly into each other where they meet (no hard seams, no abrupt color or style changes, no cut-off objects at any edge), so the whole frame reads as a single homogeneous environment rather than four separate panels.
+- Make the ENVIRONMENT and any SIDE CHARACTERS/CREATURES colorful, imaginative, and detailed.
 - The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
@@ -327,14 +329,10 @@ Return ONLY valid JSON:
         select: { pageNumber: true },
       });
 
-      let position: PositionOnCanvas = options?.position || "center";
+      let position: PositionOnCanvas = options?.position || "right";
       if (!options?.position && page?.pageNumber) {
-        if (page.pageNumber === 1) {
-          position = "center";
-        } else {
-          const comp = getPageComposition(page.pageNumber);
-          position = comp.characterSide === "left" ? "left" : "right";
-        }
+        const comp = getPageComposition(page.pageNumber);
+        position = comp.characterSide === "left" ? "left" : "right";
       }
 
       const scenePrompt = options?.childName

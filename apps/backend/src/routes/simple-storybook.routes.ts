@@ -50,12 +50,11 @@ router.post("/simple", authMiddleware, async (req, res) => {
     if (childImage) {
       try {
         const faceRefs = await faceCanvasService.generateFaceReferences(childImage);
-        const [center, right, left] = await Promise.all([
-          imageGenerationService.uploadReferenceImage(faceRefs.center),
-          imageGenerationService.uploadReferenceImage(faceRefs.right),
+        const [left, right] = await Promise.all([
           imageGenerationService.uploadReferenceImage(faceRefs.left),
+          imageGenerationService.uploadReferenceImage(faceRefs.right),
         ]);
-        storyRefs = { center, right, left };
+        storyRefs = { left, right };
         logger.info("Positioned face references generated and uploaded for storybook");
       } catch (err) {
         logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");

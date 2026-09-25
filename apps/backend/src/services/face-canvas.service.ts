@@ -112,12 +112,28 @@ async function cropFaceWithMargin(
     .toBuffer();
 }
 
+/**
+ * Wide 16:8 (2:1) white reference canvas fed to the image-edit model. Doubling
+ * the horizontal room gives the model environment space on both sides of the
+ * child while the subject stays anchored at the far edges.
+ */
+const REF_CANVAS_WIDTH = 2480;
+const REF_CANVAS_HEIGHT = 1240;
+
+/** Face-anchor positions: far left (8%) and far right (92%), NEVER centered. */
+const REF_POSITION_LEFT = 0.08;
+const REF_POSITION_RIGHT = 0.92;
+
+/** Placed subject height relative to the canvas - intentionally small so the
+ *  model keeps the child small in the wide scene. */
+const REF_TARGET_HEIGHT_FACTOR = 0.3;
+
 async function placeOnWhiteCanvas(
   faceBuffer: Buffer,
-  canvasWidth = 2480,
-  canvasHeight = 2480,
-  horizontalPercent = 0.5,
-  targetHeightFactor = 0.42
+  canvasWidth = REF_CANVAS_WIDTH,
+  canvasHeight = REF_CANVAS_HEIGHT,
+  horizontalPercent = REF_POSITION_LEFT,
+  targetHeightFactor = REF_TARGET_HEIGHT_FACTOR
 ): Promise<Buffer> {
   const targetHeight = Math.round(canvasHeight * targetHeightFactor);
   const resizedFace = await sharp(faceBuffer)
@@ -129,8 +145,8 @@ async function placeOnWhiteCanvas(
   const fh = meta.height || 450;
 
   const top = Math.round((canvasHeight - fh) / 2);
-  const centerX = canvasWidth * horizontalPercent;
-  const left = Math.max(0, Math.min(canvasWidth - fw, Math.round(centerX - fw / 2)));
+  const anchorX = canvasWidth * horizontalPercent;
+  const left = Math.max(0, Math.min(canvasWidth - fw, Math.round(anchorX - fw / 2)));
 
   return sharp({
     create: {
@@ -145,12 +161,11 @@ async function placeOnWhiteCanvas(
     .toBuffer();
 }
 
-export type PositionOnCanvas = "left" | "right" | "center";
+export type PositionOnCanvas = "left" | "right";
 
 export interface FaceReferences {
-  center: string;
-  right: string;
   left: string;
+  right: string;
 }
 
 export class FaceCanvasService {
@@ -184,8 +199,8 @@ export class FaceCanvasService {
   }
 
   /**
-   * Detect face, crop with margin, and generate center (50%), right (75%), and
-   * left (25%) canvas references — in a single detection pass.
+   * Detect face, crop with margin, and generate the two positioned white-canvas
+   * references (left 8% / right 92%) - in a single detection pass.
    */
   async generateFaceLab(input: Buffer | string): Promise<{
     detection: FaceDetectionResult;
@@ -195,14 +210,13 @@ export class FaceCanvasService {
     const detected = await detectFaceWithScore(buffer);
     const faceCrop = await cropFaceWithMargin(buffer, detected);
 
-    // 210 x 210 mm square reference canvas at 300 DPI (matches the 16:9 PDF page).
-    const canvasWidth = 2480;
-    const canvasHeight = 2480;
+    // Wide 16:8 white reference canvas fed to the image-edit model.
+    const canvasWidth = REF_CANVAS_WIDTH;
+    const canvasHeight = REF_CANVAS_HEIGHT;
 
-    const [centerBuf, rightBuf, leftBuf] = await Promise.all([
-      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.50), // center / cover
-      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.88), // 88% right
-      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, 0.12), // 12% left
+    const [leftBuf, rightBuf] = await Promise.all([
+      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, REF_POSITION_LEFT), // 8% left
+      placeOnWhiteCanvas(faceCrop, canvasWidth, canvasHeight, REF_POSITION_RIGHT), // 92% right
     ]);
 
     return {
@@ -220,15 +234,14 @@ export class FaceCanvasService {
         }
         : { found: false },
       references: {
-        center: `data:image/jpeg;base64,${centerBuf.toString("base64")}`,
-        right: `data:image/jpeg;base64,${rightBuf.toString("base64")}`,
         left: `data:image/jpeg;base64,${leftBuf.toString("base64")}`,
+        right: `data:image/jpeg;base64,${rightBuf.toString("base64")}`,
       },
     };
   }
 
   /**
-   * Detect face, crop with margin, and generate center (50%), right (75%), and left (25%) canvas references.
+   * Detect face, crop with margin, and generate left (8%) / right (92%) canvas references.
    */
   async generateFaceReferences(input: Buffer | string): Promise<FaceReferences> {
     return (await this.generateFaceLab(input)).references;
@@ -242,10 +255,8 @@ export class FaceCanvasService {
     options: { position?: PositionOnCanvas } = {}
   ): Promise<string> {
     const refs = await this.generateFaceReferences(input);
-    const pos = options.position || "center";
-    if (pos === "left") return refs.left;
-    if (pos === "right") return refs.right;
-    return refs.center;
+    const pos = options.position || "left";
+    return pos === "left" ? refs.left : refs.right;
   }
 }
 
@@ -259,12 +270,11 @@ export const generateFaceReferences = (input: Buffer | string) =>
  * Driven by the shared composition contract (`getPageComposition().characterSide`)
  * instead of an odd/even page rule, so the side of the reference image shown to
  * the image model always agrees with the character placement of the final
- * illustration and the PDF layout.
+ * illustration and the PDF layout. The subject is ALWAYS placed at the far left
+ * or far right edge - never centered (the cover inherits its side from the
+ * composition contract as well).
  */
 export function getPositionForPage(pageNumber: number): PositionOnCanvas {
-  if (pageNumber === 1) {
-    return "center"; // cover
-  }
   return getPageComposition(pageNumber).characterSide;
 }
 
@@ -273,7 +283,5 @@ export function getReferenceForPage(
   pageNumber: number
 ): string {
   const position = getPositionForPage(pageNumber);
-  if (position === "left") return refs.left;
-  if (position === "right") return refs.right;
-  return refs.center;
+  return position === "left" ? refs.left : refs.right;
 }
