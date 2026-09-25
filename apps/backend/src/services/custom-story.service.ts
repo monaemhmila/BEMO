@@ -86,7 +86,8 @@ The "imageDescription" field must ALWAYS be written in English (it is used later
 
 For every page:
 - Write the story text with warmth, charm and age-appropriate vocabulary for a ${input.childAge}-year-old.
-- Write a clear, visual "imageDescription" of the scene with VERY RICH background details: describe the setting, time of day, weather, lighting, colors,  and layered composition (background, midground, foreground) in lush, specific detail, plus any side creatures/characters and scenery elements. Put ${input.childName} in the middle of the action, actively doing things in the scene.
+- Write a clear, visual "imageDescription" of the scene with VERY RICH background details: first establish the setting, time of day, weather, lighting and color palette, then describe the ENTIRE background in four consecutive zones - what is on the RIGHT side, then the LEFT side, then the TOP, then the BOTTOM - plus the layered composition (background, midground, foreground) and any side creatures/characters and scenery elements. Put ${input.childName} in the middle of the action, actively doing things in the scene.
+- Keep the whole scene HOMOGENEOUS like ONE continuous background scene: right, left, top and bottom must all belong to the same location with matching time of day, lighting and colors, and the zones must blend smoothly into one another where they meet (no hard seams, no abrupt color or style changes, no cut-off elements at the edges), so the full frame reads as a single seamless environment rather than separate panels.
 - Do NOT include text, letters, signs, billboards, book titles, logos or speech bubbles in the imageDescription, and never render any story text inside the image.
 - Never use the child's name inside the imageDescription.
 - Keep the hero fully clothed with long trousers/pants (never shorts or bare legs).

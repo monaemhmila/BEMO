@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import axios from "axios";
 import HTMLFlipBook from "react-pageflip";
 import { useRouter } from "next/navigation";
@@ -15,7 +16,7 @@ import { StoryBookPage } from "./StoryBookPage";
 import { StoryBookControls } from "./StoryBookControls";
 import { StoryBookLoading } from "./StoryBookLoading";
 import { preloadNeighbouringPages, resetPreloadCache } from "./preload";
-import type { ReaderStory, FlipPageIndex } from "./types";
+import type { ReaderStory, FlipPageIndex, PageSide } from "./types";
 
 import "./reader.css";
 
@@ -23,8 +24,9 @@ interface StoryBookReaderProps {
   storyId: string;
 }
 
-/** Artwork is generated at 16:9 - the pages keep that ratio in the online reader. */
-const BOOK_WIDTH = 1600;
+/** One story page is printed as TWO square leaves (left + right halves of the
+ *  16:9 image). The book keeps that square per-leaf ratio in the reader. */
+const BOOK_WIDTH = 900;
 const BOOK_HEIGHT = 900;
 
 export function StoryBookReader({ storyId }: StoryBookReaderProps) {
@@ -47,8 +49,10 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
   const [story, setStory] = useState<ReaderStory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [slowGenerating, setSlowGenerating] = useState(false);
 
-  const [currentIndex, setCurrentIndex] = useState<FlipPageIndex>(startPage);
+  const [currentLeaf, setCurrentLeaf] = useState<FlipPageIndex>(startPage);
+  const pendingStartRef = useRef<number | null>(null);
   const [exporting, setExporting] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
@@ -68,7 +72,12 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
     const fetchStory = async () => {
       try {
         const token = await getToken?.();
-        if (!token) return;
+        if (!token) {
+          setLoading(false);
+          setError(true);
+          if (intervalId) clearInterval(intervalId);
+          return;
+        }
 
         const res = await axios.get(`${BACKEND_URL}/story/${storyId}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -83,11 +92,22 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
         setLoading(false);
         setError(false);
 
-        if (
-          res.data.story.status === "Completed" ||
-          res.data.story.status === "Failed"
-        ) {
+        const isTerminal =
+          nextStory.status === "Completed" || nextStory.status === "Failed";
+
+        if (isTerminal && nextStory.pages.length === 0) {
+          setError(true);
           if (intervalId) clearInterval(intervalId);
+          return;
+        }
+
+        if (isTerminal) {
+          pendingStartRef.current = null;
+          setSlowGenerating(false);
+          if (intervalId) clearInterval(intervalId);
+        } else {
+          if (pendingStartRef.current === null) pendingStartRef.current = Date.now();
+          if (Date.now() - pendingStartRef.current > 90000) setSlowGenerating(true);
         }
       } catch (err) {
         console.error("Failed to fetch story", err);
@@ -112,6 +132,9 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
     [story]
   );
 
+  /** Each source page produces two square leaves (left + right halves). */
+  const leafCount = useMemo(() => (story ? pages.length * 2 : 0), [story, pages]);
+
   const showControls = useCallback(() => {
     setControlsVisible(true);
     if (isTouchRef.current) return;
@@ -126,8 +149,8 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
   onFlipRef.current = useCallback(
     (e: { data: number }) => {
       const index = e.data;
-      setCurrentIndex(index);
-      preloadNeighbouringPages(pages, index);
+      setCurrentLeaf(index);
+      preloadNeighbouringPages(pages, Math.floor(index / 2));
 
       const url = new URL(window.location.href);
       if (index > 0) url.searchParams.set("bookPage", String(index));
@@ -143,18 +166,21 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
   );
 
   const goPrev = useCallback(() => {
-    if (currentIndex <= 0) return;
+    if (currentLeaf <= 0) return;
     flipBookRef.current?.pageFlip().flipPrev();
-  }, [currentIndex]);
+  }, [currentLeaf]);
 
   const goNext = useCallback(() => {
-    if (currentIndex >= pages.length - 1) return;
+    if (currentLeaf >= leafCount - 1) return;
     flipBookRef.current?.pageFlip().flipNext();
-  }, [currentIndex, pages.length]);
+  }, [currentLeaf, leafCount]);
 
   // ---- Audio -------------------------------------------------------------
+  const currentSourceIndex = Math.floor(currentLeaf / 2);
   const currentAudioUrl =
-    pages[currentIndex + 1]?.audioUrl || pages[currentIndex]?.audioUrl || null;
+    pages[currentSourceIndex + 1]?.audioUrl ||
+    pages[currentSourceIndex]?.audioUrl ||
+    null;
 
   useEffect(() => {
     audioRef.current?.pause();
@@ -232,39 +258,58 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
   };
 
   // ---- Rendering ----------------------------------------------------------
-  const pageLeafs = useMemo(
-    () =>
-      story
-        ? pages.map((page, index) => (
-            <StoryBookPage
-              key={page.id ?? index}
-              page={page}
-              title={story.title}
-              childName={story.childName}
-              dedication={story.dedication}
-              side={
-                index === 0
-                  ? "single"
-                  : page.pageNumber % 2 === 1
-                    ? "left"
-                    : "right"
-              }
-              isCover={index === 0}
-            />
-          ))
-        : [],
-    [pages, story]
-  );
+  /** Physical side within a spread follows the leaf position in the book:
+   *  the cover sits alone, then leaves pair up as [left, right]. */
+  const leafSide = (leafIndex: number): PageSide =>
+    leafIndex === 0 ? "single" : leafIndex % 2 === 1 ? "left" : "right";
+
+  const pageLeafs = useMemo(() => {
+    if (!story) return [];
+    const leaves: ReactNode[] = [];
+    pages.forEach((page, sourceIndex) => {
+      const leftIndex = sourceIndex * 2;
+      leaves.push(
+        <StoryBookPage
+          key={`${page.id}-l`}
+          page={page}
+          title={story.title}
+          childName={story.childName}
+          dedication={story.dedication}
+          squareHalf="left"
+          side={leafSide(leftIndex)}
+          isCover={sourceIndex === 0}
+          renderText={sourceIndex !== 0}
+          leafNumber={leftIndex + 1}
+        />
+      );
+      leaves.push(
+        <StoryBookPage
+          key={`${page.id}-r`}
+          page={page}
+          title={story.title}
+          childName={story.childName}
+          dedication={story.dedication}
+          squareHalf="right"
+          side={leafSide(leftIndex + 1)}
+          isCover={false}
+          renderText={false}
+          leafNumber={leftIndex + 2}
+        />
+      );
+    });
+    return leaves;
+  }, [pages, story]);
 
   useEffect(() => {
     return () => resetPreloadCache();
   }, []);
 
   useEffect(() => {
-    if (pages.length > 0) {
-      preloadNeighbouringPages(pages, Math.min(startPage, pages.length - 1));
+    if (pages.length > 0 && leafCount > 0) {
+      const startLeaf = Math.min(startPage, leafCount - 1);
+      preloadNeighbouringPages(pages, Math.floor(startLeaf / 2));
     }
-  }, [pages, startPage]);
+  }, [pages, startPage, leafCount]);
 
   // ---- States ------------------------------------------------------------
   if (loading && !story) {
@@ -306,7 +351,7 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
     );
   }
 
-  const effectiveStart = Math.min(startPage, Math.max(0, pages.length - 1));
+  const effectiveStart = Math.min(startPage, Math.max(0, leafCount - 1));
 
   return (
     <div
@@ -341,7 +386,9 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
             }
             hint={
               story.status === "Pending" || story.status === "Generating"
-                ? "This window refreshes automatically - no need to reload"
+                ? slowGenerating
+                  ? "This is taking longer than usual - keep this page open and your story will appear"
+                  : "This window refreshes automatically - no need to reload"
                 : undefined
             }
           />
@@ -358,9 +405,9 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
               width={BOOK_WIDTH}
               height={BOOK_HEIGHT}
               minWidth={320}
-              maxWidth={1000}
-              minHeight={360}
-              maxHeight={900}
+              maxWidth={640}
+              minHeight={320}
+              maxHeight={640}
               drawShadow
               flippingTime={900}
               usePortrait
@@ -384,8 +431,8 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
 
       <StoryBookControls
         title={story.title}
-        currentPage={currentIndex + 1}
-        totalPages={pages.length}
+        currentPage={currentLeaf + 1}
+        totalPages={leafCount}
         visible={controlsVisible}
         isFullscreen={isFullscreen}
         exporting={exporting}

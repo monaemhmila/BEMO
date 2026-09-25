@@ -1,11 +1,12 @@
 "use client";
 
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { ImageOff } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { ReaderPage, PageSide } from "./types";
 import { StoryBookCover } from "./StoryBookCover";
+import { drawSquareHalfOnCanvas } from "./split16x9InBrowser";
 
 interface StoryBookPageProps {
   page: ReaderPage;
@@ -15,6 +16,12 @@ interface StoryBookPageProps {
   dedication?: string | null;
   side: PageSide;
   isCover: boolean;
+  /** When set, this leaf renders a square crop of that half of the 16:9 image instead of the full image. */
+  squareHalf?: "left" | "right";
+  /** Page number printed on the leaf; defaults to the source page number. */
+  leafNumber?: number;
+  /** When false the story text overlay is hidden (right halves carry only the artwork, like the print). */
+  renderText?: boolean;
 }
 
 type ImageState = "loading" | "loaded" | "error";
@@ -29,13 +36,43 @@ type ImageState = "loading" | "loaded" | "error";
  * styling here lives in CSS classes (see reader.css), never on `style`.
  */
 export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
-  function StoryBookPage({ page, title, childName, dedication, side, isCover }, ref) {
+  function StoryBookPage(
+    { page, title, childName, dedication, side, isCover, squareHalf, leafNumber, renderText = true },
+    ref
+  ) {
     const imageUrl = page.imageUrl ?? "";
     const [imageState, setImageState] = useState<ImageState>(imageUrl ? "loading" : "error");
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     useEffect(() => {
       setImageState(imageUrl ? "loading" : "error");
     }, [imageUrl]);
+
+    useEffect(() => {
+      if (!squareHalf) return;
+      if (!imageUrl) {
+        setImageState("error");
+        return;
+      }
+      let cancelled = false;
+      const source = new Image();
+      source.decoding = "async";
+      source.onload = () => {
+        if (cancelled) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        setImageState(drawSquareHalfOnCanvas(source, squareHalf, canvas) ? "loaded" : "error");
+      };
+      source.onerror = () => {
+        if (!cancelled) setImageState("error");
+      };
+      source.src = imageUrl;
+      return () => {
+        cancelled = true;
+        source.onload = null;
+        source.onerror = null;
+      };
+    }, [imageUrl, squareHalf]);
 
     return (
       <div
@@ -53,7 +90,16 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
       >
         {/* Artwork */}
         <div className="absolute inset-0 story-book-art">
-          {imageUrl ? (
+          {squareHalf ? (
+            <canvas
+              ref={canvasRef}
+              aria-hidden="true"
+              className={cn(
+                "absolute inset-0 size-full select-none",
+                imageState !== "loaded" && "opacity-0"
+              )}
+            />
+          ) : imageUrl ? (
             <img
               src={imageUrl}
               alt={isCover ? `Cover of ${title}` : ""}
@@ -93,7 +139,7 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
         ) : null}
 
         {/* Story text mirroring the printed page layout */}
-        {!isCover && page.content ? (
+        {!isCover && renderText && page.content ? (
           <div
             className={cn(
               "story-book-caption",
@@ -109,7 +155,7 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
         {/* Page number, like a real finished book */}
         {!isCover ? (
           <span className="story-book-page-number" aria-hidden="true">
-            {page.pageNumber}
+            {leafNumber ?? page.pageNumber}
           </span>
         ) : null}
       </div>
