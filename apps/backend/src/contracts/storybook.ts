@@ -33,6 +33,7 @@ export type CharacterSide = "left" | "right";
 export const STORYBOOK_PAGE_COUNT = 5;
 
 export const STORYBOOK_IMAGE_ASPECT_RATIO = "16:9";
+export const STORYBOOK_SQUARE_ASPECT_RATIO = "1:1";
 
 // Exact A4 landscape page in PDF points (297 x 210 mm).
 export const A4_LANDSCAPE_WIDTH_PT = 841.89;
@@ -51,7 +52,7 @@ export interface PageComposition {
   pageType: PageType;
   textPosition: TextPosition;
   alignment: "left" | "center";
-  imageAspectRatio: "16:9";
+  imageAspectRatio: "16:9" | "1:1";
   textSafeArea: string;
   characterSide: CharacterSide;
   sideCharacterArea: string;
@@ -101,6 +102,25 @@ const PAGE_TYPE_BY_NUMBER: Record<number, PageType> = {
 
 function isStoryPage(pageNumber: number): boolean {
   return pageNumber >= 3 && pageNumber <= 14;
+}
+
+/**
+ * The cover (first page) and the closing (last page) render as a single 1:1
+ * square page in the book; every intermediate page is a 16:9 illustration that
+ * is printed as two square halves. Both the image pipeline and the reader use
+ * this single source of truth so generated images always match the page layout.
+ */
+export function isSquareBookPage(pageNumber: number, totalPages: number): boolean {
+  return pageNumber === 1 || pageNumber === Math.max(1, totalPages);
+}
+
+export function getPageAspectRatio(
+  pageNumber: number,
+  totalPages: number
+): "1:1" | "16:9" {
+  return isSquareBookPage(pageNumber, totalPages)
+    ? STORYBOOK_SQUARE_ASPECT_RATIO
+    : STORYBOOK_IMAGE_ASPECT_RATIO;
 }
 
 export function getPageType(pageNumber: number): PageType {

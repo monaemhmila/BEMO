@@ -92,7 +92,7 @@ interface FaceLabDetection {
 
 interface FaceLabResult {
   detection: FaceLabDetection;
-  references: { left: string; right: string };
+  references: { face: string };
 }
 
 interface AdminOrder {
@@ -400,7 +400,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
       toast.success(
         res.data.detection.found
           ? "Face detected!"
-          : "No face found — canvases use the full image"
+          : "No face found — the full image is used"
       );
     } catch {
       toast.error("Face lab request failed");
@@ -411,8 +411,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
 
   const cards = result
     ? [
-        { label: "Left (8%)", hint: "pages with the character on the left", dataUrl: result.references.left, filename: "face-left-canvas.jpg", accent: "bg-purple-500/20 text-purple-400" },
-        { label: "Right (92%)", hint: "pages with the character on the right", dataUrl: result.references.right, filename: "face-right-canvas.jpg", accent: "bg-emerald-500/20 text-emerald-400" },
+        { label: "Face crop", hint: "tightly cropped to the child's face — this is what gets fed to the AI edit", dataUrl: result.references.face, filename: "face-crop.jpg", accent: "bg-purple-500/20 text-purple-400" },
       ]
     : [];
 
@@ -422,8 +421,9 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
       <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
         <h3 className="font-semibold text-white mb-1">Test Face Detection</h3>
         <p className="text-white/40 text-xs mb-4">
-          Upload a child photo — detection runs locally (tiny face detector), then the face is placed on a wide 16:8
-          white canvas at the left (8%) and right (92%) positions. No image API is called.
+          Upload a child photo — detection runs locally (tiny face detector), then the
+          image is cropped as tightly as possible to the child's face. That crop is the
+          reference fed to the AI edit model (no white canvas). No image API is called.
         </p>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-semibold transition-colors">
@@ -461,7 +461,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
               <p className="font-semibold text-white text-sm">
                 {result.detection.found
                   ? "Face detected"
-                  : "No face detected — canvases use the full image"}
+                  : "No face detected — the full image is used"}
               </p>
               {result.detection.found && result.detection.box && result.detection.imageSize && (
                 <p className="text-white/40 text-xs mt-0.5">
@@ -476,7 +476,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
         </div>
       )}
 
-      {/* Positioned canvases with downloads */}
+      {/* Face crop with download */}
       {result && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {cards.map((card) => (
@@ -490,7 +490,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
                 </p>
                 <p className="text-white/30 text-xs mt-0.5">{card.hint}</p>
               </div>
-              <img src={card.dataUrl} alt={card.label} className="w-full aspect-video object-contain bg-white" />
+              <img src={card.dataUrl} alt={card.label} className="w-full max-h-64 object-contain bg-white" />
               <div className="p-3 border-t border-white/5 mt-auto">
                 <button
                   onClick={() => downloadDataUrl(card.dataUrl, card.filename)}

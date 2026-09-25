@@ -3,7 +3,6 @@ import { prismaClient } from "../lib/prisma";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { FaceConsistencyService } from "./face-consistency.service";
-import { PositionOnCanvas } from "./face-canvas.service";
 import { StoryCompletionService } from "./story-completion.service";
 import { GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
 import { saveRemoteImageLocally, saveJsonLocally } from "../lib/storage";
@@ -11,6 +10,8 @@ import {
   STORYBOOK_PAGE_COUNT,
   getPageType,
   getPageComposition,
+  getPageAspectRatio,
+  isSquareBookPage,
   PageType,
   normalizeStoryCategory,
 } from "../contracts/storybook";
@@ -31,7 +32,7 @@ interface StoryPageInput {
   imageDescription: string;
   emotion?: string;
   pageType?: PageType;
-  imageAspectRatio?: "16:9";
+  imageAspectRatio?: "16:9" | "1:1";
 }
 
 interface StoryScript {
@@ -152,11 +153,12 @@ Return ONLY valid JSON:
       .slice(0, expectedPageCount)
       .map((page, index) => {
         const pageNumber = index + 1;
+        const totalPages = Math.min(script.pages.length, expectedPageCount);
         return {
           ...page,
           pageNumber,
           pageType: getPageType(pageNumber),
-          imageAspectRatio: "16:9" as const,
+          imageAspectRatio: getPageAspectRatio(pageNumber, totalPages),
         };
       });
 
@@ -211,6 +213,7 @@ For each page:
 - Keep all four zones part of ONE continuous, seamless background scene: same location, same time of day, same weather, same lighting and the same color palette across right/left/top/bottom. The zones must blend smoothly into each other where they meet (no hard seams, no abrupt color or style changes, no cut-off objects at any edge), so the whole frame reads as a single homogeneous environment rather than four separate panels.
 - Make the ENVIRONMENT and any SIDE CHARACTERS/CREATURES colorful, imaginative, and detailed.
 - The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
+- The imageDescription must NEVER mention or imply any art style, illustration style, medium, or drawing technique - never use words like illustration, storybook, cartoon, anime, painting, watercolor, 3D, drawing, sketch, render, or any similar artistic term. Descriptions are purely about the scene CONTENT: the setting, time of day, weather, lighting, colors, characters, objects, and atmosphere. The artwork's visual style is applied separately and is not part of the description.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.
@@ -321,16 +324,25 @@ Return ONLY valid JSON:
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; position?: PositionOnCanvas; artStyle?: string }
+    options?: { childName?: string; position?: "left" | "right"; artStyle?: string }
   ) {
     try {
       const page = await prismaClient.storyPage.findUnique({
         where: { id: pageId },
-        select: { pageNumber: true },
+        select: { pageNumber: true, storyId: true },
       });
+      if (!page) return { requestId: "" };
 
-      let position: PositionOnCanvas = options?.position || "right";
-      if (!options?.position && page?.pageNumber) {
+      // The cover and closing pages are generated and rendered as single 1:1
+      // square pages, so we need the story's total page count to know which
+      // page is the last one.
+      const totalPages = await prismaClient.storyPage.count({
+        where: { storyId: page.storyId },
+      });
+      const isSquarePage = isSquareBookPage(page.pageNumber, totalPages);
+
+      let position: "left" | "right" = options?.position || "right";
+      if (!options?.position) {
         const comp = getPageComposition(page.pageNumber);
         position = comp.characterSide === "left" ? "left" : "right";
       }
@@ -344,9 +356,9 @@ Return ONLY valid JSON:
           {
             prompt: scenePrompt,
             referenceImageUrl: referenceImageUrl || undefined,
-            aspectRatio: "16:9",
+            aspectRatio: getPageAspectRatio(page.pageNumber, totalPages),
             childName: options?.childName,
-            position,
+            edgePlacementSide: isSquarePage ? undefined : position,
             artStyle: options?.artStyle,
           },
           STORY_WEBHOOK
@@ -661,6 +673,7 @@ Return ONLY valid JSON:
       )
       .map((page, index) => {
         const pageNumber = index + 1;
+        const totalPages = script.pages.length;
 
         // Page 1 is the cover: its body text is never rendered in the PDF
         // (the title is drawn by the PDF service), so it may be empty.
@@ -688,7 +701,7 @@ Return ONLY valid JSON:
           emotion:
             page.emotion?.trim() || "curious",
           pageType: getPageType(pageNumber),
-          imageAspectRatio: "16:9" as const,
+          imageAspectRatio: getPageAspectRatio(pageNumber, totalPages),
         };
       });
 

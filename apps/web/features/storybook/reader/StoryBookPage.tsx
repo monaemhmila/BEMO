@@ -6,7 +6,10 @@ import { ImageOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReaderPage, PageSide } from "./types";
 import { StoryBookCover } from "./StoryBookCover";
-import { drawSquareHalfOnCanvas } from "./split16x9InBrowser";
+import {
+  drawSquareHalfOnCanvas,
+  drawSquarePageOnCanvas,
+} from "./split16x9InBrowser";
 
 interface StoryBookPageProps {
   page: ReaderPage;
@@ -18,6 +21,8 @@ interface StoryBookPageProps {
   isCover: boolean;
   /** When set, this leaf renders a square crop of that half of the 16:9 image instead of the full image. */
   squareHalf?: "left" | "right";
+  /** When set, this leaf renders the page as ONE square: a 1:1 source fills it whole (cover / closing). */
+  squareFill?: boolean;
   /** Page number printed on the leaf; defaults to the source page number. */
   leafNumber?: number;
   /** When false the story text overlay is hidden (right halves carry only the artwork, like the print). */
@@ -37,7 +42,7 @@ type ImageState = "loading" | "loaded" | "error";
  */
 export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
   function StoryBookPage(
-    { page, title, childName, dedication, side, isCover, squareHalf, leafNumber, renderText = true },
+    { page, title, childName, dedication, side, isCover, squareHalf, squareFill, leafNumber, renderText = true },
     ref
   ) {
     const imageUrl = page.imageUrl ?? "";
@@ -49,7 +54,8 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
     }, [imageUrl]);
 
     useEffect(() => {
-      if (!squareHalf) return;
+      const cropMode = squareHalf ?? (squareFill ? "full" : undefined);
+      if (!cropMode) return;
       if (!imageUrl) {
         setImageState("error");
         return;
@@ -61,7 +67,11 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
         if (cancelled) return;
         const canvas = canvasRef.current;
         if (!canvas) return;
-        setImageState(drawSquareHalfOnCanvas(source, squareHalf, canvas) ? "loaded" : "error");
+        const drew =
+          cropMode === "full"
+            ? drawSquarePageOnCanvas(source, canvas)
+            : drawSquareHalfOnCanvas(source, cropMode, canvas);
+        setImageState(drew ? "loaded" : "error");
       };
       source.onerror = () => {
         if (!cancelled) setImageState("error");
@@ -72,7 +82,7 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
         source.onload = null;
         source.onerror = null;
       };
-    }, [imageUrl, squareHalf]);
+    }, [imageUrl, squareHalf, squareFill]);
 
     return (
       <div
@@ -90,7 +100,7 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
       >
         {/* Artwork */}
         <div className="absolute inset-0 story-book-art">
-          {squareHalf ? (
+          {squareHalf || squareFill ? (
             <canvas
               ref={canvasRef}
               aria-hidden="true"

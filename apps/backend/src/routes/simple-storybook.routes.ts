@@ -1,11 +1,8 @@
 import { Router } from "express";
 import { authMiddleware } from "../middleware/auth";
 import { imageGenerationService } from "../services/image-generation.service";
-import {
-  faceCanvasService,
-  FaceReferences,
-  getReferenceForPage,
-} from "../services/face-canvas.service";
+import { faceCanvasService } from "../services/face-canvas.service";
+import { getPageAspectRatio, isSquareBookPage, getPageComposition } from "../contracts/storybook";
 import { PDFService } from "../services/pdf.service";
 import { logger } from "../lib/logger";
 import { z } from "zod";
@@ -42,20 +39,15 @@ router.post("/simple", authMiddleware, async (req, res) => {
   const { title, pages, childImage } = validation.data;
 
   try {
-    // Generate the positioned face references ONCE per storybook from the
-    // uploaded photo (local detection + white-canvas compositing), then upload
-    // each canvas once so page calls reuse the URL instead of re-uploading
-    // the raw child photo on every page.
-    let storyRefs: FaceReferences | null = null;
+    // Crop the uploaded photo to the child's face ONCE per storybook (local
+    // detection + crop, no white canvas), then upload the single crop once so
+    // every page reuses the URL instead of re-uploading the raw photo.
+    let storyRef: string | null = null;
     if (childImage) {
       try {
         const faceRefs = await faceCanvasService.generateFaceReferences(childImage);
-        const [left, right] = await Promise.all([
-          imageGenerationService.uploadReferenceImage(faceRefs.left),
-          imageGenerationService.uploadReferenceImage(faceRefs.right),
-        ]);
-        storyRefs = { left, right };
-        logger.info("Positioned face references generated and uploaded for storybook");
+        storyRef = await imageGenerationService.uploadReferenceImage(faceRefs.face);
+        logger.info("Face crop generated and uploaded for storybook");
       } catch (err) {
         logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");
       }
@@ -71,24 +63,26 @@ router.post("/simple", authMiddleware, async (req, res) => {
     for (let i = 0; i < pages.length; i++) {
       const { content, prompt } = pages[i];
       const pageNumber = i + 1;
+      const totalPages = pages.length;
       let imageUrl: string | null = null;
       if (childImage) {
-        // Cover uses the centered reference; later pages pick the side from
-        // getPageComposition(pageNumber).characterSide so the reference framing
-        // matches the requested character placement.
-        const referenceUrl = storyRefs
-          ? getReferenceForPage(storyRefs, pageNumber)
-          : childImage;
+        // The same tight face crop is fed to the edit model for every page;
+        // the edge placement of the child in the final image is driven by the
+        // per-page composition directive below.
+        const referenceUrl = storyRef ?? childImage;
 
         imageUrl = await imageGenerationService.generateImageSync({
           prompt,
-          aspectRatio: "16:9",
+          aspectRatio: getPageAspectRatio(pageNumber, totalPages),
           imageUrl: referenceUrl,
+          edgePlacementSide: isSquareBookPage(pageNumber, totalPages)
+            ? undefined
+            : getPageComposition(pageNumber).characterSide,
         });
       } else {
         imageUrl = await imageGenerationService.generateImageSync({
           prompt,
-          aspectRatio: "16:9",
+          aspectRatio: getPageAspectRatio(pageNumber, totalPages),
         });
       }
       generatedPages.push({

@@ -132,8 +132,26 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
     [story]
   );
 
-  /** Each source page produces two square leaves (left + right halves). */
-  const leafCount = useMemo(() => (story ? pages.length * 2 : 0), [story, pages]);
+  /** Each source page produces two square leaves (left + right halves). The
+ *  cover (first) and closing (last) pages are generated 1:1 and stay ONE
+ *  square page. */
+  const leafCount = useMemo(() => {
+    if (!story) return 0;
+    if (pages.length <= 1) return pages.length;
+    return (pages.length - 2) * 2 + 2;
+  }, [story, pages]);
+
+  /** Map a flipbook leaf index back to its source page index. */
+  const sourceIndexForLeaf = useCallback(
+    (leafIndex: number): number => {
+      const n = pages.length;
+      if (n <= 1) return 0;
+      if (leafIndex <= 0) return 0;
+      if (leafIndex >= leafCount - 1) return n - 1;
+      return 1 + Math.floor((leafIndex - 1) / 2);
+    },
+    [pages.length, leafCount]
+  );
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
@@ -150,7 +168,7 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
     (e: { data: number }) => {
       const index = e.data;
       setCurrentLeaf(index);
-      preloadNeighbouringPages(pages, Math.floor(index / 2));
+      preloadNeighbouringPages(pages, sourceIndexForLeaf(index));
 
       const url = new URL(window.location.href);
       if (index > 0) url.searchParams.set("bookPage", String(index));
@@ -162,7 +180,7 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
 
       showControls();
     },
-    [pages, showControls]
+    [pages, sourceIndexForLeaf, showControls]
   );
 
   const goPrev = useCallback(() => {
@@ -176,7 +194,7 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
   }, [currentLeaf, leafCount]);
 
   // ---- Audio -------------------------------------------------------------
-  const currentSourceIndex = Math.floor(currentLeaf / 2);
+  const currentSourceIndex = sourceIndexForLeaf(currentLeaf);
   const currentAudioUrl =
     pages[currentSourceIndex + 1]?.audioUrl ||
     pages[currentSourceIndex]?.audioUrl ||
@@ -266,8 +284,27 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
   const pageLeafs = useMemo(() => {
     if (!story) return [];
     const leaves: ReactNode[] = [];
+    const n = pages.length;
     pages.forEach((page, sourceIndex) => {
-      const leftIndex = sourceIndex * 2;
+      const isSingleSquare = sourceIndex === 0 || sourceIndex === n - 1;
+      const leafIndex = leaves.length;
+      if (isSingleSquare) {
+        leaves.push(
+          <StoryBookPage
+            key={`${page.id}-s`}
+            page={page}
+            title={story.title}
+            childName={story.childName}
+            dedication={story.dedication}
+            squareFill
+            side={leafSide(leafIndex)}
+            isCover={sourceIndex === 0}
+            renderText={sourceIndex !== 0}
+            leafNumber={leafIndex + 1}
+          />
+        );
+        return;
+      }
       leaves.push(
         <StoryBookPage
           key={`${page.id}-l`}
@@ -276,10 +313,10 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
           childName={story.childName}
           dedication={story.dedication}
           squareHalf="left"
-          side={leafSide(leftIndex)}
-          isCover={sourceIndex === 0}
-          renderText={sourceIndex !== 0}
-          leafNumber={leftIndex + 1}
+          side={leafSide(leafIndex)}
+          isCover={false}
+          renderText
+          leafNumber={leafIndex + 1}
         />
       );
       leaves.push(
@@ -290,10 +327,10 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
           childName={story.childName}
           dedication={story.dedication}
           squareHalf="right"
-          side={leafSide(leftIndex + 1)}
+          side={leafSide(leafIndex + 1)}
           isCover={false}
           renderText={false}
-          leafNumber={leftIndex + 2}
+          leafNumber={leafIndex + 2}
         />
       );
     });
@@ -307,9 +344,9 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
   useEffect(() => {
     if (pages.length > 0 && leafCount > 0) {
       const startLeaf = Math.min(startPage, leafCount - 1);
-      preloadNeighbouringPages(pages, Math.floor(startLeaf / 2));
+      preloadNeighbouringPages(pages, sourceIndexForLeaf(startLeaf));
     }
-  }, [pages, startPage, leafCount]);
+  }, [pages, startPage, leafCount, sourceIndexForLeaf]);
 
   // ---- States ------------------------------------------------------------
   if (loading && !story) {

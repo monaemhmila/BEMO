@@ -6,7 +6,7 @@ import { validateStartup } from "./lib/startup";
 export async function startServer() {
   // Validate database before starting server
   const isValid = await validateStartup();
-  
+
   if (!isValid) {
     logger.warn("⚠️  Server starting with validation warnings. Check logs above.");
   }

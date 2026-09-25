@@ -20,9 +20,8 @@ import { ImageGenerationService } from "../services/image-generation.service";
 import { PDFService } from "../services/pdf.service";
 import {
   faceCanvasService,
-  FaceReferences,
-  getReferenceForPage,
 } from "../services/face-canvas.service";
+import { getPageAspectRatio, isSquareBookPage, getPageComposition } from "../contracts/storybook";
 import { customStoryService } from "../services/custom-story.service";
 import { logger } from "../lib/logger";
 
@@ -93,17 +92,14 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       "Starting template-free custom story generation"
     );
 
-    // Generate positioned face references ONCE from the uploaded photo
-    let storyRefs: FaceReferences | null = null;
+    // Crop the uploaded photo to the child's face ONCE, upload it to fal storage,
+    // and reuse the URL for every page (no white canvas, no per-side variants).
+    let storyRef: string | null = null;
     if (childImageData) {
       try {
         const faceRefs = await faceCanvasService.generateFaceReferences(childImageData);
-        const [left, right] = await Promise.all([
-          imageService.uploadReferenceImage(faceRefs.left),
-          imageService.uploadReferenceImage(faceRefs.right),
-        ]);
-        storyRefs = { left, right };
-        logger.info("Custom story: positioned face references generated and uploaded");
+        storyRef = await imageService.uploadReferenceImage(faceRefs.face);
+        logger.info("Custom story: face crop generated and uploaded");
       } catch (err) {
         logger.warn({ err }, "Custom story: face reference generation failed; falling back to raw child photo");
       }
@@ -129,15 +125,18 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     const previewPages = await Promise.all(
       firstTwoPages.map(async (page) => {
         const scenePrompt = `${childName} ${page.imageDescription}`;
-        const referenceUrl = storyRefs
-          ? getReferenceForPage(storyRefs, page.pageNumber)
+        const referenceUrl = storyRef
+          ? storyRef
           : childImageData;
 
         const imageUrl = await imageService.generateImageSync({
           prompt: scenePrompt,
-          aspectRatio: "16:9",
+          aspectRatio: getPageAspectRatio(page.pageNumber, totalPages),
           imageUrl: referenceUrl,
           childName,
+          edgePlacementSide: isSquareBookPage(page.pageNumber, totalPages)
+            ? undefined
+            : getPageComposition(page.pageNumber).characterSide,
         }).catch((err) => {
           logger.error({ err, pageNumber: page.pageNumber }, "Custom story: failed image generation for preview page");
           return null;
@@ -231,15 +230,18 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
           await Promise.all(
             remainingPages.map(async (page) => {
               const scenePrompt = `${childName} ${page.imageDescription}`;
-              const referenceUrl = storyRefs
-                ? getReferenceForPage(storyRefs, page.pageNumber)
+              const referenceUrl = storyRef
+                ? storyRef
                 : childImageData;
 
               const imageUrl = await imageService.generateImageSync({
                 prompt: scenePrompt,
-                aspectRatio: "16:9",
+                aspectRatio: getPageAspectRatio(page.pageNumber, totalPages),
                 imageUrl: referenceUrl,
                 childName,
+                edgePlacementSide: isSquareBookPage(page.pageNumber, totalPages)
+                  ? undefined
+                  : getPageComposition(page.pageNumber).characterSide,
               }).catch((err) => {
                 logger.error({ err, pageNumber: page.pageNumber }, "Custom story: failed background image generation for page");
                 return null;

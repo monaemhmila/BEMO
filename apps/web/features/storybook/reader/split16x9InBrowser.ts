@@ -43,3 +43,27 @@ export function drawSquareHalfOnCanvas(
   ctx.drawImage(img, sx, crop.cropY, crop.size, crop.size, 0, 0, crop.size, crop.size);
   return true;
 }
+
+/**
+ * Draw a SINGLE square page (cover / closing). A 1:1 source fills the canvas
+ * whole; an older 16:9 cover falls back to the centered square crop (the left
+ * printed half) so the page is never distorted.
+ */
+export function drawSquarePageOnCanvas(
+  img: HTMLImageElement,
+  canvas: HTMLCanvasElement
+): boolean {
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const isSquare = w > 0 && h > 0 && Math.abs(w - h) < Math.max(1, w * 0.03);
+  if (!isSquare) {
+    return drawSquareHalfOnCanvas(img, "left", canvas);
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return false;
+  canvas.width = w;
+  canvas.height = h;
+  ctx.drawImage(img, 0, 0, w, h, 0, 0, w, h);
+  return true;
+}

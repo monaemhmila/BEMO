@@ -5,7 +5,7 @@ import {
   STORYBOOK_IMAGE_ASPECT_RATIO,
   STORYBOOK_NEGATIVE_PROMPT,
 } from "../contracts/storybook";
-import { getArtStylePrompt, SUBJECT_IDENTITY_PROMPT } from "./image-style.service";
+import { buildStorybookImagePrompt } from "./image-style.service";
 
 interface ImageGenerationRequest {
   prompt: string;
@@ -14,8 +14,11 @@ interface ImageGenerationRequest {
   imageUrl?: string;
   childName?: string;
   artStyle?: string;
-  /** Internal: rephrase the prompt to policy-safe wording when fal flags it. */
+  /** Internal: keep set after fal content-policy rejections. */
   sanitizePolicy?: boolean;
+  /** Anchor the child to the far edge (left/right) in the final image
+   *  (middle pages only). */
+  edgePlacementSide?: "left" | "right";
 }
 
 interface ImageGenerationResult {
@@ -26,13 +29,6 @@ interface ImageGenerationResult {
 
 export const GROK_IMAGINE_MODEL = "xai/grok-imagine-image";
 export const GROK_IMAGINE_EDIT_MODEL = "xai/grok-imagine-image/edit";
-
-/**
- * Scene directive injected into every image prompt so the model renders a
- * lush, layered environment instead of a sparse background.
- */
-export const RICH_BACKGROUND_DIRECTIVE =
-  "";
 
 /**
  * Dedicated storybook image configuration so storybook-specific values are
@@ -96,9 +92,9 @@ export class ImageGenerationService {
   }
 
   /**
-   * Upload a positioned face-reference canvas to Fal storage ONCE per story so
-   * every page call can reuse the same public URL instead of re-uploading the
-   * client's raw photo. Non-data URLs are returned unchanged.
+   * Upload a face-crop reference to Fal storage ONCE per story so every page
+   * call can reuse the same public URL instead of re-uploading the client's
+   * raw photo. Non-data URLs are returned unchanged.
    */
   async uploadReferenceImage(url: string): Promise<string> {
     return this.ensurePublicImageUrl(url);
@@ -265,63 +261,31 @@ export class ImageGenerationService {
   }
 
   /**
-   * Build a storybook image prompt with anatomy and textless guarantees.
+   * Assemble the fixed storybook illustration prompt template from the scene
+   * description, selected art style, per-page aspect ratio and - for middle
+   * pages - the edge placement rule.
    */
   buildStorybookImagePrompt(input: {
     sceneDescription: string;
-    hasReference?: boolean;
-    childName?: string;
     artStyle?: string;
+    aspectRatio?: string;
+    edgePlacementSide?: "left" | "right";
   }): string {
-    let scene = input.sceneDescription.trim();
-    if (!scene.startsWith(RICH_BACKGROUND_DIRECTIVE)) {
-      scene = `${RICH_BACKGROUND_DIRECTIVE} ${scene}`;
-    }
-    const styled = getArtStylePrompt(scene, input.artStyle);
-    if (input.hasReference && !styled.startsWith(SUBJECT_IDENTITY_PROMPT)) {
-      return `${SUBJECT_IDENTITY_PROMPT} ${styled}`;
-    }
-    return styled;
+    return buildStorybookImagePrompt(input);
   }
 
   /**
-   * Assemble the final prompt string for the Grok Imagine API.
-   * When `sanitizePolicy` is set (fal rejected the earlier prompt), the
-   * photorealistic "real child photograph" phrasing is swapped for neutral
-   * illustration wording so the content checker can pass it.
+   * Assemble the final prompt string for the Grok Imagine API from the single
+   * storybook template. The template is already policy-safe (it never refers
+   * to a "real child photograph"), so content-policy retries reuse it as-is.
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
-    let scene = request.prompt.trim();
-
-    if (!scene.startsWith(RICH_BACKGROUND_DIRECTIVE)) {
-      scene = `${RICH_BACKGROUND_DIRECTIVE} ${scene}`;
-    }
-
-    if (request.sanitizePolicy) {
-      scene = scene
-        .replace(
-          /photo realistic high fidelity photograph of a real child, natural skin texture, realistic lighting and shadows, life-like colors/gi,
-          SUBJECT_IDENTITY_PROMPT
-        )
-        .replace(
-          /use the kid face without changing anything in the kid from the photo/gi,
-          SUBJECT_IDENTITY_PROMPT
-        );
-    }
-
-    const directives = getArtStylePrompt(scene, request.artStyle);
-
-    let baseScene = directives;
-    if (!baseScene.includes("completely textless")) {
-      baseScene = `${baseScene}. no text, no words, no letters, no typography, no signs, no speech bubbles, no watermark`;
-    } else if (!baseScene.includes("no white space")) {
-      baseScene = `${baseScene}. no white space, no blank borders, the child must be fully clothed wearing long trousers and pants (never wearing shorts or short clothing)`;
-    }
-
-    if (request.imageUrl && !baseScene.startsWith(SUBJECT_IDENTITY_PROMPT)) {
-      return `${SUBJECT_IDENTITY_PROMPT} ${baseScene}`;
-    }
-    return baseScene;
+    return buildStorybookImagePrompt({
+      sceneDescription: request.prompt.trim(),
+      artStyle: request.artStyle,
+      aspectRatio: request.aspectRatio,
+      edgePlacementSide: request.edgePlacementSide,
+    });
   }
 
   private delay(ms: number): Promise<void> {

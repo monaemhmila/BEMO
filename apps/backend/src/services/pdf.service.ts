@@ -6,8 +6,8 @@ import {
   getPageTextLayout,
 } from "../contracts/storybook";
 import {
-  split16x9IntoTwoSquares,
-  SplitSquareImage,
+  splitForBookPage,
+  BookPageImage,
 } from "../utils/split16x9IntoTwoSquares";
 
 interface StoryPagePayload {
@@ -16,11 +16,10 @@ interface StoryPagePayload {
   imageUrl?: string | null;
 }
 
-/**
- * One PDF leaf rendered for a story page. A story page whose 16:9 image is
- * available produces TWO leaves (left square then right square); a page
- * without an image produces a single fallback leaf.
- */
+/* A story page whose 16:9 image is available produces TWO leaves (left square
+ * then right square); a 1:1 source (cover / closing) is already the exact
+ * printed square page and produces a single full-bleed leaf. Pages without an
+ * image produce a single fallback leaf. */
 interface PdfLeaf {
   pageNumber: number;
   content: string;
@@ -85,13 +84,12 @@ const FONTS = {
 };
 
 /**
- * Download the already-generated 16:9 image and split it into two equal square
- * crops (left + right), vertically centered, using the shared utility. The
- * source image itself is never modified and no stretching/distortion happens:
- * each square keeps the full original width and uses only square size worth of
- * the vertical center. Cropping happens before any optional resizing.
+ * Download the generated page image and split it for the book. A 16:9 image
+ * becomes two equal square crops (left + right), vertically centered; a 1:1
+ * image (cover / closing pages) stays whole as a single square. The source is
+ * never modified and no stretching/distortion happens.
  */
-async function fetchSplitPageImages(url: string): Promise<SplitSquareImage | null> {
+async function fetchSplitPageImages(url: string): Promise<BookPageImage | null> {
   try {
     let rawBuffer: Buffer;
     if (url.startsWith("data:")) {
@@ -104,7 +102,7 @@ async function fetchSplitPageImages(url: string): Promise<SplitSquareImage | nul
       rawBuffer = Buffer.from(await response.arrayBuffer());
     }
 
-    return await split16x9IntoTwoSquares(rawBuffer);
+    return await splitForBookPage(rawBuffer);
   } catch (error) {
     console.error("Failed to split story image into squares for PDF:", error);
     return null;
@@ -144,15 +142,17 @@ export class PDFService {
       sortedPages.map((page) => (page.imageUrl ? fetchSplitPageImages(page.imageUrl) : Promise.resolve(null)))
     );
 
-    // One story page becomes two PDF leaves (left square, then right square)
-    // when its 16:9 image is available. Pages without an image collapse to a
-    // single fallback leaf.
+    // A 16:9 story page becomes two PDF leaves (left square, then right square).
+    // A 1:1 source (cover / closing) is already the exact page shape and stays a
+    // single full-bleed leaf. Pages without an image collapse to one fallback leaf.
     const leaves: PdfLeaf[] = [];
     sortedPages.forEach((page, index) => {
       const split = splitImages[index];
-      if (split) {
+      if (split?.left && split.right) {
         leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.left, renderText: true });
         leaves.push({ pageNumber: page.pageNumber, content: "", image: split.right, renderText: false });
+      } else if (split?.full) {
+        leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.full, renderText: true });
       } else {
         leaves.push({ pageNumber: page.pageNumber, content: page.content, image: null, renderText: true });
       }

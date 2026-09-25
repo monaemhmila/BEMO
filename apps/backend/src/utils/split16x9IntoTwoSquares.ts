@@ -67,3 +67,38 @@ export async function split16x9IntoTwoSquares(
     right: await encode(rightCrop),
   };
 }
+
+export interface BookPageImage {
+  /** Two square halves for a 16:9 source (printed side-by-side). */
+  left?: Buffer;
+  right?: Buffer;
+  /** The whole page kept square for a 1:1 source (cover / closing pages). */
+  full?: Buffer;
+}
+
+/**
+ * Split a generated page image for the book. A 16:9 source is cut into its two
+ * square halves (see `split16x9IntoTwoSquares`); a 1:1 source (cover and
+ * closing pages) is already exactly the printed page shape, so it is returned
+ * whole as a single full-bleed square. Tall/other sources fall back to the two
+ * half-width squares so nothing is ever distorted.
+ */
+export async function splitForBookPage(
+  source: Buffer,
+  options: Split16x9Options = {}
+): Promise<BookPageImage> {
+  const oriented = sharp(source, { failOn: "error" }).rotate();
+  const { width, height } = await oriented.metadata();
+  if (width && height && Math.abs(width - height) < Math.max(1, width * 0.03)) {
+    let pipeline = oriented;
+    if (options.size && options.size > 0) {
+      pipeline = pipeline.resize(options.size, options.size);
+    }
+    return {
+      full: await pipeline.jpeg({ quality: options.quality ?? 90, mozjpeg: true }).toBuffer(),
+    };
+  }
+
+  const { left, right } = await split16x9IntoTwoSquares(source, options);
+  return { left, right };
+}

@@ -6,7 +6,6 @@ import {
 import {
   faceCanvasService,
   FaceReferences,
-  PositionOnCanvas,
 } from "./face-canvas.service";
 
 interface FaceConsistentImageRequest {
@@ -14,7 +13,9 @@ interface FaceConsistentImageRequest {
   referenceImageUrl?: string;
   aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3";
   childName?: string;
-  position?: PositionOnCanvas;
+  /** Anchor the child to the far edge (left/right) in the final image
+   *  (middle pages only). */
+  edgePlacementSide?: "left" | "right";
   artStyle?: string;
 }
 
@@ -35,9 +36,9 @@ export class FaceConsistencyService {
   }
 
   /**
-   * Detect face and generate the left (8%) / right (92%) white canvas references (cached per URL).
+   * Crop the uploaded photo to the child's face (cached per source URL).
    */
-  async getOrGenerateReferences(referenceImageUrl: string): Promise<FaceReferences> {
+  async getOrGenerateFaceCrop(referenceImageUrl: string): Promise<FaceReferences> {
     if (this.referenceCache.has(referenceImageUrl)) {
       return this.referenceCache.get(referenceImageUrl)!;
     }
@@ -54,9 +55,8 @@ export class FaceConsistencyService {
 
     if (request.referenceImageUrl) {
       try {
-        const refs = await this.getOrGenerateReferences(request.referenceImageUrl);
-        const pos = request.position || "left";
-        processedReferenceUrl = pos === "left" ? refs.left : refs.right;
+        const refs = await this.getOrGenerateFaceCrop(request.referenceImageUrl);
+        processedReferenceUrl = refs.face || processedReferenceUrl;
       } catch (err) {
         processedReferenceUrl = request.referenceImageUrl;
       }
@@ -69,6 +69,7 @@ export class FaceConsistencyService {
         aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
         childName: request.childName,
         artStyle: request.artStyle,
+        edgePlacementSide: request.edgePlacementSide,
       },
       webhookUrl
     );
@@ -85,9 +86,8 @@ export class FaceConsistencyService {
 
     if (request.referenceImageUrl) {
       try {
-        const refs = await this.getOrGenerateReferences(request.referenceImageUrl);
-        const pos = request.position || "left";
-        processedReferenceUrl = pos === "left" ? refs.left : refs.right;
+        const refs = await this.getOrGenerateFaceCrop(request.referenceImageUrl);
+        processedReferenceUrl = refs.face || processedReferenceUrl;
       } catch (err) {
         processedReferenceUrl = request.referenceImageUrl;
       }
@@ -99,6 +99,7 @@ export class FaceConsistencyService {
       aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
       childName: request.childName,
       artStyle: request.artStyle,
+      edgePlacementSide: request.edgePlacementSide,
     });
   }
 

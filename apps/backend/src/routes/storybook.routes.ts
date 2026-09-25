@@ -11,9 +11,8 @@ import { PDFService } from "../services/pdf.service";
 import { storyGenerationLimiter } from "../middleware/rateLimiter";
 import {
   faceCanvasService,
-  FaceReferences,
-  getReferenceForPage,
 } from "../services/face-canvas.service";
+import { getPageAspectRatio, isSquareBookPage, getPageComposition } from "../contracts/storybook";
 import { logger } from "../lib/logger";
 import { z } from "zod";
 
@@ -692,22 +691,17 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       "Starting no-training PDF storybook generation"
     );
 
-    // Generate the positioned face references ONCE per story from the uploaded
-    // photo: detect + crop locally (no network), place on a wide 16:8 white
-    // canvas at the far left (8%) / far right (92%) edges, then upload each
-    // canvas to fal storage a single time so page calls reuse the URL instead
-    // of re-uploading the raw photo.
-    let storyRefs: FaceReferences | null = null;
+    // Crop the uploaded photo to the child's face ONCE per story: detect +
+    // crop locally (no network), upload the single crop to fal storage a
+    // single time so page calls reuse the URL instead of re-uploading the raw
+    // photo on every page.
+    let storyRef: string | null = null;
     if (childImage) {
       const inputImage: string = childImage;
       try {
         const faceRefs = await faceCanvasService.generateFaceReferences(inputImage);
-        const [left, right] = await Promise.all([
-          imageService.uploadReferenceImage(faceRefs.left),
-          imageService.uploadReferenceImage(faceRefs.right),
-        ]);
-        storyRefs = { left, right };
-        logger.info("Positioned face references generated and uploaded for story");
+        storyRef = await imageService.uploadReferenceImage(faceRefs.face);
+        logger.info("Face crop generated and uploaded for story");
       } catch (err) {
         logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");
       }
@@ -755,16 +749,19 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       firstTwoPages.map(async (page) => {
         const scenePrompt = `${childName} ${page.imageDescription}`;
 
-        const referenceUrl = storyRefs
-          ? getReferenceForPage(storyRefs, page.pageNumber)
+        const referenceUrl = storyRef
+          ? storyRef
           : childImage;
 
         const imageUrl = await imageService.generateImageSync({
           prompt: scenePrompt,
-          aspectRatio: "16:9",
+          aspectRatio: getPageAspectRatio(page.pageNumber, script.pages.length),
           imageUrl: referenceUrl,
           childName,
           artStyle,
+          edgePlacementSide: isSquareBookPage(page.pageNumber, script.pages.length)
+            ? undefined
+            : getPageComposition(page.pageNumber).characterSide,
         }).catch((err) => {
           logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for preview page");
           return null;
@@ -862,16 +859,22 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
           await Promise.all(
             remainingPages.map(async (page) => {
               const scenePrompt = `${childName} ${page.imageDescription}`;
-              const referenceUrl = storyRefs
-                ? getReferenceForPage(storyRefs, page.pageNumber)
+              const referenceUrl = storyRef
+                ? storyRef
                 : childImage;
 
               const imageUrl = await imageService.generateImageSync({
                 prompt: scenePrompt,
-                aspectRatio: "16:9",
+                aspectRatio: getPageAspectRatio(page.pageNumber, script.pages.length),
                 imageUrl: referenceUrl,
                 childName,
                 artStyle,
+                edgePlacementSide: isSquareBookPage(
+                  page.pageNumber,
+                  script.pages.length
+                )
+                  ? undefined
+                  : getPageComposition(page.pageNumber).characterSide,
               }).catch((err) => {
                 logger.error({ err, pageNumber: page.pageNumber }, "Failed background image generation for page");
                 return null;

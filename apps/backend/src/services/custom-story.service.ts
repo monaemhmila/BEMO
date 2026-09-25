@@ -12,7 +12,7 @@
 
 import { env } from "../config/env";
 import { logger } from "../lib/logger";
-import { getPageType, PageType } from "../contracts/storybook";
+import { getPageType, getPageAspectRatio, PageType } from "../contracts/storybook";
 
 export interface CustomStoryInput {
   childName: string;
@@ -35,7 +35,7 @@ export interface CustomStoryPage {
   imageDescription: string;
   emotion?: string;
   pageType?: PageType;
-  imageAspectRatio?: "16:9";
+  imageAspectRatio?: "16:9" | "1:1";
 }
 
 export interface CustomStoryScript {
@@ -89,6 +89,7 @@ For every page:
 - Write a clear, visual "imageDescription" of the scene with VERY RICH background details: first establish the setting, time of day, weather, lighting and color palette, then describe the ENTIRE background in four consecutive zones - what is on the RIGHT side, then the LEFT side, then the TOP, then the BOTTOM - plus the layered composition (background, midground, foreground) and any side creatures/characters and scenery elements. Put ${input.childName} in the middle of the action, actively doing things in the scene.
 - Keep the whole scene HOMOGENEOUS like ONE continuous background scene: right, left, top and bottom must all belong to the same location with matching time of day, lighting and colors, and the zones must blend smoothly into one another where they meet (no hard seams, no abrupt color or style changes, no cut-off elements at the edges), so the full frame reads as a single seamless environment rather than separate panels.
 - Do NOT include text, letters, signs, billboards, book titles, logos or speech bubbles in the imageDescription, and never render any story text inside the image.
+- The imageDescription must NEVER mention or imply any art style, illustration style, medium, or drawing technique - never use words like illustration, storybook, cartoon, anime, painting, watercolor, 3D, drawing, sketch, render, or any similar artistic term. Descriptions are purely about the scene CONTENT: the setting, time of day, weather, lighting, colors, characters, objects, and atmosphere. The artwork's visual style is applied separately and is not part of the description.
 - Never use the child's name inside the imageDescription.
 - Keep the hero fully clothed with long trousers/pants (never shorts or bare legs).
 - Ensure no white space and no blank margins in the composition.
@@ -118,12 +119,15 @@ function withPageComposition(script: CustomStoryScript): CustomStoryScript {
   const ordered = [...script.pages]
     .slice()
     .sort((a, b) => a.pageNumber - b.pageNumber)
-    .map((page, index) => ({
-      ...page,
-      pageNumber: index + 1,
-      pageType: getPageType(index + 1),
-      imageAspectRatio: "16:9" as const,
-    }));
+    .map((page, index) => {
+      const pageNumber = index + 1;
+      return {
+        ...page,
+        pageNumber,
+        pageType: getPageType(pageNumber),
+        imageAspectRatio: getPageAspectRatio(pageNumber, script.pages.length),
+      };
+    });
 
   return {
     title: script.title,
