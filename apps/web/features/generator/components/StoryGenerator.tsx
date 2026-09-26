@@ -49,11 +49,8 @@ const TEMPLATES: Record<string, { theme: string }> = {
   "magical-adventure": { theme: "discovers a magical portal and goes on an amazing adventure" },
   "brave-explorer": { theme: "becomes a brave explorer and discovers hidden treasures" },
   "kind-friend": { theme: "helps a lost animal find its way home and makes a new friend" },
-  "space-adventure": { theme: "blasts off in a rocket ship and meets friendly aliens" },
   "bedtime-dream": { theme: "floats up to the clouds and has a magical dream adventure" },
   "animal-friends": { theme: "visits a magical forest and befriends talking animals" },
-  "superhero-day": { theme: "wakes up with super powers and saves the day" },
-  "ocean-adventure": { theme: "dives under the ocean and discovers a mermaid kingdom" },
   // Home page story gallery templates
   "rocket-to-the-stars": { theme: "builds a rocket with tools from the shed, blasts off to the moon and befriends a tiny alien named Fizz who needs help finding his way back to his star" },
   "the-ocean-kingdom": { theme: "puts on a magic diving helmet, explores the deep sea and helps princess coral find her lost pearl-that-holds-the-sunset before the tide goes out" },

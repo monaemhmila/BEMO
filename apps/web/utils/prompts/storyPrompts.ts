@@ -131,15 +131,6 @@ STYLE REQUIREMENTS:
  */
 export const STORY_STARTERS = [
   {
-    id: "space-adventure",
-    title: "Space Explorer",
-    theme: "Blasts off to explore the stars and makes friends with a friendly alien",
-    category: "space",
-    icon: "🚀",
-    moralLesson: "Inclusion & celebrating cultural differences",
-    educationalFocus: "Basic astronomy, planets & gravity",
-  },
-  {
     id: "dragon-friend",
     title: "Dragon Friend",
     theme: "Discovers a lost baby dragon and helps it find its way home through patience and caring",
@@ -147,24 +138,6 @@ export const STORY_STARTERS = [
     icon: "🐉",
     moralLesson: "Patience, gentleness & empathy for lost creatures",
     educationalFocus: "Emotional intelligence & problem solving",
-  },
-  {
-    id: "ocean-mystery",
-    title: "Ocean Mystery",
-    theme: "Dives underwater, discovers a sea kingdom, and helps clean up a coral reef",
-    category: "ocean",
-    icon: "🐠",
-    moralLesson: "Ocean preservation & teamwork",
-    educationalFocus: "Marine biology & environmental awareness",
-  },
-  {
-    id: "superhero-day",
-    title: "Superhero Day",
-    theme: "Wakes up with superpowers and learns that true strength is helping neighbors and doing good deeds",
-    category: "superhero",
-    icon: "🦸",
-    moralLesson: "Responsibility, integrity & community helping",
-    educationalFocus: "Civic responsibility & cause-and-effect reasoning",
   },
   {
     id: "magic-garden",

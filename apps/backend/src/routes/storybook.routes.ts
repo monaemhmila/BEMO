@@ -99,15 +99,6 @@ router.get("/templates", async (_req, res) => {
       theme: "helps a lost animal find its way home and makes a new friend",
     },
     {
-      id: "space-adventure",
-      name: "Journey to the Stars",
-      description: "An exciting trip through outer space",
-      ageRange: "6-8",
-      category: "space",
-      coverImage: null,
-      theme: "blasts off in a rocket ship and meets friendly aliens",
-    },
-    {
       id: "bedtime-dream",
       name: "The Bedtime Dream",
       description: "A peaceful journey through dreamland",
@@ -124,24 +115,6 @@ router.get("/templates", async (_req, res) => {
       category: "animals",
       coverImage: null,
       theme: "visits a magical forest and befriends talking animals",
-    },
-    {
-      id: "superhero-day",
-      name: "Superhero Day",
-      description: "Discovering special powers and helping others",
-      ageRange: "6-8",
-      category: "superhero",
-      coverImage: null,
-      theme: "wakes up with super powers and saves the day",
-    },
-    {
-      id: "ocean-adventure",
-      name: "Under the Sea",
-      description: "Exploring the magical underwater world",
-      ageRange: "3-5",
-      category: "ocean",
-      coverImage: null,
-      theme: "dives under the ocean and discovers a mermaid kingdom",
     },
   ];
 

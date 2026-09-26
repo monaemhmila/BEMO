@@ -151,7 +151,6 @@ export const arFeatures: Record<string, string> = {
     "✨ هل تعلم؟ تُصمم كل رسوم باستخدام وجه طفلك الفعلي لاتساق مثالي!",
 
   // ── Dashboard ──────────────────────────────────────────────────────
-  "My Storybook Studio": "استوديو قصصي",
   "Track your creations and start new adventures.":
     "تتبع إبداعاتك وابدأ مغامرات جديدة.",
   "Create a New Story": "أنشئ قصة جديدة",
@@ -308,8 +307,6 @@ export const arFeatures: Record<string, string> = {
   "Dinosaur Time": "زمن الديناصورات",
   "Bedtime Dreams": "أحلام النوم",
   "Dragon Friend": "صديق التنين",
-  "Ocean Mystery": "غموض المحيط",
-  "Superhero Day": "يوم البطل الخارق",
   "Magic Garden": "الحديقة السحرية",
   "Dinosaur Expedition": "بعثة الديناصورات",
   "Sleepy Stars": "النجوم النائمة",

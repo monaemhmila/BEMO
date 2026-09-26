@@ -157,7 +157,6 @@ export const frFeatures: Record<string, string> = {
     "✨ Le saviez-vous ? Chaque illustration est créée avec le vrai visage de votre enfant pour une cohérence parfaite !",
 
   // ── Dashboard ──────────────────────────────────────────────────────
-  "My Storybook Studio": "Mon studio de livres d'histoires",
   "Track your creations and start new adventures.":
     "Suivez vos créations et commencez de nouvelles aventures.",
   "Create a New Story": "Créer une nouvelle histoire",
@@ -323,8 +322,6 @@ export const frFeatures: Record<string, string> = {
   "Dinosaur Time": "À l'époque des dinosaures",
   "Bedtime Dreams": "Rêves du soir",
   "Dragon Friend": "Ami dragon",
-  "Ocean Mystery": "Mystère de l'océan",
-  "Superhero Day": "Journée super-héros",
   "Magic Garden": "Jardin magique",
   "Dinosaur Expedition": "Expédition dinosaures",
   "Sleepy Stars": "Étoiles endormies",

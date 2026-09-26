@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BookOpenCheck } from "lucide-react";
 
 const LINKS = [
@@ -8,6 +11,12 @@ const LINKS = [
 ];
 
 export function StorybookNav() {
+  const pathname = usePathname();
+  // The dashboard has its own full-bleed header, so the studio bar is dropped there.
+  if (pathname === "/storybook/dashboard") {
+    return null;
+  }
+
   return (
     <div className="border-b border-buttercup/30 bg-white/70 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5 text-foreground/80">

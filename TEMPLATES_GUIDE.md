@@ -53,21 +53,12 @@ Each template in the system is explicitly designed around core moral lessons and
 3. **The Kind Friend** (`kind-friend`): 
    - **Moral Value**: Empathy, active listening, and gentle kindness to animals.
    - **Educational Focus**: Animal welfare, emotion recognition & social skills.
-4. **Journey to the Stars** (`space-adventure`): 
-   - **Moral Value**: Inclusion, celebrating differences, and cosmic curiosity.
-   - **Educational Focus**: Solar system astronomy, gravity, planets & physics basics.
-5. **The Bedtime Dream** (`bedtime-dream`): 
+4. **The Bedtime Dream** (`bedtime-dream`): 
    - **Moral Value**: Gratitude, mindfulness & peaceful emotional self-soothing.
    - **Educational Focus**: Mindfulness breathing, sleep routines & constellation shapes.
-6. **Forest Guardians** (`animal-friends`): 
+5. **Forest Guardians** (`animal-friends`): 
    - **Moral Value**: Environmental responsibility & caring for wildlife.
    - **Educational Focus**: Ecosystems, forest habitats & biodiversity.
-7. **Superhero Day** (`superhero-day`): 
-   - **Moral Value**: Integrity, community responsibility & standing up for good.
-   - **Educational Focus**: Civic duties, safety awareness & cause-and-effect reasoning.
-8. **Under the Sea** (`ocean-adventure`): 
-   - **Moral Value**: Ocean preservation, teamwork & keeping waters clean.
-   - **Educational Focus**: Marine biology, coral reefs & recycling concepts.
 
 ---
 

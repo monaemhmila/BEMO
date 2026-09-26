@@ -9,7 +9,6 @@ import {
   Sparkles,
   Clock,
   ArrowRight,
-  Gift,
   Package,
   Truck,
   CheckCircle2,
@@ -20,7 +19,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { useTrials } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../config";
 
 interface StorySummary {
@@ -127,7 +125,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function StorybookDashboardPage() {
   const { getToken, user } = useAuth();
-  const { trials, loading: trialsLoading } = useTrials();
   const [stats, setStats] = useState<StorybookStats>(EMPTY_STATS);
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,35 +174,6 @@ export default function StorybookDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <header className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm uppercase tracking-[0.3em] text-primary">
-              Dashboard
-            </p>
-            <h1 className="font-display text-3xl sm:text-4xl font-bold text-violet-deep mt-1">
-              My Storybook Studio
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Track your creations and start new adventures.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Free story generations badge */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-buttercup/20 to-blush/40 rounded-full border border-buttercup/40">
-              <Gift className="w-5 h-5 text-primary shrink-0" />
-              <span className="font-bold text-violet-deep">
-                {trialsLoading ? "..." : trials}
-              </span>
-              <span className="text-primary text-sm whitespace-nowrap">
-                free {trials === 1 ? "story" : "stories"} left
-              </span>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Quick Actions */}
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="p-6 border-border bg-gradient-to-br from-buttercup/15 to-blush/40">
