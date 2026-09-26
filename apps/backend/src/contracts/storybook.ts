@@ -30,7 +30,7 @@ export type TextPosition =
  */
 export type CharacterSide = "left" | "right";
 
-export const STORYBOOK_PAGE_COUNT = 5;
+export const STORYBOOK_PAGE_COUNT = 14;
 
 export const STORYBOOK_IMAGE_ASPECT_RATIO = "16:9";
 export const STORYBOOK_SQUARE_ASPECT_RATIO = "1:1";
@@ -74,36 +74,6 @@ export interface PageTextLayout {
   shadowOpacity: number;
 }
 
-const TEXT_POSITION_BY_PAGE: Record<number, TextPosition> = {
-  1: "top-center",
-  2: "bottom-left",
-  3: "bottom-right",
-  4: "bottom-left",
-  5: "bottom-right",
-  6: "bottom-left",
-  7: "bottom-right",
-  8: "bottom-left",
-  9: "bottom-right",
-  10: "bottom-left",
-  11: "bottom-right",
-  12: "bottom-left",
-  13: "bottom-right",
-  14: "bottom-left",
-  15: "bottom-center",
-  16: "center",
-};
-
-const PAGE_TYPE_BY_NUMBER: Record<number, PageType> = {
-  1: "cover",
-  2: "opening",
-  15: "ending",
-  16: "closing",
-};
-
-function isStoryPage(pageNumber: number): boolean {
-  return pageNumber >= 3 && pageNumber <= 14;
-}
-
 /**
  * The cover (first page) and the closing (last page) render as a single 1:1
  * square page in the book; every intermediate page is a 16:9 illustration that
@@ -123,17 +93,45 @@ export function getPageAspectRatio(
     : STORYBOOK_IMAGE_ASPECT_RATIO;
 }
 
-export function getPageType(pageNumber: number): PageType {
-  return PAGE_TYPE_BY_NUMBER[pageNumber] || (isStoryPage(pageNumber) ? "story" : "opening");
+/**
+ * Page types and text positions are DERIVED from the total page count instead
+ * of being hardcoded to absolute page numbers, so a book of any length always
+ * gets the same shape: cover, opening, story pages, ending, closing.
+ */
+export function getPageType(
+  pageNumber: number,
+  totalPages: number = STORYBOOK_PAGE_COUNT
+): PageType {
+  const last = Math.max(1, totalPages);
+
+  if (pageNumber === 1) return "cover";
+  if (pageNumber === 2) return "opening";
+  if (pageNumber === last) return "closing";
+  if (pageNumber === last - 1) return "ending";
+
+  return "story";
 }
 
-export function getTextPosition(pageNumber: number): TextPosition {
-  return TEXT_POSITION_BY_PAGE[pageNumber] || "bottom-center";
+export function getTextPosition(
+  pageNumber: number,
+  totalPages: number = STORYBOOK_PAGE_COUNT
+): TextPosition {
+  const pageType = getPageType(pageNumber, totalPages);
+
+  if (pageType === "cover") return "top-center";
+  if (pageType === "closing") return "center";
+  if (pageType === "ending") return "bottom-center";
+
+  // Body pages alternate corners so consecutive spreads stay balanced.
+  return pageNumber % 2 === 0 ? "bottom-left" : "bottom-right";
 }
 
 
-export function getPageComposition(pageNumber: number): PageComposition {
-  const textPosition = getTextPosition(pageNumber);
+export function getPageComposition(
+  pageNumber: number,
+  totalPages: number = STORYBOOK_PAGE_COUNT
+): PageComposition {
+  const textPosition = getTextPosition(pageNumber, totalPages);
   const isCover = pageNumber === 1;
   const isWide = textPosition === "bottom-center" || textPosition === "center";
 
@@ -144,7 +142,7 @@ export function getPageComposition(pageNumber: number): PageComposition {
 
   return {
     pageNumber,
-    pageType: getPageType(pageNumber),
+    pageType: getPageType(pageNumber, totalPages),
     textPosition,
     alignment: textPosition === "top-center" || textPosition === "bottom-center" || textPosition === "center" ? "center" : "left",
     imageAspectRatio: STORYBOOK_IMAGE_ASPECT_RATIO,
@@ -160,8 +158,11 @@ export function getPageComposition(pageNumber: number): PageComposition {
  * Numeric text layout in PDF points for the 210x210 mm square page, driven
  * only by the page number so PDF and image generation stay perfectly in sync.
  */
-export function getPageTextLayout(pageNumber: number): PageTextLayout {
-  const composition = getPageComposition(pageNumber);
+export function getPageTextLayout(
+  pageNumber: number,
+  totalPages: number = STORYBOOK_PAGE_COUNT
+): PageTextLayout {
+  const composition = getPageComposition(pageNumber, totalPages);
   const width = STORYBOOK_PAGE_WIDTH_PT;
   const height = STORYBOOK_PAGE_HEIGHT_PT;
   const margin = 56;
@@ -261,7 +262,29 @@ export function getPageTextLayout(pageNumber: number): PageTextLayout {
 export const STORYBOOK_NEGATIVE_PROMPT =
   "cartoon, cartoon character, cartoonized child, anime, manga, illustration, children's book illustration, drawing, painting, comic, stylized character, 3D cartoon, CGI character, toy-like appearance, plastic skin, exaggerated facial features, empty side areas, empty left side, empty right side, white side margins, white side panels, blank areas, blank margins, borders, letterboxing, pillarboxing, vertical bars, unused canvas, isolated central composition, text, typography, words, letters, signs, speech bubbles, logos, watermark, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, shorts, bare legs, partial crop, truncated frame";
 
+/**
+ * The categories a story template may belong to. Anything else (including a
+ * model echoing the list of options back at us) falls back to "adventure".
+ */
+export const STORY_CATEGORIES = [
+  "adventure",
+  "friendship",
+  "bedtime",
+  "fantasy",
+  "learning",
+  "animals",
+  "family",
+  "nature",
+  "sentimental",
+  "educative",
+  "moral",
+] as const;
+
 export function normalizeStoryCategory(rawCategory?: string | null): string {
   if (!rawCategory || !rawCategory.trim()) return "adventure";
-  return rawCategory.trim();
+
+  const normalized = rawCategory.trim().toLowerCase();
+  return (STORY_CATEGORIES as readonly string[]).includes(normalized)
+    ? normalized
+    : "adventure";
 }

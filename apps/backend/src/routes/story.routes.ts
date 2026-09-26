@@ -15,12 +15,10 @@ const audioService = AudioService.getInstance();
 // Validation schemas
 const GenerateStorySchema = z.object({
   modelId: z.string().min(1),
-  theme: z.string().min(1),
+  templateId: z.string().min(1, "Template is required"),
   artStyle: z.string().optional(),
   childName: z.string().optional(),
   childAge: z.number().min(3).max(12).optional(),
-  storyLength: z.enum(["short", "medium", "long"]).optional(),
-  category: z.string().optional(),
   dedication: z.string().optional(),
   includeAudio: z.boolean().optional(),
   voiceId: z.string().optional(),
@@ -48,7 +46,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
-    const { modelId, theme, artStyle, childName, childAge, storyLength, category, dedication, includeAudio, voiceId, language } = validation.data;
+    const { modelId, templateId, artStyle, childName, childAge, dedication, includeAudio, voiceId, language } = validation.data;
     const userId = req.userId!;
 
     // Verify model exists and is trained
@@ -73,18 +71,46 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
+    // The template row is the source of truth for the story arc
+    const templateRow = await prismaClient.storyTemplate.findFirst({
+      where: {
+        id: templateId,
+        isActive: true,
+        OR: [{ source: "PREDEFINED" }, { source: "CUSTOM", ownerUserId: userId }],
+      },
+    });
+
+    if (!templateRow) {
+      res.status(404).json({ message: "Story template not found" });
+      return;
+    }
+
+    const template = {
+      id: templateRow.id,
+      name: templateRow.name,
+      description: templateRow.description,
+      ageRange: templateRow.ageRange,
+      category: templateRow.category,
+      difficulty: templateRow.difficulty,
+      prompts: templateRow.prompts as unknown as {
+        theme: string;
+        moralLesson: string;
+        educationalFocus: string;
+        worldContext: string;
+        beats: string[];
+      },
+    };
+
     // Generate story script
     const script = childName && childAge
       ? await storyService.generatePersonalizedStoryScript(model.name, {
         childName,
         childAge,
-        theme,
-        storyLength: storyLength || "short",
-        category: category || "adventure",
+        template,
         dedication,
         language,
       })
-      : await storyService.generateStoryScript(model.name, theme, language);
+      : await storyService.generateStoryScript(model.name, template.prompts.theme, language);
 
     // Create story and pages in database
     const { story, pages } = await storyService.createStory(
@@ -92,7 +118,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       modelId,
       script,
       artStyle || "",
-      { childName, childAge, storyLength, category, dedication, includeAudio, voiceId }
+      { childName, childAge, template, dedication, includeAudio, voiceId }
     );
 
     // Trigger image generation for each page

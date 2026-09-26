@@ -17,9 +17,7 @@ import { webhookRouter } from "./routes/webhook.routes";
 import { falAiWebhookRouter } from "./routes/fal-ai-webhook.routes";
 
 import { adminRouter } from "./routes/admin.routes";
-import { simpleStorybookRouter } from "./routes/simple-storybook.routes";
 import { orderRouter } from "./routes/order.routes";
-import { customStoryRouter } from "./routes/custom-story.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
 
 initSentry();
@@ -103,8 +101,6 @@ export function createApp() {
   app.use("/admin", adminRouter);
     app.use("/orders", orderRouter);
 
-  app.use("/simple-storybook", simpleStorybookRouter);
-  app.use("/custom-story", customStoryRouter);
   app.use("/analytics", analyticsRouter);
 
   // Serve generated PDFs saved to assets/pdfs (e.g. /assets/pdfs/{storyId}.pdf)

@@ -40,28 +40,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
-import { STORY_LANGUAGES, STORY_LENGTH_CONFIG } from "../../../services/fal/storyGeneration";
+import { STORY_LANGUAGES } from "../constants";
 import { CARTOON_ART_STYLES, DEFAULT_ART_STYLE, getArtStyle } from "../../../services/fal/cartoonGeneration";
-import { STORY_STARTERS } from "../../../utils/prompts/storyPrompts";
-
-// Templates matching the ones defined on the backend
-const TEMPLATES: Record<string, { theme: string }> = {
-  "magical-adventure": { theme: "discovers a magical portal and goes on an amazing adventure" },
-  "brave-explorer": { theme: "becomes a brave explorer and discovers hidden treasures" },
-  "kind-friend": { theme: "helps a lost animal find its way home and makes a new friend" },
-  "bedtime-dream": { theme: "floats up to the clouds and has a magical dream adventure" },
-  "animal-friends": { theme: "visits a magical forest and befriends talking animals" },
-  // Home page story gallery templates
-  "rocket-to-the-stars": { theme: "builds a rocket with tools from the shed, blasts off to the moon and befriends a tiny alien named Fizz who needs help finding his way back to his star" },
-  "the-ocean-kingdom": { theme: "puts on a magic diving helmet, explores the deep sea and helps princess coral find her lost pearl-that-holds-the-sunset before the tide goes out" },
-  "the-enchanted-forest": { theme: "steps into a glowing forest where animals can talk and solves the riddle of the sleeping waterfall to bring the magic back to the woods" },
-  "the-lost-puppy": { theme: "finds a scared lost puppy in the rain, comforts it with patience and gentleness, and helps it find its way back to its family" },
-  "the-bravest-hug": { theme: "has butterflies before the first day of a new school and learns from the people who love them that the bravest thing is to share their feelings and ask for a hug" },
-  "grandmas-moonlight-garden": { theme: "spends a quiet evening with grandma in the moonlight garden, hears the story of every flower and learns that family love stays with us forever" },
-  "the-planet-hop": { theme: "joins professor Zuzu the teacher alien on a solar-system scavenger hunt and learns the order of the planets by visiting every one" },
-  "a-world-of-words": { theme: "discovers a magic library where letters come alive, learns to recognize them and sound out first words to help them get back into their books" },
-  "the-tiny-gardeners": { theme: "plants seeds in the family garden with grandma, learns what plants need to grow - soil, water, sunlight and patience - and watches a tiny garden come to life" },
-};
 
 const STEPS = [
   { title: "Your Hero", description: "Upload a photo of your child", icon: User },
@@ -83,6 +63,17 @@ interface GeneratedStoryResult {
   pages: StoryPageData[];
 }
 
+/** A predefined template as returned by GET /storybook/templates. */
+interface TemplateOption {
+  id: string;
+  name: string;
+  description: string;
+  ageRange: string;
+  category: string;
+  difficulty: number;
+  tags: string[];
+}
+
 export function StoryGenerator() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -102,32 +93,121 @@ export function StoryGenerator() {
   const [childAge, setChildAge] = useState(5);
   const [childImage, setChildImage] = useState<string | null>(null);
   const [childImagePreview, setChildImagePreview] = useState<string | null>(null);
-  const [theme, setTheme] = useState("");
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [customMode, setCustomMode] = useState(false);
   const [customIdea, setCustomIdea] = useState("");
   const [customSetting, setCustomSetting] = useState("");
   const [customExtras, setCustomExtras] = useState("");
   const [customMessage, setCustomMessage] = useState("");
-  const [storyLength, setStoryLength] = useState<"short" | "medium" | "long">("short");
   const [storyLanguage, setStoryLanguage] = useState<"english" | "french" | "arabic">("english");
   const [artStyle, setArtStyle] = useState(DEFAULT_ART_STYLE);
   const [dedication, setDedication] = useState("");
 
-  const buildCustomTheme = () => {
-    const parts = [customIdea.trim()];
-    if (customSetting.trim()) parts.push(`Setting: ${customSetting.trim()}`);
-    if (customExtras.trim()) parts.push(`Include: ${customExtras.trim()}`);
-    if (customMessage.trim()) parts.push(`Message: ${customMessage.trim()}`);
-    return parts.filter(Boolean).join(". ");
-  };
+  // A custom idea is turned into a real template first, so the generation call
+  // always carries a templateId and both paths share one flow.
+  const [customTemplateId, setCustomTemplateId] = useState<string | null>(null);
+  const [customTemplateName, setCustomTemplateName] = useState<string>("");
+  const [customTemplateLoading, setCustomTemplateLoading] = useState(false);
+  const [customTemplateError, setCustomTemplateError] = useState<string | null>(null);
 
-  // Pre-fill from ?templateId query param
+  const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+
+  // Pre-fill from ?templateId, or open straight into "My Own Story" via ?custom=1
   useEffect(() => {
-    const templateId = searchParams?.get("templateId");
-    if (templateId && TEMPLATES[templateId]) {
-      setTheme(TEMPLATES[templateId].theme);
+    const params = searchParams;
+    if (!params) return;
+
+    if (params.get("custom")) {
+      setCustomMode(true);
+      setCustomTemplateId(null);
+      setStep((current) => (current === 0 ? 1 : current));
+      return;
+    }
+
+    const templateId = params.get("templateId");
+    if (templateId) {
+      setCustomMode(false);
+      setSelectedTemplateId(templateId);
     }
   }, [searchParams]);
+
+  // The database is the source of truth for the template list.
+  useEffect(() => {
+    let cancelled = false;
+
+    axios
+      .get<{ templates: TemplateOption[] }>(`${BACKEND_URL}/storybook/templates`)
+      .then((response) => {
+        if (cancelled) return;
+        const list = response.data?.templates ?? [];
+        setTemplates(list);
+        setSelectedTemplateId((current) => {
+          if (current && list.some((t) => t.id === current)) return current;
+          return list[0]?.id ?? "";
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setTemplates([]);
+          setError("We couldn't load the story templates. Please refresh and try again.");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /** Turn the parent's idea into a stored custom template. */
+  const createCustomTemplate = async (): Promise<string | null> => {
+    const idea = customIdea.trim();
+    if (idea.length < 3) {
+      setCustomTemplateError("Tell us a little about your story first.");
+      return null;
+    }
+
+    setCustomTemplateLoading(true);
+    setCustomTemplateError(null);
+
+    try {
+      const token = await getToken?.();
+      const ageRange = childAge <= 5 ? "3-5" : childAge <= 8 ? "6-8" : "9-12";
+
+      const response = await axios.post(
+        `${BACKEND_URL}/storybook/templates/custom`,
+        {
+          idea,
+          setting: customSetting.trim() || undefined,
+          extras: customExtras.trim() || undefined,
+          message: customMessage.trim() || undefined,
+          ageRange,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const template: TemplateOption = response.data?.template;
+      if (!template?.id) {
+        setCustomTemplateError("We couldn't build that story yet. Please try again.");
+        return null;
+      }
+
+      setCustomTemplateId(template.id);
+      setCustomTemplateName(template.name);
+      return template.id;
+    } catch (err) {
+      console.error("Custom template creation failed", err);
+      const errorResponse = err instanceof AxiosError ? err.response : undefined;
+      setCustomTemplateError(
+        (errorResponse?.data as { message?: string } | undefined)?.message ||
+          "We couldn't build that story yet. Please try again."
+      );
+      return null;
+    } finally {
+      setCustomTemplateLoading(false);
+    }
+  };
+
 
   const handleImageUpload = (file: File) => {
     const supportedTypes = ["image/jpeg", "image/png", "image/webp"];
@@ -150,7 +230,13 @@ export function StoryGenerator() {
   };
 
   const handleGenerate = async () => {
-    if (!childName || !(customMode ? customIdea.trim() : theme)) {
+    // Custom stories become a real template first, so the generation request
+    // always carries a templateId and both paths converge on one flow.
+    const templateId = customMode
+      ? customTemplateId ?? (await createCustomTemplate())
+      : selectedTemplateId;
+
+    if (!childName.trim() || !templateId) {
       setError("Please complete all required fields");
       return;
     }
@@ -166,10 +252,9 @@ export function StoryGenerator() {
       const response = await axios.post(
         `${BACKEND_URL}/storybook/generate-pdf`,
         {
-          childName,
+          childName: childName.trim(),
           childAge,
-          theme: customMode ? buildCustomTheme() : theme,
-          storyLength,
+          templateId,
           language: storyLanguage,
           artStyle,
           dedication: dedication || undefined,
@@ -225,7 +310,7 @@ export function StoryGenerator() {
   const canProceed = () => {
     switch (step) {
       case 0: return !!childName.trim() && !!childImage;
-      case 1: return customMode ? !!customIdea.trim() : !!theme.trim();
+      case 1: return customMode ? !!customIdea.trim() : !!selectedTemplateId;
       case 2: return true;
       default: return false;
     }
@@ -566,7 +651,7 @@ export function StoryGenerator() {
                 <Label>Quick Starters</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                   <button
-                    onClick={() => setCustomMode(true)}
+                    onClick={() => { setCustomMode(true); setCustomTemplateId(null); }}
                     className={`p-3 rounded-xl border-2 text-left transition-all ${customMode
                       ? "border-primary bg-buttercup/10"
                       : "border-dashed border-primary/50 hover:border-primary"
@@ -580,17 +665,20 @@ export function StoryGenerator() {
                       No template — from your idea
                     </span>
                   </button>
-                  {STORY_STARTERS.slice(0, 8).map((starter) => (
+                  {templates.map((template) => (
                     <button
-                      key={starter.id}
-                      onClick={() => { setCustomMode(false); setTheme(starter.theme); }}
-                      className={`p-3 rounded-xl border-2 text-left transition-all ${!customMode && theme === starter.theme
+                      key={template.id}
+                      onClick={() => { setCustomMode(false); setSelectedTemplateId(template.id); }}
+                      title={template.description}
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${!customMode && selectedTemplateId === template.id
                         ? "border-primary bg-buttercup/10"
                         : "border-border hover:border-border"
                         }`}
                     >
-                      <span className="text-2xl block mb-1">{starter.icon}</span>
-                      <span className="text-sm font-medium text-violet-deep">{starter.title}</span>
+                      <span className="text-sm font-medium text-violet-deep block">{template.name}</span>
+                      <span className="block text-[11px] text-muted-foreground mt-0.5">
+                        Ages {template.ageRange}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -614,7 +702,7 @@ export function StoryGenerator() {
                     </Label>
                     <Textarea
                       value={customIdea}
-                      onChange={(e) => setCustomIdea(e.target.value)}
+                      onChange={(e) => { setCustomIdea(e.target.value); setCustomTemplateId(null); }}
                       placeholder="e.g., Leo visits grandma's bakery and secretly helps save the day when the oven breaks before the town festival..."
                       className="min-h-28"
                     />
@@ -624,7 +712,7 @@ export function StoryGenerator() {
                       <Label>Setting <span className="text-muted-foreground">(optional)</span></Label>
                       <Input
                         value={customSetting}
-                        onChange={(e) => setCustomSetting(e.target.value)}
+                        onChange={(e) => { setCustomSetting(e.target.value); setCustomTemplateId(null); }}
                         placeholder="e.g., A snowy mountain village"
                       />
                     </div>
@@ -632,7 +720,7 @@ export function StoryGenerator() {
                       <Label>Extras to include <span className="text-muted-foreground">(optional)</span></Label>
                       <Input
                         value={customExtras}
-                        onChange={(e) => setCustomExtras(e.target.value)}
+                        onChange={(e) => { setCustomExtras(e.target.value); setCustomTemplateId(null); }}
                         placeholder="e.g., A fluffy rabbit, a magic sleigh"
                       />
                     </div>
@@ -641,37 +729,54 @@ export function StoryGenerator() {
                     <Label>A message to teach <span className="text-muted-foreground">(optional)</span></Label>
                     <Input
                       value={customMessage}
-                      onChange={(e) => setCustomMessage(e.target.value)}
+                      onChange={(e) => { setCustomMessage(e.target.value); setCustomTemplateId(null); }}
                       placeholder="e.g., Helping others makes us braver"
                     />
                   </div>
+
+                  {customTemplateId && (
+                    <div className="flex items-start gap-3 bg-emerald-50 text-emerald-800 p-4 rounded-xl text-sm">
+                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <p>
+                        Your story is ready: <strong>{customTemplateName || "Your custom story"}</strong>.
+                        Edit your idea above to rebuild it.
+                      </p>
+                    </div>
+                  )}
+
+                  {customTemplateError && (
+                    <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm">{customTemplateError}</div>
+                  )}
+
+                  <Button
+                    type="button"
+                    onClick={createCustomTemplate}
+                    disabled={customTemplateLoading || customIdea.trim().length < 3}
+                    className="w-full bg-white text-violet-deep border border-border hover:bg-buttercup/10"
+                  >
+                    {customTemplateLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Writing your story...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        {customTemplateId ? "Rebuild my story" : "Turn my idea into a story"}
+                      </>
+                    )}
+                  </Button>
                 </motion.div>
               ) : (
-                <div className="space-y-2">
-                  <Label>Or Write Your Own</Label>
-                  <Input
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value)}
-                    placeholder="e.g., Travels to a magical forest and befriends talking animals..."
-                    className="h-12"
-                  />
-                </div>
+                selectedTemplate && (
+                  <div className="rounded-2xl border border-border bg-muted/30 p-5">
+                    <h3 className="font-display font-bold text-violet-deep">{selectedTemplate.name}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedTemplate.description}</p>
+                  </div>
+                )
               )}
 
               <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Story Length</Label>
-                  <Select value={storyLength} onValueChange={(v) => setStoryLength(v as "short" | "medium" | "long")}>
-                    <SelectTrigger className="mt-1 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(STORY_LENGTH_CONFIG).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>{config.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div>
                   <Label>Story Language</Label>
                   <Select
@@ -741,8 +846,12 @@ export function StoryGenerator() {
                     <p className="font-medium text-violet-deep text-lg">{childName}, age {childAge}</p>
                   </div>
                   <div>
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Story Length</span>
-                    <p className="font-medium text-violet-deep">{STORY_LENGTH_CONFIG[storyLength].label}</p>
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Story</span>
+                    <p className="font-medium text-violet-deep">
+                      {customMode
+                        ? customTemplateName || "Your own story"
+                        : selectedTemplate?.name || "—"}
+                    </p>
                   </div>
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Language</span>
@@ -751,10 +860,6 @@ export function StoryGenerator() {
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Art Style</span>
                     <p className="font-medium text-violet-deep">{getArtStyle(artStyle).emoji} {getArtStyle(artStyle).name}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">Adventure Theme</span>
-                    <p className="font-medium text-violet-deep">{customMode ? buildCustomTheme() : theme}</p>
                   </div>
                   {dedication.trim() && (
                     <div className="col-span-2">
@@ -777,8 +882,7 @@ export function StoryGenerator() {
               <div className="flex items-start gap-3 bg-blue-50 text-blue-800 p-4 rounded-xl text-sm">
                 <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <p>
-                  Generation takes about{" "}
-                  <strong>{STORY_LENGTH_CONFIG[storyLength].pages * 30} seconds</strong>.
+                  Generation takes about <strong>7 minutes</strong>.
                   Images are generated live with Fal AI — no model training required!
                 </p>
               </div>

@@ -12,7 +12,7 @@ import { storyGenerationLimiter } from "../middleware/rateLimiter";
 import {
   faceCanvasService,
 } from "../services/face-canvas.service";
-import { getPageAspectRatio, isSquareBookPage, getPageComposition } from "../contracts/storybook";
+import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT } from "../contracts/storybook";
 import { logger } from "../lib/logger";
 import { z } from "zod";
 
@@ -26,10 +26,8 @@ const GenerateStorybookSchema = z.object({
   modelId: z.string().min(1),
   childName: z.string().min(1),
   childAge: z.number().min(3).max(12),
-  storyLength: z.enum(["short", "medium", "long"]).default("short"),
-  category: z.string().optional(),
+  templateId: z.string().min(1, "Template is required"),
   dedication: z.string().optional(),
-  theme: z.string().min(1),
   artStyle: z.string().optional(),
   includeAudio: z.boolean().optional().default(false),
   voiceId: z.string().optional().default("sarah"),
@@ -43,13 +41,53 @@ const SimplePDFSchema = z.object({
   eyeColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   skinTone: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   hairDescription: z.string().trim().max(120).optional().nullable().or(z.literal("")),
-  theme: z.string().trim().min(1, "Theme is required"),
-  storyLength: z.enum(["short", "medium", "long"]).optional().nullable().transform((v) => v || "short"),
+  templateId: z.string().trim().min(1, "Template is required"),
   dedication: z.string().optional().nullable().or(z.literal("")),
   childImage: z.string().optional().nullable().or(z.literal("")),
   language: z.enum(["english", "french", "arabic"]).optional().default("english"),
   artStyle: z.string().optional().nullable().or(z.literal("")),
 });
+
+const CustomTemplateSchema = z.object({
+  idea: z.string().trim().min(3, "Tell us a little about your story").max(500),
+  setting: z.string().trim().max(200).optional(),
+  extras: z.string().trim().max(200).optional(),
+  message: z.string().trim().max(200).optional(),
+  ageRange: z.enum(["3-5", "6-8", "9-12"]),
+});
+
+/** Explicit profanity / hateful-content screen for parent-supplied text. */
+const UNSAFE_TERMS = [
+  "fuck",
+  "shit",
+  "bitch",
+  "cunt",
+  "asshole",
+  "bastard",
+  "slut",
+  "whore",
+  "rape",
+  "molest",
+  "gore",
+  "suicide",
+  "hate you",
+  "kill yourself",
+];
+
+function moderateText(text: string): { safe: boolean; reason?: string } {
+  const normalized = ` ${text.toLowerCase().replace(/[^a-z\s]/g, " ").replace(/\s+/g, " ")} `;
+
+  const term = UNSAFE_TERMS.find((unsafe) => normalized.includes(` ${unsafe} `));
+  if (term) {
+    return {
+      safe: false,
+      reason:
+        "That story idea contains language or themes we can't use in a children's book. Please rephrase it.",
+    };
+  }
+
+  return { safe: true };
+}
 
 /**
  * GET /storybook/trials
@@ -67,59 +105,163 @@ router.get("/trials", authMiddleware, async (req, res) => {
 
 /**
  * GET /storybook/templates
- * Get available story templates
+ * Get available story templates. The database is the source of truth: every
+ * row carries the 14-beat prompt document the generator writes from.
  */
 router.get("/templates", async (_req, res) => {
-  const templates = [
-    {
-      id: "magical-adventure",
-      name: "The Magical Adventure",
-      description: "A whimsical journey through enchanted lands",
-      ageRange: "3-5",
-      category: "adventure",
-      coverImage: null,
-      theme: "discovers a magical portal and goes on an amazing adventure",
-    },
-    {
-      id: "brave-explorer",
-      name: "The Brave Explorer",
-      description: "Discovering new worlds and making friends",
-      ageRange: "6-8",
-      category: "adventure",
-      coverImage: null,
-      theme: "becomes a brave explorer and discovers hidden treasures",
-    },
-    {
-      id: "kind-friend",
-      name: "The Kind Friend",
-      description: "Learning the value of friendship and kindness",
-      ageRange: "3-5",
-      category: "friendship",
-      coverImage: null,
-      theme: "helps a lost animal find its way home and makes a new friend",
-    },
-    {
-      id: "bedtime-dream",
-      name: "The Bedtime Dream",
-      description: "A peaceful journey through dreamland",
-      ageRange: "3-5",
-      category: "bedtime",
-      coverImage: null,
-      theme: "floats up to the clouds and has a magical dream adventure",
-    },
-    {
-      id: "animal-friends",
-      name: "Forest Friends",
-      description: "Making friends with woodland creatures",
-      ageRange: "6-8",
-      category: "animals",
-      coverImage: null,
-      theme: "visits a magical forest and befriends talking animals",
-    },
-  ];
+  const rows = await prismaClient.storyTemplate.findMany({
+    where: { isActive: true, source: "PREDEFINED" },
+    orderBy: [{ difficulty: "asc" }, { name: "asc" }],
+  });
 
-  res.json({ templates });
+  res.json({
+    templates: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      ageRange: row.ageRange,
+      category: row.category,
+      difficulty: row.difficulty,
+      tags: row.tags,
+      coverImage: row.coverImage,
+    })),
+  });
 });
+
+/**
+ * POST /storybook/templates/custom
+ * Turn a parent's idea into a reusable custom story template owned by that
+ * user, then hand back the stored row so the frontend can generate from it
+ * with the exact same flow used by the predefined templates.
+ */
+router.post("/templates/custom", authMiddleware, storyGenerationLimiter, async (req, res) => {
+  const validation = CustomTemplateSchema.safeParse(req.body);
+  if (!validation.success) {
+    res.status(400).json({
+      message: "Invalid input",
+      errors: validation.error.flatten(),
+    });
+    return;
+  }
+
+  const { idea, setting, extras, message, ageRange } = validation.data;
+  const moderation = moderateText([idea, setting, extras, message].filter(Boolean).join(" "));
+  if (!moderation.safe) {
+    res.status(400).json({ message: moderation.reason, code: "UNSAFE_TEMPLATE_INPUT" });
+    return;
+  }
+
+  try {
+    const generated = await storyService.generateCustomTemplate({
+      idea,
+      setting,
+      extras,
+      message,
+      ageRange,
+    });
+
+    const template = await prismaClient.storyTemplate.create({
+      data: {
+        name: generated.name,
+        description: generated.description,
+        ageRange,
+        category: generated.category,
+        difficulty: generated.difficulty,
+        tags: generated.tags,
+        prompts: generated.prompts as unknown as object,
+        isActive: true,
+        source: "CUSTOM",
+        ownerUserId: req.userId!,
+      },
+    });
+
+    res.status(201).json({
+      template: {
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        ageRange: template.ageRange,
+        category: template.category,
+        difficulty: template.difficulty,
+        tags: template.tags,
+        coverImage: template.coverImage,
+      },
+    });
+  } catch (error) {
+    logger.error({ err: error }, "Failed to generate custom story template");
+    res.status(500).json({
+      message:
+        error instanceof Error
+          ? error.message
+          : "We couldn't turn that idea into a storybook yet. Please try again.",
+    });
+  }
+});
+
+/**
+ * Resolve a template id for generation. A user may use any active predefined
+ * template plus their own custom templates.
+ */
+async function loadUsableTemplate(
+  templateId: string,
+  userId: string
+): Promise<{
+  id: string;
+  name: string;
+  description: string;
+  ageRange: string;
+  category: string;
+  difficulty: number;
+  prompts: {
+    theme: string;
+    moralLesson: string;
+    educationalFocus: string;
+    worldContext: string;
+    beats: string[];
+  };
+} | null> {
+  const row = await prismaClient.storyTemplate.findFirst({
+    where: {
+      id: templateId,
+      isActive: true,
+      OR: [{ source: "PREDEFINED" }, { source: "CUSTOM", ownerUserId: userId }],
+    },
+  });
+
+  if (!row) return null;
+
+  const prompts = row.prompts as unknown as {
+    theme?: string;
+    moralLesson?: string;
+    educationalFocus?: string;
+    worldContext?: string;
+    beats?: string[];
+  };
+
+  if (!Array.isArray(prompts.beats) || prompts.beats.length !== STORYBOOK_PAGE_COUNT) {
+    logger.error(
+      { templateId: row.id, beats: Array.isArray(prompts.beats) ? prompts.beats.length : 0 },
+      "Story template does not contain the required number of beats"
+    );
+    return null;
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    ageRange: row.ageRange,
+    category: row.category,
+    difficulty: row.difficulty,
+    prompts: {
+      theme: prompts.theme ?? "",
+      moralLesson: prompts.moralLesson ?? "",
+      educationalFocus: prompts.educationalFocus ?? "",
+      worldContext: prompts.worldContext ?? "",
+      beats: prompts.beats,
+    },
+  };
+}
 
 /**
  * POST /storybook/generate
@@ -144,10 +286,8 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       modelId,
       childName,
       childAge,
-      storyLength,
-      category,
+      templateId,
       dedication,
-      theme,
       artStyle,
       includeAudio,
       voiceId,
@@ -175,21 +315,26 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
+    // Step 3: Resolve the template (predefined, or one this user owns)
+    const template = await loadUsableTemplate(templateId, userId);
+    if (!template) {
+      res.status(404).json({ message: "Story template not found" });
+      return;
+    }
+
     logger.info(
-      { userId, modelId, storyLength, includeAudio },
+      { userId, modelId, templateId, includeAudio },
       "Starting storybook generation"
     );
 
-    // Step 3: Generate story script
+    // Step 4: Generate story script
     const script = await storyService.generatePersonalizedStoryScript(
       model.name,
       {
         childName,
         childAge,
-        storyLength,
-        category: category || "adventure",
+        template,
         dedication,
-        theme,
       },
       {
         name: childName,
@@ -198,7 +343,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       }
     );
 
-    // Step 4: Create story in database (status: Generating)
+    // Step 5: Create story in database (status: Generating)
     const { story, pages } = await storyService.createStory(
       userId,
       modelId,
@@ -207,8 +352,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       {
         childName,
         childAge,
-        storyLength,
-        category,
+        template,
         dedication,
         includeAudio,
         voiceId,
@@ -216,7 +360,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     );
     storyId = story.id;
 
-    // Step 5: Trigger every page with the model's reference portrait through Grok Imagine.
+    // Step 6: Trigger every page with the model's reference portrait through Grok Imagine.
     const generationResults = await Promise.allSettled(
       pages.map((page) =>
         storyService.triggerPageGeneration(page.id, page.imagePrompt, model.thumbnail, { childName, artStyle })
@@ -639,8 +783,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
   const eyeColor = validation.data.eyeColor || undefined;
   const skinTone = validation.data.skinTone || undefined;
   const hairDescription = validation.data.hairDescription || undefined;
-  const theme = validation.data.theme;
-  const storyLength = validation.data.storyLength || undefined;
+  const templateId = validation.data.templateId;
   const dedication = validation.data.dedication || undefined;
   const childImage = validation.data.childImage || undefined;
   const language = validation.data.language || undefined;
@@ -659,8 +802,16 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       return;
     }
 
+    // Predefined templates are available to everyone; custom templates only to
+    // the user who created them.
+    const template = await loadUsableTemplate(templateId, req.userId!);
+    if (!template) {
+      res.status(404).json({ message: "Story template not found" });
+      return;
+    }
+
     logger.info(
-      { childName, theme, storyLength, trialsLeft },
+      { childName, templateId, trialsLeft },
       "Starting no-training PDF storybook generation"
     );
 
@@ -701,9 +852,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       {
         childName,
         childAge,
-        theme,
-        category: "adventure",
-        storyLength,
+        template,
         dedication,
         language,
       },
@@ -734,7 +883,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
           artStyle,
           edgePlacementSide: isSquareBookPage(page.pageNumber, script.pages.length)
             ? undefined
-            : getPageComposition(page.pageNumber).characterSide,
+            : getPageComposition(page.pageNumber, script.pages.length).characterSide,
         }).catch((err) => {
           logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for preview page");
           return null;
@@ -776,9 +925,11 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         status: remainingPages.length === 0 ? "Completed" : "Generating",
         childName,
         childAge,
-        storyLength,
-        category: "adventure",
+        // Every book is 14 pages, so the legacy storyLength column is left at
+        // its default and the template row is the source of truth.
+        category: template.category,
         dedication,
+        templateId: template.id,
       },
     });
 
@@ -847,7 +998,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
                   script.pages.length
                 )
                   ? undefined
-                  : getPageComposition(page.pageNumber).characterSide,
+                  : getPageComposition(page.pageNumber, script.pages.length).characterSide,
               }).catch((err) => {
                 logger.error({ err, pageNumber: page.pageNumber }, "Failed background image generation for page");
                 return null;

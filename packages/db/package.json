@@ -17,6 +17,7 @@
     "migrate:dev": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:seed": "npx ts-node prisma/seed.ts",
+    "db:seed:templates": "npx ts-node prisma/seed-templates.ts",
     "build": "tsc && prisma generate"
   },
   "dependencies": {

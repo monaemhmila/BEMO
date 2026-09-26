@@ -26,6 +26,7 @@ model User {
   outputImages      OutputImages[]
   stories           Story[]
   orders            Order[]
+  storyTemplates    StoryTemplate[]
   
   @@index([clerkId])
   @@index([email])
@@ -190,6 +191,9 @@ model StoryTemplate {
   isActive    Boolean @default(true)
   difficulty  Int @default(1)
   tags        String[]
+  source      StoryTemplateSourceEnum @default(PREDEFINED)
+  ownerUserId String?
+  owner       User?    @relation(fields: [ownerUserId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   stories     Story[]
@@ -197,6 +201,12 @@ model StoryTemplate {
   @@index([category, ageRange])
   @@index([isActive])
   @@index([difficulty])
+  @@index([source, ownerUserId])
+}
+
+enum StoryTemplateSourceEnum {
+  PREDEFINED
+  CUSTOM
 }
 
 model UserPreferences {

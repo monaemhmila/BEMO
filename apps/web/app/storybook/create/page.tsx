@@ -27,8 +27,9 @@ export default function StorybookCreatePage() {
 
 function CreateChooser() {
   const templateId = useSearchParams().get("templateId");
+  const custom = useSearchParams().get("custom");
 
-  if (templateId) {
+  if (templateId || custom) {
     return (
       <div>
         <motion.div
@@ -37,11 +38,11 @@ function CreateChooser() {
           className="mb-6"
         >
           <Link
-            href="/books"
+            href="/storybook/create"
             className="inline-flex items-center gap-2 rounded-full border border-border bg-white/80 px-4 py-2 text-sm font-semibold text-primary transition-colors hover:bg-white"
           >
             <ArrowLeft className="size-4" />
-            Back to the books
+            Back to the options
           </Link>
         </motion.div>
 
@@ -156,7 +157,7 @@ function CreateChooser() {
           className="rounded-[2rem] bg-gradient-to-br from-primary/40 to-sky-300/40 p-1.5 shadow-sm"
         >
           <Link
-            href="/create-custom"
+            href="/storybook/create?custom=1"
             className="group flex h-full flex-col rounded-[1.75rem] bg-white p-8"
           >
             <span className="relative flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
