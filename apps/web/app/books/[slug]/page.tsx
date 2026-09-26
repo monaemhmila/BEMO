@@ -6,11 +6,19 @@ import { ArrowLeft, ArrowRight, Camera, Heart, Sparkles, Truck } from "lucide-re
 import { BookCard } from "@/components/book-card";
 import { FillerImage } from "@/components/filler";
 import { SiteFooter } from "@/components/sections/site-footer";
+import {
+  TemplateBookDetail,
+  TemplateBookDetailMetadata,
+} from "@/components/template-book-detail";
 import { Button } from "@/components/ui/button";
+import { getStoryTemplate, STORY_TEMPLATES } from "@/data/story-templates";
 import { allBooks, bestsellers, boysBooks, getBook, girlsBooks, newReleases } from "@/lib/data";
 
 export function generateStaticParams() {
-  return allBooks.map((book) => ({ slug: book.slug }));
+  return [
+    ...allBooks.map((book) => ({ slug: book.slug })),
+    ...STORY_TEMPLATES.map((template) => ({ slug: template.slug })),
+  ];
 }
 
 export const dynamicParams = false;
@@ -45,6 +53,11 @@ export default async function BookDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const template = getStoryTemplate(slug);
+  if (template) {
+    return <TemplateBookDetail template={template} />;
+  }
+
   const book = getBook(slug);
   if (!book) notFound();
 
@@ -176,6 +189,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
+  const template = getStoryTemplate(slug);
+  if (template) return TemplateBookDetailMetadata({ template });
+
   const book = getBook(slug);
   if (!book) return { title: "Book not found" };
   return {

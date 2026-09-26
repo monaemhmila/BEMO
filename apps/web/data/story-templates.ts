@@ -1,6 +1,13 @@
 export type StoryCategory = "adventure" | "sentimental" | "educative";
 export type StoryAudience = "girl" | "boy" | "any";
 
+export interface StoryReview {
+  rating: number;
+  count: number;
+  quote: string;
+  author: string;
+}
+
 export interface StoryTemplate {
   slug: string;
   title: string;
@@ -15,6 +22,7 @@ export interface StoryTemplate {
   ageRange: string;
   theme: string;
   artStyle: string;
+  review?: StoryReview;
   moral?: string;
   learning?: string;
 }
@@ -63,6 +71,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
     theme:
       "builds a rocket with tools from the shed, blasts off to the moon and befriends a tiny alien named Fizz who needs help finding his way back to his star",
     artStyle: "vibrant storybook illustration",
+    review: {
+      rating: 5,
+      count: 1284,
+      quote:
+        "My son asked for a second copy because he wanted to keep the first one safe. The moon pictures are still on our bedside shelf.",
+      author: "Yara M.",
+    },
   },
 
   {
@@ -83,6 +98,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
     theme:
       "puts on a magic diving helmet, explores the deep sea and helps princess coral find her lost pearl-that-holds-the-sunset before the tide goes out",
     artStyle: "colorful underwater storybook illustration",
+    review: {
+      rating: 5,
+      count: 946,
+      quote:
+        "She pointed at the diving helmet on every page. We read it three times in one sitting and she now introduces it to all her friends.",
+      author: "Nadia B.",
+    },
   },
 
   {
@@ -103,6 +125,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
     theme:
       "steps into a glowing forest where animals can talk and solves the riddle of the sleeping waterfall to bring the magic back to the woods",
     artStyle: "whimsical fairy-tale storybook illustration",
+    review: {
+      rating: 5,
+      count: 2310,
+      quote:
+        "The giggle at the waterfall gets my daughter every single time. She now tells the story herself, word for word.",
+      author: "Salma R.",
+    },
   },
 
   // ── Sentimental ───────────────────────────────────────────
@@ -125,6 +154,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
       "finds a scared lost puppy in the rain, comforts it with patience and gentleness, and helps it find its way back to its family",
     artStyle: "soft warm watercolor storybook illustration",
     moral: "Empathy, kindness, and looking after those who are lost.",
+    review: {
+      rating: 5,
+      count: 1876,
+      quote:
+        "My daughter was the one comforting her puppy in real life a week later. This book somehow taught her what to do.",
+      author: "Mariam K.",
+    },
   },
 
   {
@@ -146,6 +182,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
       "has butterflies before the first day of a new school and learns from the people who love them that the bravest thing is to share their feelings and ask for a hug",
     artStyle: "calm comforting storybook illustration",
     moral: "Courage to share feelings; it is okay to be scared.",
+    review: {
+      rating: 5,
+      count: 3549,
+      quote:
+        "He was nervous about his first day and would not talk about it. After reading this twice he told us everything. Worth it.",
+      author: "Omar S.",
+    },
   },
 
   {
@@ -167,6 +210,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
       "spends a quiet evening with grandma in the moonlight garden, hears the story of every flower and learns that family love stays with us forever",
     artStyle: "nostalgic warm storybook illustration",
     moral: "Family love, gratitude, and remembering the ones we love.",
+    review: {
+      rating: 5,
+      count: 1602,
+      quote:
+        "I cried at the part about the rose planted the day I came home. My mother read it with my daughter on Facetime.",
+      author: "Lina A.",
+    },
   },
 
   // ── Educative ─────────────────────────────────────────────
@@ -189,6 +239,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
       "joins professor Zuzu the teacher alien on a solar-system scavenger hunt and learns the order of the planets by visiting every one",
     artStyle: "bright playful educational storybook illustration",
     learning: "Astronomy: the order of the planets and counting.",
+    review: {
+      rating: 5,
+      count: 2043,
+      quote:
+        "He can now name all eight planets in order because of this book. His teacher asked where he learned it.",
+      author: "Karim T.",
+    },
   },
 
   {
@@ -210,6 +267,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
       "discovers a magic library where letters come alive, learns to recognize them and sound out first words to help them get back into their books",
     artStyle: "whimsical educational storybook illustration",
     learning: "Early reading: letters, phonics, and building first words.",
+    review: {
+      rating: 5,
+      count: 1420,
+      quote:
+        "The letters hopping off the page is now her favourite way to learn new sounds. She asks for the book before bedtime.",
+      author: "Hana D.",
+    },
   },
 
   {
@@ -231,6 +295,13 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
       "plants seeds in the family garden with grandma, learns what plants need to grow - soil, water, sunlight and patience - and watches a tiny garden come to life",
     artStyle: "fresh green educational storybook illustration",
     learning: "Botany: plant life cycles, what plants need to grow, responsibility.",
+    review: {
+      rating: 5,
+      count: 1188,
+      quote:
+        "We planted the seeds the week we received it and she checks on them every morning. Real patience, real pride.",
+      author: "Amel F.",
+    },
   },
 ];
 

@@ -1,37 +1,20 @@
 import Link from "next/link";
 
-import { CATEGORY_META, type StoryTemplate } from "@/data/story-templates";
+import { TemplateBookCover } from "@/components/template-book-cover";
+import type { StoryTemplate } from "@/data/story-templates";
 
 const PRICE_FROM = "From";
 const PRICE = "$34.99";
 
 export function TemplateBookCard({ template }: { template: StoryTemplate }) {
   return (
-    <Link
-      href={{ pathname: "/storybook/create", query: { templateId: template.slug } }}
-      className="group block"
-    >
+    <Link href={`/books/${template.slug}`} className="group block">
       <div className="relative mx-auto flex h-full w-full max-w-[357.67px] flex-col items-start space-y-4 pb-6 md:pb-8 lg:mx-0 lg:max-w-none lg:w-full xl:w-[390px]">
-        <div className="relative w-full xl:w-[390px]">
-          <div className="absolute right-2 top-2 z-10 md:-right-2 md:-top-4">
-            <span className="flex h-[38px] min-w-[74px] items-center justify-center rounded-full bg-white/95 px-3 text-center text-[13px] font-bold uppercase tracking-wide text-violet-deep shadow-md md:h-[46px] md:min-w-[92px] md:text-[15px]">
-              {template.emoji} {CATEGORY_META[template.category].label}
-            </span>
-          </div>
-
-          <div
-            className={`relative aspect-square w-full overflow-hidden rounded-tr-md rounded-br-md bg-zinc-100 shadow-[0_18px_40px_-24px_rgba(31,22,54,.45)] xl:h-[390px] xl:w-[390px] xl:aspect-auto ${CATEGORY_META[template.category].accent}`}
-          >
-            <img
-              src={template.coverImage}
-              alt={`${template.title} cover`}
-              width={390}
-              height={390}
-              loading="lazy"
-              decoding="async"
-              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          </div>
+        <div className="relative w-full transition-transform duration-500 group-hover:-translate-y-1 xl:w-[390px]">
+          <TemplateBookCover
+            template={template}
+            className="transition-shadow duration-500 group-hover:shadow-[0_40px_70px_-30px_rgba(31,22,54,.65)]"
+          />
         </div>
 
         <div className="flex w-full flex-1 flex-col">
