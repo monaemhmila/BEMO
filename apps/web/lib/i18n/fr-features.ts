@@ -223,9 +223,10 @@ export const frFeatures: Record<string, string> = {
   "How It Becomes Your Child's Story":
     "Comment elle devient l'histoire de votre enfant",
   "Story not found": "Histoire introuvable",
-  Dashboard: "Tableau de bord",
-  "Back to Dashboard": "Retour au tableau de bord",
-  "Back to dashboard": "Retour au tableau de bord",
+  "My Books": "Mes livres",
+  "Go to My Books": "Aller à mes livres",
+  "Back to My Books": "Retour à mes livres",
+  "Back to my books": "Retour à mes livres",
   "Previous page": "Page précédente",
   "Next page": "Page suivante",
   "Use ← → keys or click the arrows to turn the pages":

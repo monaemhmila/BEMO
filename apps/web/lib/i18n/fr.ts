@@ -13,7 +13,6 @@ export const frStorefront: Record<string, string> = {
   // ── Navigation / header ────────────────────────────────────────────
   Home: "Accueil",
   Books: "Livres",
-  Stickers: "Autocollants",
   "My Books": "Mes livres",
   Support: "Assistance",
   Dashboard: "Tableau de bord",
@@ -27,7 +26,7 @@ export const frStorefront: Record<string, string> = {
   "Start Creating": "Commencer à créer",
   "Open menu": "Ouvrir le menu",
   "Save 20% on 2+ books using code": "Économisez 20% sur 2+ livres avec le code",
-  "Go to Dashboard": "Aller au tableau de bord",
+  "Go to My Books": "Aller à mes livres",
   "Personalise now": "Personnaliser maintenant",
   "View all": "Voir tout",
   "View all books": "Voir tous les livres",
@@ -199,29 +198,6 @@ export const frStorefront: Record<string, string> = {
     "Des livres brochés haut de gamme livrés directement chez vous.",
   "More stories to love": "Plus d'histoires à adorer",
 
-  // ── Stickers ───────────────────────────────────────────────────────
-  "Personalised Stickers": "Autocollants personnalisés",
-  "Personalised sticker packs for your little girl or boy — printed with your child's favourite characters and delivered with love.":
-    "Des packs d'autocollants personnalisés pour votre fille ou votre garçon — imprimés avec les personnages préférés de votre enfant et livrés avec amour.",
-  "Sticker fun": "Amusement stickers",
-  "Personalised sticker packs": "Packs d'autocollants personnalisés",
-  "Colourful, durable stickers starring your child's world — the perfect extra sprinkle on any Mon Petit Hero order.":
-    "Des autocollants colorés et durables mettant en scène l'univers de votre enfant — la touche parfaite pour toute commande Mon Petit Hero.",
-  "Pick a sticker pack": "Choisissez un pack d'autocollants",
-  "Choose the pack that matches your child's favourite characters.":
-    "Choisissez le pack qui correspond aux personnages préférés de votre enfant.",
-  "Personalise it": "Personnalisez-le",
-  "Add your child's name or photo so every sticker feels like theirs.":
-    "Ajoutez le nom ou la photo de votre enfant pour que chaque autocollant lui ressemble.",
-  "Stick, share, repeat": "Collez, partagez, recommencez",
-  "Waterproof and durable — perfect for books, bottles and lunchboxes.":
-    "Imperméables et durables — parfaits pour les livres, les gourdes et les boîtes à lunch.",
-  "Pair your stickers with a story":
-    "Associez vos autocollants à une histoire",
-  "Add a fully personalised storybook to your order and your child gets a hero, an adventure and stickers to match.":
-    "Ajoutez un livre d'histoires entièrement personnalisé à votre commande et votre enfant recevra un héros, une aventure et des autocollants assortis.",
-  "Browse books": "Parcourir les livres",
-
   // ── Support ────────────────────────────────────────────────────────
   "We're here to help": "Nous sommes là pour vous aider",
   "How can we help you?": "Comment pouvons-nous vous aider ?",
@@ -356,8 +332,8 @@ export const frStorefront: Record<string, string> = {
   "Create your account": "Créez votre compte",
   "Every new account starts with free story generations.":
     "Chaque nouveau compte commence avec des générations d'histoires gratuites.",
-  "Redirecting to your dashboard...":
-    "Redirection vers votre tableau de bord...",
+  "Redirecting to My Books...":
+    "Redirection vers Mes livres...",
 
   // ── Welcome ────────────────────────────────────────────────────────
   Welcome: "Bienvenue",

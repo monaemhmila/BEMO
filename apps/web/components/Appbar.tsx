@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/sheet";
 
 const AUTH_ITEMS = [
-  { label: "Dashboard", href: "/storybook/dashboard" },
+  { label: "Home", href: "/" },
+  { label: "My Books", href: "/storybook/dashboard" },
   { label: "Create Story", href: "/storybook/create" },
 ];
 
@@ -192,7 +193,7 @@ export function Appbar() {
                       </Link>
                     ))}
                     <Button asChild className="mt-4 rounded-full font-bold">
-                      <Link href="/dashboard">Go to Dashboard</Link>
+                      <Link href="/storybook/dashboard">Go to My Books</Link>
                     </Button>
                   </SignedIn>
                 </nav>

@@ -174,6 +174,12 @@ export default function StorybookDashboardPage() {
 
   return (
     <div className="space-y-8">
+      <header>
+        <h1 className="font-display text-3xl sm:text-4xl font-bold text-violet-deep">
+          My Books
+        </h1>
+      </header>
+
       {/* Quick Actions */}
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="p-6 border-border bg-gradient-to-br from-buttercup/15 to-blush/40">

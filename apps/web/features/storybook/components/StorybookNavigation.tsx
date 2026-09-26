@@ -17,7 +17,7 @@ export const StorybookNavigation = () => {
           href="/storybook/dashboard"
           className="px-5 py-2 bg-green-500 text-white rounded no-underline"
         >
-          My Stories
+          My Books
         </Link>
         <Link
           href="/storybook/templates"

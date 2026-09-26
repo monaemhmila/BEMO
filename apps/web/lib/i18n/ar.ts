@@ -13,7 +13,6 @@ export const arStorefront: Record<string, string> = {
   // ── Navigation / header ────────────────────────────────────────────
   Home: "الرئيسية",
   Books: "الكتب",
-  Stickers: "الملصقات",
   "My Books": "كتبي",
   Support: "الدعم",
   Dashboard: "لوحة التحكم",
@@ -27,7 +26,7 @@ export const arStorefront: Record<string, string> = {
   "Start Creating": "ابدأ الإنشاء",
   "Open menu": "افتح القائمة",
   "Save 20% on 2+ books using code": "وفّر 20% عند شراء كتابين أو أكثر بالرمز",
-  "Go to Dashboard": "الانتقال إلى لوحة التحكم",
+  "Go to My Books": "الانتقال إلى كتبي",
   "Personalise now": "خصّص الآن",
   "View all": "عرض الكل",
   "View all books": "عرض جميع الكتب",
@@ -193,28 +192,6 @@ export const arStorefront: Record<string, string> = {
     "كتب فاخرة بغلاف مرن تُوصَل مباشرة إلى باب منزلك.",
   "More stories to love": "المزيد من القصص الرائعة",
 
-  // ── Stickers ───────────────────────────────────────────────────────
-  "Personalised Stickers": "ملصقات مخصصة",
-  "Personalised sticker packs for your little girl or boy — printed with your child's favourite characters and delivered with love.":
-    "مجموعات ملصقات مخصصة لفتاتك أو صغيرك — مطبوعة بشخصيات طفلك المفضلة وتُوصَل بحب.",
-  "Sticker fun": "متعة الملصقات",
-  "Personalised sticker packs": "مجموعات ملصقات مخصصة",
-  "Colourful, durable stickers starring your child's world — the perfect extra sprinkle on any Mon Petit Hero order.":
-    "ملصقات ملونة متينة تعرض عالم طفلك — لمسة إضافية مثالية لأي طلب من Mon Petit Hero.",
-  "Pick a sticker pack": "اختر مجموعة ملصقات",
-  "Choose the pack that matches your child's favourite characters.":
-    "اختر المجموعة التي تتناسب مع شخصيات طفلك المفضلة.",
-  "Personalise it": "خصّصها",
-  "Add your child's name or photo so every sticker feels like theirs.":
-    "أضف اسم طفلك أو صورته لتشعر كل ملصقة بأنها له.",
-  "Stick, share, repeat": "الصق، شارك، كرر",
-  "Waterproof and durable — perfect for books, bottles and lunchboxes.":
-    "مقاومة للماء ومتينة — مثالية للكتب والزجاجات وعلب الطعام.",
-  "Pair your stickers with a story": "زاوج ملصقاتك مع قصة",
-  "Add a fully personalised storybook to your order and your child gets a hero, an adventure and stickers to match.":
-    "أضف كتاب قصة مخصصًا بالكامل إلى طلبك وسيحصل طفلك على بطل ومغامرة وملصقات متناسقة.",
-  "Browse books": "تصفح الكتب",
-
   // ── Support ────────────────────────────────────────────────────────
   "We're here to help": "نحن هنا لمساعدتك",
   "How can we help you?": "كيف يمكننا مساعدتك؟",
@@ -345,7 +322,7 @@ export const arStorefront: Record<string, string> = {
   "Create your account": "أنشئ حسابك",
   "Every new account starts with free story generations.":
     "يبدأ كل حساب جديد بتوليدات قصص مجانية.",
-  "Redirecting to your dashboard...": "جارٍ إعادة التوجيه إلى لوحة التحكم...",
+  "Redirecting to My Books...": "جارٍ إعادة التوجيه إلى كتبي...",
 
   // ── Welcome ────────────────────────────────────────────────────────
   Welcome: "مرحبًا",

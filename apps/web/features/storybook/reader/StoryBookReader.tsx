@@ -382,7 +382,7 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
           Try again
         </Button>
         <Button variant="ghost" onClick={() => router.push("/storybook/dashboard")}>
-          Back to dashboard
+          Back to my books
         </Button>
       </div>
     );

@@ -215,9 +215,10 @@ export const arFeatures: Record<string, string> = {
     "كل مشهد يعرض وجه طفلك واسمه والتفاصيل الصغيرة التي تختارها.",
   "How It Becomes Your Child's Story": "كيف تصبح قصة طفلك",
   "Story not found": "القصة غير موجودة",
-  Dashboard: "لوحة التحكم",
-  "Back to Dashboard": "العودة إلى لوحة التحكم",
-  "Back to dashboard": "العودة إلى لوحة التحكم",
+  "My Books": "كتبي",
+  "Go to My Books": "الذهاب إلى كتبي",
+  "Back to My Books": "العودة إلى كتبي",
+  "Back to my books": "العودة إلى كتبي",
   "Previous page": "الصفحة السابقة",
   "Next page": "الصفحة التالية",
   "Use ← → keys or click the arrows to turn the pages":
