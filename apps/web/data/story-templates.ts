@@ -8,6 +8,22 @@ export interface StoryReview {
   author: string;
 }
 
+export interface StoryMedia {
+  type: "image" | "video";
+  src: string;
+  mimeType?: string;
+  placeholder?: boolean;
+}
+
+/** Neutral stand-in slides used until a book has its own photos or preview video. */
+export function fillerSlides(count = 9): StoryMedia[] {
+  return Array.from({ length: count }, () => ({
+    type: "image" as const,
+    src: "",
+    placeholder: true,
+  }));
+}
+
 export interface StoryTemplate {
   slug: string;
   title: string;
@@ -19,6 +35,7 @@ export interface StoryTemplate {
   description: string;
   excerpt: string;
   coverImage: string;
+  media?: StoryMedia[];
   ageRange: string;
   theme: string;
   artStyle: string;
