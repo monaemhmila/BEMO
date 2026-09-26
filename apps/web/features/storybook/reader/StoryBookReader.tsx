@@ -381,8 +381,8 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
           <RefreshCw className="size-4" aria-hidden="true" />
           Try again
         </Button>
-        <Button variant="ghost" onClick={() => router.push("/stories")}>
-          Back to library
+        <Button variant="ghost" onClick={() => router.push("/storybook/dashboard")}>
+          Back to dashboard
         </Button>
       </div>
     );

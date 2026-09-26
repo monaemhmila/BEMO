@@ -198,14 +198,14 @@ export default function StorybookHome() {
                 Start Creating Now
               </Button>
             </Link>
-            <Link href="/stories">
+            <Link href="/storybook/dashboard">
               <Button
                 size="lg"
                 variant="outline"
                 className="rounded-full border-white/40 text-white hover:bg-violet-deep"
               >
                 <BookOpenText className="w-5 h-5 mr-2" />
-                Browse My Story Library
+                My stories
               </Button>
             </Link>
           </div>

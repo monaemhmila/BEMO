@@ -146,9 +146,9 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
           <h2 className="text-2xl font-display text-violet-deep mb-4">
             Story not found
           </h2>
-          <Button onClick={() => router.push("/stories")}>
-            Return to Library
-          </Button>
+        <Button onClick={() => router.push("/storybook/dashboard")}>
+          Back to Dashboard
+        </Button>
         </div>
       </div>
     );
@@ -243,10 +243,10 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
         <Button
           variant="ghost"
           className="text-white/80 hover:text-white hover:bg-white/10 shrink-0"
-          onClick={() => router.push("/stories")}
+          onClick={() => router.push("/storybook/dashboard")}
         >
           <Home className="w-5 h-5 mr-2" />
-          <span className="hidden sm:inline">Library</span>
+          <span className="hidden sm:inline">Dashboard</span>
         </Button>
 
         <h1 className="flex-1 min-w-0 font-display font-bold text-lg sm:text-xl text-white/90 tracking-wide text-center truncate px-1">

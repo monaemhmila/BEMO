@@ -376,7 +376,7 @@ export const frStorefront: Record<string, string> = {
   "Every printed book you order unlocks 1 extra free story.":
     "Chaque livre imprimé commandé débloque 1 histoire gratuite supplémentaire.",
   "Create My First Story": "Créer ma première histoire",
-  "Browse Library": "Parcourir la bibliothèque",
+  "Browse Templates": "Parcourir les modèles",
 
   // ── Upload / camera / pack / shared ────────────────────────────────
   "Uploading photos...": "Téléchargement des photos...",

@@ -19,7 +19,6 @@ import {
 
 const AUTH_ITEMS = [
   { label: "Dashboard", href: "/storybook/dashboard" },
-  { label: "Library", href: "/stories" },
   { label: "Create Story", href: "/storybook/create" },
 ];
 

@@ -64,7 +64,7 @@ export default function Welcome() {
             <Link href="/storybook/create">Create My First Story</Link>
           </Button>
           <Button asChild variant="outline" className="flex-1 h-14 rounded-full font-semibold text-base">
-            <Link href="/stories">Browse Library</Link>
+            <Link href="/storybook/templates">Browse Templates</Link>
           </Button>
         </div>
       </div>

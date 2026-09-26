@@ -50,7 +50,7 @@ export function PackCard(props: TPack & { selectedModelId: string }) {
 
   const handleGenerate = async () => {
     if (trials <= 0) {
-      router.push("/stories");
+      router.push("/storybook/dashboard");
       return;
     }
 

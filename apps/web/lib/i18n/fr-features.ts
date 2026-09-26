@@ -50,7 +50,6 @@ export const frFeatures: Record<string, string> = {
   "Join thousands of parents creating unforgettable personalized storybooks for their children.":
     "Rejoignez des milliers de parents qui créent des livres d'histoires personnalisés inoubliables pour leurs enfants.",
   "Start Creating Now": "Commencer maintenant",
-  "Browse My Story Library": "Parcourir ma bibliothèque d'histoires",
 
   // ── Story Generator ────────────────────────────────────────────────
   "Please use a JPG, PNG, or WebP photo.":
@@ -166,14 +165,13 @@ export const frFeatures: Record<string, string> = {
   "Order a Printed Book": "Commander un livre imprimé",
   "Turn any finished story into a hardcover book - each order also unlocks 1 extra free story.":
     "Transformez n'importe quelle histoire terminée en livre à couverture rigide — chaque commande débloque aussi 1 histoire gratuite supplémentaire.",
-  "Choose a Book": "Choisir un livre",
+  "Choose a Story": "Choisir une histoire",
   "My Orders": "Mes commandes",
   "Track your printed storybooks from order to delivery.":
     "Suivez vos livres imprimés de la commande à la livraison.",
   "No orders yet": "Aucune commande pour le moment",
   "Open a finished story and order your printed book.":
     "Ouvrez une histoire terminée et commandez votre livre imprimé.",
-  "Browse My Stories": "Parcourir mes histoires",
   "Order received": "Commande reçue",
   "Being prepared": "En préparation",
   "On the way": "En route",
@@ -225,7 +223,9 @@ export const frFeatures: Record<string, string> = {
   "How It Becomes Your Child's Story":
     "Comment elle devient l'histoire de votre enfant",
   "Story not found": "Histoire introuvable",
-  "Return to Library": "Retour à la bibliothèque",
+  Dashboard: "Tableau de bord",
+  "Back to Dashboard": "Retour au tableau de bord",
+  "Back to dashboard": "Retour au tableau de bord",
   "Previous page": "Page précédente",
   "Next page": "Page suivante",
   "Use ← → keys or click the arrows to turn the pages":

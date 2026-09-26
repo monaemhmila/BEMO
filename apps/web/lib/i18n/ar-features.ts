@@ -49,7 +49,6 @@ export const arFeatures: Record<string, string> = {
   "Join thousands of parents creating unforgettable personalized storybooks for their children.":
     "انضم إلى آلاف الآباء الذين يصنعون كتب قصص مخصصة لا تُنسى لأطفالهم.",
   "Start Creating Now": "ابدأ الآن",
-  "Browse My Story Library": "تصفح مكتبة قصصي",
 
   // ── Story Generator ────────────────────────────────────────────────
   "Please use a JPG, PNG, or WebP photo.": "يرجى استخدام صورة JPG أو PNG أو WebP.",
@@ -160,14 +159,13 @@ export const arFeatures: Record<string, string> = {
   "Order a Printed Book": "اطلب كتابًا مطبوعًا",
   "Turn any finished story into a hardcover book - each order also unlocks 1 extra free story.":
     "حوّل أي قصة مكتملة إلى كتاب بغلاف مقوّى — وكل طلب يفتح أيضًا قصة مجانية إضافية.",
-  "Choose a Book": "اختر كتابًا",
+  "Choose a Story": "اختر قصة",
   "My Orders": "طلباتي",
   "Track your printed storybooks from order to delivery.":
     "تتبع كتبك المطبوعة من الطلب حتى التسليم.",
   "No orders yet": "لا توجد طلبات بعد",
   "Open a finished story and order your printed book.":
     "افتح قصة مكتملة واطلب كتابك المطبوع.",
-  "Browse My Stories": "تصفح قصصي",
   "Order received": "استُلم الطلب",
   "Being prepared": "جارٍ التجهيز",
   "On the way": "في الطريق",
@@ -217,7 +215,9 @@ export const arFeatures: Record<string, string> = {
     "كل مشهد يعرض وجه طفلك واسمه والتفاصيل الصغيرة التي تختارها.",
   "How It Becomes Your Child's Story": "كيف تصبح قصة طفلك",
   "Story not found": "القصة غير موجودة",
-  "Return to Library": "العودة إلى المكتبة",
+  Dashboard: "لوحة التحكم",
+  "Back to Dashboard": "العودة إلى لوحة التحكم",
+  "Back to dashboard": "العودة إلى لوحة التحكم",
   "Previous page": "الصفحة السابقة",
   "Next page": "الصفحة التالية",
   "Use ← → keys or click the arrows to turn the pages":

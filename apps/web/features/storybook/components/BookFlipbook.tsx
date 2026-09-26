@@ -341,7 +341,7 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <div className="text-center">
           <h2 className="text-2xl font-display text-violet-deep mb-4">Story not found</h2>
-          <Button onClick={() => router.push("/stories")}>Return to Library</Button>
+          <Button onClick={() => router.push("/storybook/dashboard")}>Back to Dashboard</Button>
         </div>
       </div>
     );
@@ -378,7 +378,7 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
   if (spreads.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <Button onClick={() => router.push("/stories")}>Return to Library</Button>
+        <Button onClick={() => router.push("/storybook/dashboard")}>Back to Dashboard</Button>
       </div>
     );
   }
@@ -391,9 +391,9 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
           variant="ghost"
           size="sm"
           className="text-white/70 hover:text-white hover:bg-white/10 rounded-full"
-          onClick={() => router.push("/stories")}
+          onClick={() => router.push("/storybook/dashboard")}
         >
-          <Home className="w-4 h-4 mr-2" /> Library
+          <Home className="w-4 h-4 mr-2" /> Dashboard
         </Button>
         <p className="hidden md:block font-display text-white/90 truncate px-4">{story.title}</p>
         <div className="flex items-center gap-2">

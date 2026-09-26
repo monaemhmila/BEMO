@@ -231,14 +231,11 @@ export default function StorybookDashboardPage() {
                 Turn any finished story into a hardcover book - each order also
                 unlocks 1 extra free story.
               </p>
-              <Link href="/stories">
-                <Button
-                  variant="outline"
-                  className="mt-4 rounded-full border-border"
-                >
-                  Choose a Book <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
+              <Button asChild variant="outline" className="mt-4 rounded-full border-border">
+                <a href="#recent-stories">
+                  Choose a Story <ArrowRight className="w-4 h-4 ml-2" />
+                </a>
+              </Button>
             </div>
           </div>
         </Card>
@@ -265,11 +262,6 @@ export default function StorybookDashboardPage() {
               <p className="text-muted-foreground text-sm mt-1">
                 Open a finished story and order your printed book.
               </p>
-              <Link href="/stories">
-                <Button variant="outline" className="mt-4 rounded-full">
-                  Browse My Stories
-                </Button>
-              </Link>
             </div>
           ) : (
             <div className="space-y-3">
@@ -324,19 +316,11 @@ export default function StorybookDashboardPage() {
       </section>
 
       {/* Recent Stories */}
-      <section>
+      <section id="recent-stories" className="scroll-mt-32">
         <Card className="p-6 border-border">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-2xl font-bold text-violet-deep">
-              Recent Stories
-            </h2>
-            <Link
-              href="/stories"
-              className="text-sm font-medium text-primary hover:text-violet-deep flex items-center gap-1"
-            >
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
+          <h2 className="font-display text-2xl font-bold text-violet-deep mb-6">
+            Recent Stories
+          </h2>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">

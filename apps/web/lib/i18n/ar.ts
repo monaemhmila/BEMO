@@ -362,7 +362,7 @@ export const arStorefront: Record<string, string> = {
   "Every printed book you order unlocks 1 extra free story.":
     "كل كتاب مطبوع تطلبه يفتح قصة مجانية إضافية واحدة.",
   "Create My First Story": "أنشئ قصتي الأولى",
-  "Browse Library": "تصفح المكتبة",
+  "Browse Templates": "تصفح القوالب",
 
   // ── Upload / camera / pack / shared ────────────────────────────────
   "Uploading photos...": "جارٍ رفع الصور...",
