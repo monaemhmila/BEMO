@@ -20,10 +20,10 @@ export const StorybookNavigation = () => {
           My Books
         </Link>
         <Link
-          href="/storybook/templates"
+          href="/books"
           className="px-5 py-2 bg-yellow-400 text-black rounded no-underline"
         >
-          Story Templates
+          Books
         </Link>
       </div>
     </nav>

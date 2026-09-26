@@ -97,14 +97,14 @@ export default function StorybookHome() {
                   Create a Story
                 </Button>
               </Link>
-              <Link href="/storybook/templates">
+              <Link href="/books">
                 <Button
                   size="lg"
                   variant="outline"
                   className="rounded-full border-border gap-2 w-full sm:w-auto"
                 >
                   <BookOpenText className="w-5 h-5" />
-                  Browse Templates
+                  Browse Books
                 </Button>
               </Link>
             </div>

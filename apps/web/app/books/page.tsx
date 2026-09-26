@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { BooksSearch } from "@/components/books-search";
 import { SiteFooter } from "@/components/sections/site-footer";
+import { TemplateBookFilters } from "@/components/template-book-filters";
 import { Button } from "@/components/ui/button";
-import { searchableBooks } from "@/lib/data";
+import { STORY_TEMPLATES } from "@/data/story-templates";
 
 export const metadata: Metadata = {
   title: "Personalised Books",
@@ -33,7 +33,7 @@ export default async function BooksPage() {
           </div>
 
           {/* Search & filters */}
-          <BooksSearch books={searchableBooks} />
+          <TemplateBookFilters templates={STORY_TEMPLATES} />
 
           {/* CTA band */}
           <section className="relative mt-16 overflow-hidden rounded-[2rem] bg-gradient-to-r from-primary to-violet-deep p-10 text-center text-white md:p-14">

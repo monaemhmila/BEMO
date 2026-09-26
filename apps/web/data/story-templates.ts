@@ -1,8 +1,10 @@
 export type StoryCategory = "adventure" | "sentimental" | "educative";
+export type StoryAudience = "girl" | "boy" | "any";
 
 export interface StoryTemplate {
   slug: string;
   title: string;
+  audience: StoryAudience;
   category: StoryCategory;
   categoryLabel: string;
   emoji: string;
@@ -46,6 +48,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "rocket-to-the-stars",
     title: "Rocket to the Stars",
+    audience: "boy",
     category: "adventure",
     categoryLabel: "Adventure",
     emoji: "🚀",
@@ -65,6 +68,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "the-ocean-kingdom",
     title: "The Ocean Kingdom",
+    audience: "girl",
     category: "adventure",
     categoryLabel: "Adventure",
     emoji: "🐠",
@@ -84,6 +88,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "the-enchanted-forest",
     title: "The Enchanted Forest",
+    audience: "any",
     category: "adventure",
     categoryLabel: "Adventure",
     emoji: "🦊",
@@ -104,6 +109,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "the-lost-puppy",
     title: "The Lost Puppy",
+    audience: "girl",
     category: "sentimental",
     categoryLabel: "Sentimental",
     emoji: "🐶",
@@ -124,6 +130,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "the-bravest-hug",
     title: "The Bravest Hug",
+    audience: "girl",
     category: "sentimental",
     categoryLabel: "Sentimental",
     emoji: "🤗",
@@ -144,6 +151,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "grandmas-moonlight-garden",
     title: "Grandma's Moonlight Garden",
+    audience: "girl",
     category: "sentimental",
     categoryLabel: "Sentimental",
     emoji: "🌙",
@@ -165,6 +173,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "the-planet-hop",
     title: "The Planet Hop",
+    audience: "boy",
     category: "educative",
     categoryLabel: "Educative",
     emoji: "🪐",
@@ -185,6 +194,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "a-world-of-words",
     title: "A World of Words",
+    audience: "any",
     category: "educative",
     categoryLabel: "Educative",
     emoji: "📚",
@@ -205,6 +215,7 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
   {
     slug: "the-tiny-gardeners",
     title: "The Tiny Gardeners",
+    audience: "boy",
     category: "educative",
     categoryLabel: "Educative",
     emoji: "🌱",

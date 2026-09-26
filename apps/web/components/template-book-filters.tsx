@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Cake, ChevronDown, Search, Tags, UserRound, X } from "lucide-react";
+import { Cake, ChevronDown, Search, UserRound, X } from "lucide-react";
 
-import { BookCard } from "@/components/book-card";
+import { CATEGORY_META, type StoryCategory, type StoryTemplate } from "@/data/story-templates";
+import { TemplateBookGrid } from "@/components/template-book-grid";
 import { cn } from "@/lib/utils";
-import { type SearchBook } from "@/lib/data";
 
 const GENDER_OPTIONS = [
-  { value: "boy", label: "Boy" },
   { value: "girl", label: "Girl" },
+  { value: "boy", label: "Boy" },
 ];
 
 const AGE_OPTIONS = [
@@ -19,13 +19,10 @@ const AGE_OPTIONS = [
   { value: "8+", label: "8+" },
 ];
 
-const CATEGORY_OPTIONS = [
-  { value: "Dream", label: "Dream" },
-  { value: "Job", label: "Job" },
-  { value: "Adventure", label: "Adventure" },
-  { value: "Bedtime story", label: "Bedtime story" },
-  { value: "Emotional", label: "Emotional" },
-  { value: "Educative", label: "Educative" },
+const CATEGORY_OPTIONS: { value: StoryCategory; label: string }[] = [
+  { value: "educative", label: CATEGORY_META.educative.label },
+  { value: "adventure", label: CATEGORY_META.adventure.label },
+  { value: "sentimental", label: CATEGORY_META.sentimental.label },
 ];
 
 type FilterOption = { value: string; label: string };
@@ -36,7 +33,6 @@ interface FilterDropdownProps {
   options: FilterOption[];
   selected: string[];
   onToggle: (value: string) => void;
-  searchable?: boolean;
 }
 
 function FilterDropdown({
@@ -45,10 +41,8 @@ function FilterDropdown({
   options,
   selected,
   onToggle,
-  searchable,
 }: FilterDropdownProps) {
   const [open, setOpen] = React.useState(false);
-  const [query, setQuery] = React.useState("");
   const rootRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -56,7 +50,6 @@ function FilterDropdown({
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setOpen(false);
-        setQuery("");
       }
     };
     document.addEventListener("mousedown", onPointerDown);
@@ -67,18 +60,12 @@ function FilterDropdown({
     };
   }, [open]);
 
-  const filtered = searchable
-    ? options.filter((option) =>
-        option.label.toLowerCase().includes(query.toLowerCase()),
-      )
-    : options;
-
   const selectedLabels = selected
     .map((value) => options.find((option) => option.value === value)?.label ?? value)
     .filter(Boolean);
 
   const display = selected.length
-    ? selectedLabels[0] + (selected.length > 1 ? ` +${selected.length - 1}` : "")
+    ? selectedLabels[0] + (selectedLabels.length > 1 ? ` +${selectedLabels.length - 1}` : "")
     : placeholder;
 
   return (
@@ -116,25 +103,8 @@ function FilterDropdown({
 
       {open && (
         <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-          {searchable && (
-            <div className="border-b border-gray-100 p-1.5">
-              <input
-                autoFocus
-                type="text"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search..."
-                className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs focus:border-purple-400 focus:ring-1 focus:ring-purple-100 focus:outline-none"
-              />
-            </div>
-          )}
           <ul className="max-h-40 overflow-auto">
-            {filtered.length === 0 && (
-              <li className="px-2 py-1.5 text-xs text-gray-400">
-                No results found
-              </li>
-            )}
-            {filtered.map((option) => (
+            {options.map((option) => (
               <li
                 key={option.value}
                 onClick={() => onToggle(option.value)}
@@ -161,7 +131,15 @@ function FilterDropdown({
   );
 }
 
-export function BooksSearch({ books }: { books: SearchBook[] }) {
+function overlaps(ageRange: string, bucket: string) {
+  const [rangeMin = 0, rangeMax = 0] = ageRange.split("-").map((value) => Number(value));
+  const [bucketMin = 0, bucketMax = 0] = bucket.split("-").map((value) => Number(value));
+  if (Number.isNaN(rangeMin) || Number.isNaN(rangeMax)) return false;
+  if (Number.isNaN(bucketMax)) return rangeMax >= bucketMin;
+  return rangeMin <= bucketMax && rangeMax >= bucketMin;
+}
+
+export function TemplateBookFilters({ templates }: { templates: StoryTemplate[] }) {
   const [search, setSearch] = React.useState("");
   const [genders, setGenders] = React.useState<string[]>([]);
   const [ages, setAges] = React.useState<string[]>([]);
@@ -185,35 +163,35 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
     setCategories([]);
   };
 
-  const filtered = books.filter((book) => {
+  const filtered = templates.filter((template) => {
     const query = search.trim().toLowerCase();
     const matchesSearch =
       !query ||
-      book.title.toLowerCase().includes(query) ||
-      book.tagline.toLowerCase().includes(query);
+      template.title.toLowerCase().includes(query) ||
+      template.tagline.toLowerCase().includes(query);
     if (!matchesSearch) return false;
 
     if (
       genders.length > 0 &&
-      !genders.includes(book.gender) &&
-      book.gender !== "any"
+      !genders.includes(template.audience) &&
+      template.audience !== "any"
     ) {
       return false;
     }
 
-    if (ages.length > 0 && !book.ages.some((age) => ages.includes(age))) {
+    if (ages.length > 0 && !ages.some((age) => overlaps(template.ageRange, age))) {
       return false;
     }
 
-    if (
-      categories.length > 0 &&
-      !book.categories.some((category) => categories.includes(category))
-    ) {
+    if (categories.length > 0 && !categories.includes(template.category)) {
       return false;
     }
 
     return true;
   });
+
+  const hasFilters =
+    search.trim().length > 0 || genders.length > 0 || ages.length > 0 || categories.length > 0;
 
   return (
     <div>
@@ -254,21 +232,12 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
             />
           </div>
 
-          <div className="flex-1 md:w-40">
-            <FilterDropdown
-              placeholder="Category"
-              icon={<Tags aria-hidden className="h-4 w-4" />}
-              options={CATEGORY_OPTIONS}
-              selected={categories}
-              onToggle={(value) => toggle(setCategories, value)}
-            />
-          </div>
-
           <div className="hidden w-16 md:block">
             <button
               type="button"
               onClick={clearAll}
-              className="inline-flex h-8 items-center justify-center rounded border border-transparent bg-gradient-to-r from-violet-700/20 to-purple-600/20 px-2 py-1.5 font-medium text-violet-700 transition-colors hover:bg-purple-600/10"
+              disabled={!hasFilters}
+              className="inline-flex h-8 items-center justify-center rounded border border-transparent bg-gradient-to-r from-violet-700/20 to-purple-600/20 px-2 py-1.5 font-medium text-violet-700 transition-colors hover:bg-purple-600/10 disabled:cursor-not-allowed disabled:opacity-40"
             >
               Clear
             </button>
@@ -278,8 +247,9 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
             <button
               type="button"
               onClick={clearAll}
+              disabled={!hasFilters}
               aria-label="Clear filters"
-              className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-red-500 transition-colors hover:text-red-700"
+              className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-red-500 transition-colors hover:text-red-700 disabled:opacity-40"
             >
               <X aria-hidden className="h-4 w-4" />
             </button>
@@ -287,16 +257,35 @@ export function BooksSearch({ books }: { books: SearchBook[] }) {
         </div>
       </div>
 
+      {/* Second filter row: story category */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {CATEGORY_OPTIONS.map((option) => {
+          const active = categories.includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggle(setCategories, option.value)}
+              className={cn(
+                "rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors",
+                active
+                  ? "border-primary bg-primary text-white"
+                  : "border-border bg-white text-muted-foreground hover:border-primary/40 hover:text-primary",
+              )}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+
       {filtered.length === 0 ? (
         <p className="py-20 text-center text-[15px] text-muted-foreground">
           No books match your filters. Try clearing a few.
         </p>
       ) : (
-        <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((book) => (
-            <BookCard key={book.slug} book={book} />
-          ))}
-        </div>
+        <TemplateBookGrid templates={filtered} />
       )}
     </div>
   );

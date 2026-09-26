@@ -1,4 +1,3 @@
-import { AnnouncementBar, SiteHeader } from "@/components/sections/site-header";
 import { Hero } from "@/components/sections/hero";
 import { BookRail } from "@/components/sections/book-rail";
 import { HowItWorks } from "@/components/sections/how-it-works";
@@ -14,10 +13,8 @@ import { bestsellers, boysBooks, girlsBooks, newReleases } from "@/lib/data";
 
 export default function HomePage() {
   return (
-    <>
-      <AnnouncementBar />
-      <SiteHeader />
-
+    // The app bar is fixed, so the storefront sits below it.
+    <div className="pt-[7rem]">
       <Hero />
 
       <BookRail
@@ -59,6 +56,6 @@ export default function HomePage() {
       <FinalCta />
 
       <SiteFooter />
-    </>
+    </div>
   );
 }

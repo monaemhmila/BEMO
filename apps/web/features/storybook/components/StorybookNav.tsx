@@ -7,7 +7,7 @@ import { BookOpenCheck } from "lucide-react";
 const LINKS = [
   { href: "/storybook/create", label: "Create story" },
   { href: "/storybook/dashboard", label: "My Books" },
-  { href: "/storybook/templates", label: "Templates" },
+  { href: "/books", label: "Books" },
 ];
 
 export function StorybookNav() {

@@ -194,7 +194,7 @@ export default function StorybookDashboardPage() {
               <p className="text-muted-foreground text-sm mt-1">
                 Turn your child into the hero of a personalized adventure.
               </p>
-              <Link href="/storybook/create">
+              <Link href="/books">
                 <Button className="mt-4 bg-primary text-white rounded-full">
                   Start Creating <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>

@@ -39,14 +39,13 @@ export function Appbar() {
   }, []);
 
   // Immersive routes draw their own chrome: /admin (full-screen control center)
-  // and /stories/<id> (full-screen book reader). The homepage is a storefront
-  // with its own sticky header (Mon Petit Hero design). Skip the app bar there.
+  // and /stories/<id> (full-screen book reader). Everything else — the
+  // homepage included — uses this single app bar.
   const segments = (pathname ?? "").split("/").filter(Boolean);
   const isReader = segments[0] === "stories" && segments.length === 2 && segments[1] !== "new";
   const isImmersive = pathname === "/admin" || !!pathname?.startsWith("/admin/") || isReader;
-  const isHome = pathname === "/";
 
-  if (isImmersive || isHome) {
+  if (isImmersive) {
     return null;
   }
 
