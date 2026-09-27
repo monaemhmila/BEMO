@@ -13,7 +13,9 @@ The template system is modularly distributed across database schemas, backend AP
 | **Backend API Service** | [`apps/backend/src/routes/storybook.routes.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/routes/storybook.routes.ts#L65-L145) | Exposes `GET /storybook/templates` returning pre-configured story templates (id, name, description, ageRange, category, theme). |
 | **Frontend Generator Registry** | [`apps/web/features/generator/components/StoryGenerator.tsx`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/features/generator/components/StoryGenerator.tsx#L42-L51) | Client-side map matching backend template IDs to auto-populate theme and category in the story generator wizard. |
 | **Prompt Engineering & Quick Starters** | [`apps/web/utils/prompts/storyPrompts.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/utils/prompts/storyPrompts.ts#L126-L183) | Stores `STORY_STARTERS` list (theme, category, icon), `AGE_GUIDANCE` rules (3-5, 6-8, 9-12 years), and prompt builders for LLM story script generation. |
-| **Database Model (Prisma)** | [`packages/db/prisma/schema.prisma`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/packages/db/prisma/schema.prisma#L448-L467) | Defines the `StoryTemplate` database schema for persistent custom/admin templates and relates them to `Story.templateId`. **(Seeded with 8 templates)** |
+| **Database Model (Prisma)** | `packages/db/prisma/schema.prisma` | Defines the `StoryTemplate` database schema for persistent custom/admin templates and relates them to `Story.templateId`. **(Seeded with 1 template)** |
+| **Storefront Catalogue (frontend)** | `apps/web/data/story-templates.ts` | The `STORY_TEMPLATES` array behind `/books`, `/books/[slug]` and `/stories/templates/[slug]`. Must stay slug-aligned with the seed below. |
+| **Template Seed (database)** | `packages/db/prisma/seed-templates.ts` | `STOREFRONT_TEMPLATES` — the canonical `prompts` document (theme, moral lesson, educational focus, world context, 14 beats) upserted into `StoryTemplate`. Also invoked by `prisma/seed.ts`. |
 | **Template Gallery UI Page** | [`apps/web/app/storybook/templates/page.tsx`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/app/storybook/templates/page.tsx) | Next.js page that fetches and displays template cards with age filters, category tags, and "Use template" quick links. |
 
 ---
@@ -42,23 +44,14 @@ The Template System links pre-defined story concepts with dynamic AI prompt gene
 ```
 
 ### Pre-defined Templates with Moral & Educational Values
-Each template in the system is explicitly designed around core moral lessons and age-appropriate educational learning targets:
+The catalogue currently ships a single predefined template, explicitly designed around a core moral lesson and age-appropriate educational learning targets:
 
-1. **The Magical Adventure** (`magical-adventure`): 
-   - **Moral Value**: Courage, honesty, and working together to solve challenges.
-   - **Educational Focus**: Nature conservation, shapes, counting & spatial awareness.
-2. **The Brave Explorer** (`brave-explorer`): 
-   - **Moral Value**: Perseverance, empathy, and helping others in need.
-   - **Educational Focus**: Geography, map reading & historical curiosity.
-3. **The Kind Friend** (`kind-friend`): 
-   - **Moral Value**: Empathy, active listening, and gentle kindness to animals.
-   - **Educational Focus**: Animal welfare, emotion recognition & social skills.
-4. **The Bedtime Dream** (`bedtime-dream`): 
-   - **Moral Value**: Gratitude, mindfulness & peaceful emotional self-soothing.
-   - **Educational Focus**: Mindfulness breathing, sleep routines & constellation shapes.
-5. **Forest Guardians** (`animal-friends`): 
-   - **Moral Value**: Environmental responsibility & caring for wildlife.
-   - **Educational Focus**: Ecosystems, forest habitats & biodiversity.
+1. **Birthday Adventure and the Greedy Goblin** (`birthday-adventure-and-the-greedy-goblin`):
+   - **Age Range**: 4-8 · **Category**: sentimental
+   - **Moral Value**: Taking what belongs to others leaves you alone; the best gift is the one you give away.
+   - **Educational Focus**: Counting and comparing how many gifts there are, and how sharing makes everyone happier.
+
+Templates created by users through `POST /storybook/templates/custom` are stored with `source = 'CUSTOM'` and are not part of this catalogue.
 
 ---
 
@@ -110,25 +103,59 @@ Here is the step-by-step walk-through of the client's experience:
 
 ## 🛠️ 4. How to Add New Templates
 
-To introduce a new template to the system:
+A template is defined in **two** places, and the `slug` / `id` must match in both
+or the storefront will link to a template the database cannot generate from.
 
-1. Add template entry to backend array in [`apps/backend/src/routes/storybook.routes.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/routes/storybook.routes.ts#L65-L145):
+1. Add the catalogue entry (marketing copy, cover image, theme, art style) to
+   `STORY_TEMPLATES` in `apps/web/data/story-templates.ts`:
+   ```ts
+   {
+     slug: "dinosaur-expedition",
+     title: "Dinosaur Expedition",
+     audience: "any",
+     category: "adventure",
+     categoryLabel: "Adventure",
+     emoji: "🦕",
+     tagline: "Journeying back in time to meet some gentle giants.",
+     description: "...",
+     excerpt: "...",
+     coverImage: "https://...",
+     ageRange: "6-8",
+     theme: "travels back in time and befriends a gentle dinosaur",
+     artStyle: "vibrant prehistoric storybook illustration",
+     moral: "Curiosity about the past makes you a better scientist.",
+     learning: "Dinosaur eras and fossils.",
+   }
+   ```
+
+2. Add the matching row to `STOREFRONT_TEMPLATES` in
+   `packages/db/prisma/seed-templates.ts`, using the same id and theme plus the
+   full `prompts` document. The `beats` array **must be exactly
+   `BEAT_COUNT` (14) entries long** — `seedStoryTemplates` throws on any other
+   count, and `loadUsableTemplate` in `storybook.routes.ts` rejects templates
+   that do not match, so the wizard would fail with a "no usable template" error.
+
    ```ts
    {
      id: "dinosaur-expedition",
      name: "Dinosaur Expedition",
-     description: "Journeying back in time to explore gentle giants",
+     description: "...",
      ageRange: "6-8",
-     category: "dinosaurs",
-     coverImage: null,
-     theme: "travels back in time and befriends a gentle dinosaur",
+     category: "adventure",
+     difficulty: 2,
+     tags: ["dinosaurs", "courage", "science"],
+     prompts: { theme, moralLesson, educationalFocus, worldContext, beats: [/* 14 */] },
    }
    ```
-2. Add corresponding key to `TEMPLATES` object in [`apps/web/features/generator/components/StoryGenerator.tsx`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/features/generator/components/StoryGenerator.tsx#L42-L51):
-   ```ts
-   "dinosaur-expedition": {
-     theme: "travels back in time and befriends a gentle dinosaur",
-     category: "dinosaurs"
-   }
-   ```
-3. (Optional) Add starter prompt entry to `STORY_STARTERS` in [`apps/web/utils/prompts/storyPrompts.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/utils/prompts/storyPrompts.ts#L126-L183).
+
+3. (Optional) Add a starter prompt entry to `STORY_STARTERS` in
+   `apps/web/utils/prompts/storyPrompts.ts`.
+
+4. Run `npm run seed:templates` to upsert it into the database.
+
+### Removing a template
+Delete it from both registries, then add a migration that detaches any
+`Story.templateId` referencing it (`Story.templateId` is a foreign key with no
+`ON DELETE` action, so the rows must be nulled first) and deletes the row from
+`"StoryTemplate"`. See
+`packages/db/prisma/migrations/20260927000000_keep_only_birthday_template`.

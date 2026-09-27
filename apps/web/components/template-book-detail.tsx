@@ -111,6 +111,9 @@ export function TemplateBookDetail({ template }: { template: StoryTemplate }) {
   const review = template.review;
   const ctaHref = createStoryHref(template);
   const slides = template.media?.length ? template.media : fillerSlides();
+  const moreStories = STORY_TEMPLATES.filter(
+    (item) => item.slug !== template.slug
+  ).slice(0, 3);
 
   return (
     <div className="min-h-screen bg-paper">
@@ -219,14 +222,14 @@ export function TemplateBookDetail({ template }: { template: StoryTemplate }) {
           </section>
 
           {/* More stories */}
-          <section className="mt-20">
-            <h2 className="font-display text-3xl font-bold text-violet-deep">
-              More stories to love
-            </h2>
-            <TemplateBookGrid
-              templates={STORY_TEMPLATES.filter((item) => item.slug !== template.slug).slice(0, 3)}
-            />
-          </section>
+          {moreStories.length > 0 && (
+            <section className="mt-20">
+              <h2 className="font-display text-3xl font-bold text-violet-deep">
+                More stories to love
+              </h2>
+              <TemplateBookGrid templates={moreStories} />
+            </section>
+          )}
         </div>
       </main>
 

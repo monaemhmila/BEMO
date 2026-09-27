@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
+import { seedStoryTemplates } from "./seed-templates";
+
 const prisma = new PrismaClient();
 
 /**
@@ -8,6 +10,7 @@ const prisma = new PrismaClient();
  * This script sets up default data for the application:
  * 1. Creates a system user for public models
  * 2. Sets up the default "Hero Lily" model as public
+ * 3. Seeds the predefined StoryTemplates
  * 
  * Run with: npx prisma db seed
  */
@@ -134,89 +137,9 @@ async function main() {
   }
 
   // 4. Seed/Update StoryTemplates
-  console.log("Seeding/updating default StoryTemplates...");
-  const DEFAULT_TEMPLATES = [
-      {
-        id: "magical-adventure",
-        name: "The Magical Adventure",
-        description: "A whimsical journey teaching courage, problem-solving, and nature conservation.",
-        ageRange: "3-5",
-        category: "adventure" as const,
-        prompts: {
-          theme: "discovers a magical portal and goes on an amazing adventure",
-          moralLesson: "Courage, honesty, and working together to solve challenges",
-          educationalFocus: "Nature conservation, shapes, counting & spatial awareness",
-        },
-        tags: ["magic", "portal", "adventure", "courage", "nature"],
-        isActive: true,
-      },
-      {
-        id: "brave-explorer",
-        name: "The Brave Explorer",
-        description: "Discovering new worlds while learning perseverance and geography.",
-        ageRange: "6-8",
-        category: "adventure" as const,
-        prompts: {
-          theme: "becomes a brave explorer and discovers hidden treasures",
-          moralLesson: "Perseverance, empathy, and helping others in need",
-          educationalFocus: "Geography, map reading & historical curiosity",
-        },
-        tags: ["treasure", "explorer", "brave", "geography", "perseverance"],
-        isActive: true,
-      },
-      {
-        id: "kind-friend",
-        name: "The Kind Friend",
-        description: "Learning the value of empathy, animal care, and emotional growth.",
-        ageRange: "3-5",
-        category: "friendship" as const,
-        prompts: {
-          theme: "helps a lost animal find its way home and makes a new friend",
-          moralLesson: "Empathy, active listening, and gentle kindness to animals",
-          educationalFocus: "Animal welfare, emotion recognition & social skills",
-        },
-        tags: ["animals", "kindness", "friendship", "empathy"],
-        isActive: true,
-      },
-      {
-        id: "bedtime-dream",
-        name: "The Bedtime Dream",
-        description: "A peaceful journey teaching mindfulness, gratitude, and restful sleep.",
-        ageRange: "3-5",
-        category: "bedtime" as const,
-        prompts: {
-          theme: "floats up to the clouds and has a magical dream adventure",
-          moralLesson: "Gratitude, mindfulness & peaceful emotional self-soothing",
-          educationalFocus: "Mindfulness breathing, sleep routines & constellation shapes",
-        },
-        tags: ["bedtime", "clouds", "dreams", "mindfulness", "gratitude"],
-        isActive: true,
-      },
-      {
-        id: "animal-friends",
-        name: "Forest Guardians",
-        description: "Exploring an ancient forest and learning habitat conservation.",
-        ageRange: "6-8",
-        category: "animals" as const,
-        prompts: {
-          theme: "visits a magical forest and befriends talking animals",
-          moralLesson: "Environmental responsibility & caring for wildlife",
-          educationalFocus: "Ecosystems, forest habitats & biodiversity",
-        },
-        tags: ["forest", "animals", "creatures", "ecosystem", "environment"],
-        isActive: true,
-      },
-    ];
-
-  for (const tmpl of DEFAULT_TEMPLATES) {
-    await prisma.storyTemplate.upsert({
-      where: { id: tmpl.id },
-      update: tmpl,
-      create: tmpl,
-    });
-    console.log(`   ✅ Seeded/updated template: ${tmpl.name}`);
-  }
-  console.log();
+  console.log("Seeding/updating predefined StoryTemplates...");
+  const templateCount = await seedStoryTemplates(prisma);
+  console.log(`   ✅ Seeded/updated ${templateCount} template(s)\n`);
 
   console.log("🎉 Database seed completed!\n");
 }
