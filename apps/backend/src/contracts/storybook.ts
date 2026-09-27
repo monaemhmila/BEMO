@@ -180,7 +180,7 @@ export function getPageTextLayout(
         glowOpacity: 0.4,
         shadowOffsetX: 1.2,
         shadowOffsetY: 1.6,
-        shadowOpacity: 0.55,
+        shadowOpacity: 0.75,
       };
     case "bottom-left":
       return {
@@ -194,7 +194,7 @@ export function getPageTextLayout(
         glowOpacity: 0.34,
         shadowOffsetX: 1.2,
         shadowOffsetY: 1.6,
-        shadowOpacity: 0.55,
+        shadowOpacity: 0.75,
       };
     case "bottom-right":
       return {
@@ -208,7 +208,7 @@ export function getPageTextLayout(
         glowOpacity: 0.34,
         shadowOffsetX: 1.2,
         shadowOffsetY: 1.6,
-        shadowOpacity: 0.55,
+        shadowOpacity: 0.75,
       };
     case "bottom-center":
       return {
@@ -222,7 +222,7 @@ export function getPageTextLayout(
         glowOpacity: 0.36,
         shadowOffsetX: 1.2,
         shadowOffsetY: 1.6,
-        shadowOpacity: 0.55,
+        shadowOpacity: 0.75,
       };
     case "center":
       return {
@@ -236,7 +236,7 @@ export function getPageTextLayout(
         glowOpacity: 0.38,
         shadowOffsetX: 1.2,
         shadowOffsetY: 1.6,
-        shadowOpacity: 0.55,
+        shadowOpacity: 0.75,
       };
     default:
       return {
@@ -250,7 +250,7 @@ export function getPageTextLayout(
         glowOpacity: 0.34,
         shadowOffsetX: 1.2,
         shadowOffsetY: 1.6,
-        shadowOpacity: 0.55,
+        shadowOpacity: 0.75,
       };
   }
 }

@@ -378,18 +378,28 @@ router.get("/story/:id/pdf", async (req, res) => {
       return;
     }
 
+    let missingArtWarning: string | undefined;
     const pdfBuffer = await new PDFService().generateStorybookPdf(
       { title: story.title, dedication: story.dedication, childName: story.childName },
       story.pages.map((page) => ({
         pageNumber: page.pageNumber,
         content: page.content,
         imageUrl: page.imageUrl,
-      }))
+      })),
+      (message) => {
+        missingArtWarning = message;
+        logger.warn({ storyId, message }, "Story PDF rendered without some artwork");
+      }
     );
 
     const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
+    // The download itself still succeeds, but callers can see it came out
+    // incomplete instead of mistaking it for a finished book.
+    if (missingArtWarning) {
+      res.setHeader("X-Storybook-Missing-Artwork", encodeURIComponent(missingArtWarning).slice(0, 900));
+    }
     res.send(pdfBuffer);
   } catch (error) {
     logger.error({ error, storyId }, "Failed to generate admin story PDF");

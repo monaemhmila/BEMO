@@ -44,7 +44,7 @@ interface PlayfulTitleOptions {
 const PAGE_BACKGROUND = "#FFF9F0";
 const MARGIN = 38;
 const STORY_TEXT_COLOR = "#FFFFFF";
-const STORY_TEXT_SHADOW = "#0B1220";
+const STORY_TEXT_SHADOW = "#000000";
 const STORY_TEXT_OUTLINE = "#1A2235";
 const COVER_TITLE_COLORS = ["#EF6351", "#52B788", "#F6C453", "#8E6AD8", "#4D96D7", "#F59E4C"];
 const COVER_TITLE_ROTATIONS = [-3.5, 2.5, -1.5, 3.2, -2.4, 1.4, 0.5, -0.8];
@@ -60,11 +60,64 @@ const COVER_TITLE_DEPTH = "#8B5A3C";
 const PAGE_WIDTH = 595.28; // 210mm square
 const PAGE_HEIGHT = 595.28; // 210mm square
 
+// --- Web reader parity ------------------------------------------------------
+// `reader.css` expresses the page furniture in container query units (`cqw`),
+// which resolve against each leaf's own width, plus a few `rem`/`px` values.
+// A PDF page is a fixed box, so 1cqw is 1% of the page width and every CSS
+// length is converted to points at 96dpi (1px = 0.75pt). Each constant below
+// quotes the CSS it mirrors. PDFKit has no gradients or blurs, so the soft
+// edges are fanned out as thin low-opacity passes.
+const WEB_CQW = PAGE_WIDTH / 100; // 5.9528pt
+const WEB_PX = 0.75; // 1 CSS px, in points
+
+/** `.story-book-page-number` - outer corner, like a finished printed book. */
+const FOLIO = {
+  fontSize: 1.2 * WEB_CQW, // clamp(0.45rem, 1.2cqw, 0.8rem) -> 7.14pt
+  tracking: 0.08, // letter-spacing: 0.08em, resolved against fontSize
+  opacity: 0.9, // rgba(255, 255, 255, 0.9)
+  shadowOpacity: 0.55, // 0 0 4px rgba(0, 0, 0, 0.55)
+  shadowBlur: 4 * WEB_PX, // 4px -> 3pt
+  bottom: 1.4 * WEB_CQW, // bottom: 1.4cqw -> 8.33pt
+  side: 2.4 * WEB_CQW, // left/right: 2.4cqw -> 14.29pt
+};
+
+/** `.is-left::after` / `.is-right::after` - spine shading on facing pages. */
+const GUTTER = {
+  band: 0.11 * PAGE_WIDTH, // width: 11% of the leaf
+  color: "#140A05", // rgba(20, 10, 5, ...)
+  opacity: 0.22,
+};
+
+/** `.is-cover::after` - the hardcover frame inset on the cover leaf. */
+const COVER_FRAME = {
+  inset: 0.02 * PAGE_WIDTH, // inset: 2% -> 11.9pt
+  lineWidth: Math.max(2 * WEB_PX, 0.4 * WEB_CQW), // max(2px, 0.4cqw) -> 2.38pt
+  opacity: 0.6, // rgba(255, 255, 255, 0.6)
+  radius: 3 * WEB_PX, // border-radius: 3px
+  innerBlur: 0.8 * WEB_CQW, // inset 0 0 0.8cqw rgba(0, 0, 0, 0.22)
+  innerOpacity: 0.22,
+  outerBlur: 0.9 * WEB_CQW, // 0 0.15cqw 0.9cqw rgba(0, 0, 0, 0.28)
+  outerOffsetY: 0.15 * WEB_CQW,
+  outerOpacity: 0.28,
+};
+
+type LeafSide = "single" | "left" | "right";
+
+/**
+ * Which side of the spread a leaf sits on. Mirrors `leafSide` in
+ * StoryBookReader.tsx: the cover stands alone, then leaves pair up
+ * [left, right] across the book.
+ */
+function leafSide(leafIndex: number): LeafSide {
+  return leafIndex === 0 ? "single" : leafIndex % 2 === 1 ? "left" : "right";
+}
+
 // --- Fonts -----------------------------------------------------------------
-// Fredoka One = big, bubbly display font, used for the cover title only.
-// Georgia Bold Italic (serif) is used for every piece of body text - story
-// pages, ending and closing. PDFKit's bundled fonts are the fallback if the
-// .ttf files are not copied into the deployment.
+// Fredoka One = big, bubbly display font. It is used for the cover title *and*
+// for every piece of body text (story pages, ending, closing), mirroring the
+// web reader, which renders the caption in the same display face
+// (`font-display` -> --font-fredoka) in `reader.css`. PDFKit's bundled fonts
+// are the fallback if the .ttf files are not copied into the deployment.
 //
 // Place the .ttf files that ship alongside this service in a `fonts/`
 // folder next to this file (or update FONT_DIR below to wherever you keep
@@ -77,11 +130,66 @@ const FONT_DIR = [
 ].find((directory) => existsSync(path.join(directory, "FredokaOne-Regular.ttf"))) || path.join(__dirname, "../fonts");
 const FONTS = {
   title: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
-  bodyRegular: path.join(FONT_DIR, "georgiaz.ttf"),
-  bodySemiBold: path.join(FONT_DIR, "georgiaz.ttf"),
-  bodyBold: path.join(FONT_DIR, "georgiaz.ttf"),
-  bodyExtraBold: path.join(FONT_DIR, "georgiaz.ttf"),
+  bodyRegular: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
+  bodySemiBold: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
+  bodyBold: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
+  bodyExtraBold: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
 };
+
+// --- Page artwork download -------------------------------------------------
+// Story art lives on fal's CDN, which can be slow to reach from some networks:
+// a single 16:9 page here is ~5.5 MB and has been observed to take the better
+// part of a minute. `fetch` inherits undici's 10s *connect* timeout, which
+// every one of those pages blows through, and because a failed image used to
+// degrade silently the whole book came out with no artwork at all. So the
+// budget is explicit, slow hosts get a second attempt, and downloads are
+// throttled instead of opening one 5.5 MB stream per page at once.
+const IMAGE_FETCH_TIMEOUT_MS = 120_000;
+const IMAGE_FETCH_ATTEMPTS = 2;
+const IMAGE_FETCH_CONCURRENCY = 4;
+
+/**
+ * `Promise.all` over every page opens N simultaneous multi-megabyte downloads
+ * and starves them all. Keep a small fixed number in flight instead.
+ */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  run: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await run(items[index], index);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
+/**
+ * Download one page image, retrying once so a dropped connection or a brief
+ * CDN hiccup does not cost the page its artwork.
+ */
+async function downloadImage(url: string): Promise<Buffer> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= IMAGE_FETCH_ATTEMPTS; attempt += 1) {
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS) });
+      if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
+      return Buffer.from(await response.arrayBuffer());
+    } catch (error) {
+      lastError = error;
+      if (attempt < IMAGE_FETCH_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+      }
+    }
+  }
+  throw lastError;
+}
 
 /**
  * Download the generated page image and split it for the book. A 16:9 image
@@ -91,20 +199,18 @@ const FONTS = {
  */
 async function fetchSplitPageImages(url: string): Promise<BookPageImage | null> {
   try {
-    let rawBuffer: Buffer;
+    // Inline art needs no network at all.
     if (url.startsWith("data:")) {
       const base64Data = url.split(",")[1];
       if (!base64Data) return null;
-      rawBuffer = Buffer.from(base64Data, "base64");
-    } else {
-      const response = await fetch(url);
-      if (!response.ok) return null;
-      rawBuffer = Buffer.from(await response.arrayBuffer());
+      return await splitForBookPage(Buffer.from(base64Data, "base64"));
     }
-
-    return await splitForBookPage(rawBuffer);
+    return await splitForBookPage(await downloadImage(url));
   } catch (error) {
-    console.error("Failed to split story image into squares for PDF:", error);
+    // One concise line per page; the caller reports the overall tally.
+    console.error(
+      `Failed to fetch story page image: ${error instanceof Error ? error.message : String(error)}`
+    );
     return null;
   }
 }
@@ -112,7 +218,11 @@ async function fetchSplitPageImages(url: string): Promise<BookPageImage | null> 
 export class PDFService {
   private readonly customFontsAvailable = Object.values(FONTS).every(existsSync);
 
-  async generateStorybookPdf(story: StoryPayload, pages: StoryPagePayload[]): Promise<Buffer> {
+  async generateStorybookPdf(
+    story: StoryPayload,
+    pages: StoryPagePayload[],
+    onWarning?: (message: string) => void
+  ): Promise<Buffer> {
     // Render exactly the pages provided for this story: keep the first page for
     // each page number in order, ignore any duplicate/extra pages that may exist
     // in an old story, and pad any gaps with blank placeholders so the book layout
@@ -138,9 +248,25 @@ export class PDFService {
       }
     );
 
-    const splitImages = await Promise.all(
-      sortedPages.map((page) => (page.imageUrl ? fetchSplitPageImages(page.imageUrl) : Promise.resolve(null)))
+    const splitImages = await mapWithConcurrency(sortedPages, IMAGE_FETCH_CONCURRENCY, (page) =>
+      page.imageUrl ? fetchSplitPageImages(page.imageUrl) : Promise.resolve(null)
     );
+
+    // Never let a book go out looking finished when its artwork is missing:
+    // collect the offenders and say so once, loudly, instead of only logging
+    // a stack trace per page. A page that never had an imageUrl is not a
+    // failure - it legitimately falls back to a text-only leaf.
+    const missingArt = sortedPages
+      .filter((page, index) => Boolean(page.imageUrl) && !splitImages[index])
+      .map((page) => page.pageNumber);
+    if (missingArt.length > 0) {
+      const message =
+        `PDF for "${story.title}" is missing artwork on ${missingArt.length} of ` +
+        `${sortedPages.length} pages (page numbers: ${missingArt.join(", ")}). ` +
+        `The image host was unreachable; the book was rendered without those illustrations.`;
+      console.error(message);
+      onWarning?.(message);
+    }
 
     // A 16:9 story page becomes two PDF leaves (left square, then right square).
     // A 1:1 source (cover / closing) is already the exact page shape and stays a
@@ -185,19 +311,26 @@ export class PDFService {
           doc.addPage();
         }
         const pageType = getPageType(leaf.pageNumber);
+        const side = leafSide(index);
         switch (pageType) {
           case "cover":
             this.renderCoverPage(doc, leaf, story.title);
             break;
           case "ending":
-            this.renderEndingPage(doc, leaf);
+            this.renderEndingPage(doc, leaf, side);
             break;
           case "closing":
-            this.renderClosingPage(doc, leaf);
+            this.renderClosingPage(doc, leaf, side);
             break;
           default:
-            this.renderStoryPage(doc, leaf);
+            this.renderStoryPage(doc, leaf, side);
         }
+        // Page furniture sits above the artwork and the story text, the same
+        // stacking order the reader's z-indexes give it.
+        if (pageType === "cover") {
+          this.drawCoverFrame(doc, PAGE_WIDTH, PAGE_HEIGHT);
+        }
+        this.drawPageNumber(doc, PAGE_WIDTH, PAGE_HEIGHT, index, side);
       });
       doc.end();
     });
@@ -268,11 +401,13 @@ export class PDFService {
    */
   private renderStoryPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf
+    leaf: PdfLeaf,
+    side: LeafSide
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
+    this.drawGutter(doc, width, height, side);
     if (leaf.renderText) {
       this.drawStoryText(doc, leaf.pageNumber, leaf.content);
     }
@@ -284,11 +419,13 @@ export class PDFService {
    */
   private renderEndingPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf
+    leaf: PdfLeaf,
+    side: LeafSide
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
+    this.drawGutter(doc, width, height, side);
     this.drawStoryText(doc, leaf.pageNumber, leaf.content);
   }
 
@@ -298,12 +435,161 @@ export class PDFService {
    */
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf
+    leaf: PdfLeaf,
+    side: LeafSide
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
+    this.drawGutter(doc, width, height, side);
     this.drawStoryText(doc, leaf.pageNumber, leaf.content);
+  }
+
+  /**
+   * Spine shading on a facing page, mirroring `.is-left::after` /
+   * `.is-right::after`: an 11%-wide band on the spine edge fading to
+   * transparent toward the outer edge. The cover is a lone leaf and has none.
+   *
+   * CSS reaches this with a linear gradient; PDFKit has no gradient fill, so
+   * the band is drawn as a stack of equal strips whose alpha ramps linearly
+   * from opaque at the spine to clear at the outer edge.
+   */
+  private drawGutter(
+    doc: PDFKit.PDFDocument,
+    width: number,
+    height: number,
+    side: LeafSide
+  ) {
+    if (side === "single") return;
+
+    // On a left-hand page the spine is on the right, and vice versa.
+    const anchoredRight = side === "left";
+    const steps = 24;
+    const stripWidth = GUTTER.band / steps;
+
+    for (let i = 0; i < steps; i += 1) {
+      // i = 0 is always the strip touching the spine, i.e. the darkest.
+      const darkness = 1 - i / (steps - 1);
+      const x = anchoredRight ? width - (i + 1) * stripWidth : i * stripWidth;
+      doc
+        .rect(x, 0, stripWidth + 0.5, height)
+        .fillOpacity(GUTTER.opacity * darkness)
+        .fill(GUTTER.color);
+    }
+    doc.fillOpacity(1);
+  }
+
+  /**
+   * The cover's hardcover frame, mirroring `.is-cover::after`: a hairline
+   * white border inset 2% of the page, with a soft inner shade and a drop
+   * shadow. The reader composites it as a box-shadow, so the two blurs are
+   * fanned out as expanding low-opacity rounded rects.
+   */
+  private drawCoverFrame(doc: PDFKit.PDFDocument, width: number, height: number) {
+    const { inset, radius } = COVER_FRAME;
+    const x = inset;
+    const y = inset;
+    const w = width - inset * 2;
+    const h = height - inset * 2;
+
+    // Drop shadow: a few expanding rounded rects fading outward.
+    const outerSteps = 4;
+    for (let i = outerSteps; i >= 1; i -= 1) {
+      const grow = (COVER_FRAME.outerBlur / outerSteps) * i;
+      doc
+        .roundedRect(
+          x - grow,
+          y - grow + COVER_FRAME.outerOffsetY,
+          w + grow * 2,
+          h + grow * 2,
+          radius + grow
+        )
+        .fillOpacity(COVER_FRAME.outerOpacity * (1 - i / (outerSteps + 1)))
+        .fill("#000000");
+    }
+    doc.fillOpacity(1);
+
+    // Inner shade hugging the inside of the border.
+    const innerSteps = 4;
+    for (let i = innerSteps; i >= 1; i -= 1) {
+      const grow = (COVER_FRAME.innerBlur / innerSteps) * i;
+      doc
+        .roundedRect(
+          x + grow,
+          y + grow,
+          w - grow * 2,
+          h - grow * 2,
+          Math.max(0, radius - grow)
+        )
+        .lineWidth(COVER_FRAME.lineWidth)
+        .strokeOpacity(COVER_FRAME.innerOpacity * (1 - i / (innerSteps + 1)))
+        .stroke("#000000");
+    }
+    doc.strokeOpacity(0);
+
+    // The frame itself.
+    doc
+      .roundedRect(x, y, w, h, radius)
+      .lineWidth(COVER_FRAME.lineWidth)
+      .strokeColor("#FFFFFF")
+      .strokeOpacity(COVER_FRAME.opacity)
+      .stroke("#FFFFFF");
+    doc.strokeOpacity(0);
+  }
+
+  /**
+   * Folio in the outer corner, mirroring `.story-book-page-number`. The
+   * reader numbers leaves 1..N and never numbers the cover, so leaf 0 is
+   * skipped here too.
+   */
+  private drawPageNumber(
+    doc: PDFKit.PDFDocument,
+    width: number,
+    height: number,
+    leafIndex: number,
+    side: LeafSide
+  ) {
+    if (leafIndex === 0) return;
+
+    const fontSize = FOLIO.fontSize;
+    const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
+    this.font(doc, baseFont, "Helvetica").fontSize(fontSize);
+    const label = String(leafIndex + 1);
+    const textWidth = doc.widthOfString(label) + FOLIO.tracking * fontSize * label.length;
+
+    // `bottom` in CSS pins the element's bottom edge, so back the baseline
+    // up off the foot of the page by the line box height.
+    const y = height - FOLIO.bottom - fontSize * 1.15;
+    const x =
+      side === "single"
+        ? (width - textWidth) / 2
+        : side === "left"
+          ? FOLIO.side
+          : width - FOLIO.side - textWidth;
+
+    // 0 0 4px rgba(0, 0, 0, 0.55) - a soft halo, so the folio stays legible
+    // over pale artwork.
+    const haloSteps = 3;
+    for (let i = 1; i <= haloSteps; i += 1) {
+      const t = i / haloSteps;
+      doc
+        .fillColor("#000000")
+        .fillOpacity(FOLIO.shadowOpacity * Math.pow(1 - t, 1.4))
+        .text(label, x, y + FOLIO.shadowBlur * t, {
+          lineBreak: false,
+          characterSpacing: FOLIO.tracking * fontSize,
+        });
+    }
+    doc.fillOpacity(1);
+
+    doc
+      .fillColor(STORY_TEXT_COLOR)
+      .fillOpacity(FOLIO.opacity)
+      .text(label, x, y, {
+        lineBreak: false,
+        characterSpacing: FOLIO.tracking * fontSize,
+      });
+    doc.fillOpacity(1);
   }
 
   /**
@@ -358,9 +644,12 @@ export class PDFService {
   }
 
   /**
-   * Draw text in white with layered soft dark shadows (no opaque box):
-   * three offset passes at decreasing opacity feather the edge, then a thin
-   * outline pass keeps the glyphs crisp, then the solid white fill on top.
+   * Draw text in white with a soft dark halo, mirroring the web reader's
+   * `text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75)`. PDFKit has no blur, so the
+   * blur is fanned out as a stack of offset passes whose opacity decays with
+   * distance: they accumulate into a tight dark core that fades to nothing
+   * `BLUR_SPREAD` points away. A thin outline pass follows to keep the glyphs
+   * crisp over light artwork, then the solid white fill goes on top.
    */
   private drawTextWithShadow(
     doc: PDFKit.PDFDocument,
@@ -370,20 +659,18 @@ export class PDFService {
     options: PDFKit.Mixins.TextOptions,
     layout: { glowOpacity: number; shadowOffsetX: number; shadowOffsetY: number; shadowOpacity: number }
   ) {
-    const shadowSteps: Array<[number, number, number]> = [
-      [layout.shadowOffsetX, layout.shadowOffsetY, layout.shadowOpacity],
-      [layout.shadowOffsetX * 0.66, layout.shadowOffsetY * 0.66, layout.shadowOpacity * 0.66],
-      [layout.shadowOffsetX * 0.33, layout.shadowOffsetY * 0.33, layout.shadowOpacity * 0.33],
-    ];
+    // 8px of CSS blur at 96dpi is 6pt; the 1px y-offset is 0.75pt.
+    const BLUR_PASSES = 6;
+    const BLUR_SPREAD = 6;
 
-    // Soft shadow (layered, semi-transparent dark)
-    shadowSteps.forEach(([dx, dy, opacity]) => {
+    for (let i = 1; i <= BLUR_PASSES; i += 1) {
+      const t = i / BLUR_PASSES;
       doc
         .fillColor(STORY_TEXT_SHADOW)
-        .fillOpacity(opacity)
-        .text(text, x + dx, y + dy, options);
+        .fillOpacity(layout.shadowOpacity * Math.pow(1 - t, 1.6))
+        .text(text, x + layout.shadowOffsetX * 0.4 * t, y + BLUR_SPREAD * t, options);
       doc.fillOpacity(1);
-    });
+    }
 
     // Thin crisp outline
     doc
