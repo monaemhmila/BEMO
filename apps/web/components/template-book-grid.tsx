@@ -6,6 +6,10 @@ import type { StoryTemplate } from "@/data/story-templates";
 const PRICE_FROM = "From";
 const PRICE = "$34.99";
 
+/**
+ * A catalogue card. Tapping a story opens that story's detail page, where the
+ * "Personalise my book" button starts the wizard with this story selected.
+ */
 export function TemplateBookCard({ template }: { template: StoryTemplate }) {
   return (
     <Link href={`/books/${template.slug}`} className="group block">

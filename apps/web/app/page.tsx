@@ -1,5 +1,5 @@
 import { Hero } from "@/components/sections/hero";
-import { BookRail } from "@/components/sections/book-rail";
+import { StoryRail } from "@/components/sections/story-rail";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { BeforeAfter } from "@/components/sections/before-after";
 import { CharacterShowcase } from "@/components/sections/character-showcase";
@@ -9,7 +9,11 @@ import { CustomStoryBanner } from "@/components/sections/custom-story-banner";
 import { Faq } from "@/components/sections/faq";
 import { FinalCta } from "@/components/sections/final-cta";
 import { SiteFooter } from "@/components/sections/site-footer";
-import { bestsellers, boysBooks, girlsBooks, newReleases } from "@/lib/data";
+import {
+  bestsellerTemplates,
+  newReleaseTemplates,
+  templatesForAudience,
+} from "@/data/story-templates";
 
 export default function HomePage() {
   return (
@@ -17,16 +21,16 @@ export default function HomePage() {
     <div className="pt-[7rem]">
       <Hero />
 
-      <BookRail
+      <StoryRail
         eyebrow="Bestsellers"
         title="Personalise a bestseller"
-        books={bestsellers}
+        templates={bestsellerTemplates()}
       />
 
-      <BookRail
+      <StoryRail
         eyebrow="New releases"
         title="Discover what's new"
-        books={newReleases}
+        templates={newReleaseTemplates()}
         className="bg-paper"
       />
 
@@ -34,18 +38,18 @@ export default function HomePage() {
 
       <BeforeAfter />
 
-      <BookRail
+      <StoryRail
         eyebrow="Our books"
         title="Books for your little girl!"
-        books={girlsBooks}
+        templates={templatesForAudience("girl")}
       />
 
       <CharacterShowcase />
 
-      <BookRail
+      <StoryRail
         eyebrow="Our books"
         title="Books for your little boy!"
-        books={boysBooks}
+        templates={templatesForAudience("boy")}
         className="bg-paper"
       />
 

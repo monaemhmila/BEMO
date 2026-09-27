@@ -42,6 +42,12 @@ export interface PersonalizedStoryInput {
   template: StoryTemplateRow;
   dedication?: string;
   language?: string;
+  /**
+   * The hero's gender. Optional so older clients keep working, but when it is
+   * present the prose uses matching pronouns and gendered details instead of
+   * leaving the model to guess from the name.
+   */
+  gender?: "boy" | "girl";
 }
 
 interface StoryPageInput {
@@ -223,8 +229,21 @@ Return ONLY valid JSON:
       .map((beat, index) => `  - Page ${index + 1}: ${beat}`)
       .join("\n");
 
+    // Gender is optional so older clients keep working, but when the parent
+    // told us, keep the prose consistent instead of leaving the model to infer
+    // it from the hero's name.
+    const heroDescription = `${input.childAge}-year-old${
+      input.gender ? ` ${input.gender}` : ""
+    } named "${input.childName}"`;
+
+    const genderRule = input.gender
+      ? `- Hero's gender: the hero is a ${input.gender}. Use ${
+          input.gender === "boy" ? "he/him" : "she/her"
+        } pronouns and gendered details consistently on every page, and describe the hero's clothing and presentation as a ${input.gender}'s.\n`
+      : "";
+
     const prompt = `
-Create a personalized children's story for a ${input.childAge}-year-old named "${input.childName}".
+Create a personalized children's story for a ${heroDescription}.
 
 Story template: "${template.name}" (${template.ageRange}, difficulty ${template.difficulty})
 - Central theme: ${template.prompts.theme}
@@ -244,7 +263,7 @@ Story:
 - ${guidance.textLength}
 - Page length: every story page (pages 3 to ${pageCount - 2}) must carry ${guidance.targetPageWords} words and MUST NOT be shorter than ${guidance.minPageWords} words. A thin page looks unfinished in a printed picture book, so describe what the hero does, says and notices on that page instead of rushing to the next beat. The cover (page 1) is a single short hook line and the closing page is a brief farewell; those two are the only short pages.
 - HEART & LESSON: weave the template's moral lesson and educational focus into the story naturally and never preachy.
-- Themes: ${guidance.themes}
+${genderRule}- Themes: ${guidance.themes}
 ${input.language ? `- Language: ${input.language}. Write the story text and title in ${input.language}.` : ""}
 - The imageDescription field must ALWAYS be written in English (it is used to generate the illustrations); only the story text and title are written in the selected language.
 ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}

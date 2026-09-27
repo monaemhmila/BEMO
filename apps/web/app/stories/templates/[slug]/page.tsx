@@ -15,7 +15,7 @@ import {
   BedDouble,
   ArrowRight,
 } from "lucide-react";
-import { getStoryTemplate, STORY_TEMPLATES, CATEGORY_META, type StoryTemplate } from "../../../../data/story-templates";
+import { getStoryTemplate, STORY_TEMPLATES, CATEGORY_META, createStoryHref, type StoryTemplate } from "../../../../data/story-templates";
 
 export function generateStaticParams() {
   return STORY_TEMPLATES.map((story) => ({ slug: story.slug }));
@@ -148,7 +148,7 @@ function StoryDetailContent({ story }: { story: StoryTemplate }) {
 
             {/* CTA */}
             <Link
-              href={`/storybook/create?templateId=${story.slug}`}
+              href={createStoryHref(story)}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-primary to-violet-deep text-white font-semibold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-0.5 transition-all"
             >
               <Sparkles className="w-5 h-5" />

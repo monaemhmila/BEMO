@@ -9,6 +9,7 @@ import { TemplateBookGrid } from "@/components/template-book-grid";
 import { SiteFooter } from "@/components/sections/site-footer";
 import {
   CATEGORY_META,
+  createStoryHref,
   fillerSlides,
   STORY_TEMPLATES,
   type StoryTemplate,
@@ -108,7 +109,7 @@ function ReviewHighlight({ template }: { template: StoryTemplate }) {
 
 export function TemplateBookDetail({ template }: { template: StoryTemplate }) {
   const review = template.review;
-  const ctaHref = { pathname: "/storybook/create", query: { templateId: template.slug } };
+  const ctaHref = createStoryHref(template);
   const slides = template.media?.length ? template.media : fillerSlides();
 
   return (
@@ -230,7 +231,7 @@ export function TemplateBookDetail({ template }: { template: StoryTemplate }) {
       </main>
 
       <BookMobileCta
-        href={`/storybook/create?templateId=${template.slug}`}
+        href={createStoryHref(template)}
         targetId="book-cta"
         priceFrom={PRICE_FROM}
         price={PRICE}

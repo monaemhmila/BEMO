@@ -26,6 +26,7 @@ const GenerateStorybookSchema = z.object({
   modelId: z.string().min(1),
   childName: z.string().min(1),
   childAge: z.number().min(3).max(12),
+  gender: z.enum(["boy", "girl"]).optional(),
   templateId: z.string().min(1, "Template is required"),
   dedication: z.string().optional(),
   artStyle: z.string().optional(),
@@ -37,6 +38,7 @@ const GenerateStorybookSchema = z.object({
 const SimplePDFSchema = z.object({
   childName: z.string().trim().min(1, "Child name is required"),
   childAge: z.coerce.number().min(1).max(100).default(5),
+  gender: z.enum(["boy", "girl"]).optional().nullable().or(z.literal("")),
   hairColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   eyeColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   skinTone: z.string().trim().max(40).optional().nullable().or(z.literal("")),
@@ -263,6 +265,25 @@ async function loadUsableTemplate(
   };
 }
 
+/** Gender the parent picked for the hero, when they picked one. */
+type HeroGender = "boy" | "girl";
+
+/**
+ * Prefix a page's scene description with who the hero is, so the illustration
+ * agrees with the story text about the same child (name, age and gender).
+ */
+function heroScene(
+  childName: string,
+  childAge: number,
+  gender: HeroGender | undefined,
+  scene: string
+): string {
+  const hero = gender
+    ? `${childName}, a ${childAge}-year-old ${gender}`
+    : childName;
+  return `${hero} ${scene}`;
+}
+
 /**
  * POST /storybook/generate
  * Generate a complete personalized storybook
@@ -286,6 +307,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       modelId,
       childName,
       childAge,
+      gender,
       templateId,
       dedication,
       artStyle,
@@ -335,6 +357,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
         childAge,
         template,
         dedication,
+        gender,
       },
       {
         name: childName,
@@ -356,6 +379,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
         dedication,
         includeAudio,
         voiceId,
+        gender,
       }
     );
     storyId = story.id;
@@ -788,6 +812,10 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
   const childImage = validation.data.childImage || undefined;
   const language = validation.data.language || undefined;
   const artStyle = validation.data.artStyle || undefined;
+  const gender: HeroGender | undefined =
+    validation.data.gender === "boy" || validation.data.gender === "girl"
+      ? validation.data.gender
+      : undefined;
 
   try {
     // Gate generation behind the free-generation allowance
@@ -855,6 +883,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         template,
         dedication,
         language,
+        gender,
       },
       {
         name: childName,
@@ -869,7 +898,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
 
     const previewPages = await Promise.all(
       firstTwoPages.map(async (page) => {
-        const scenePrompt = `${childName} ${page.imageDescription}`;
+        const scenePrompt = heroScene(childName, childAge, gender, page.imageDescription);
 
         const referenceUrl = storyRef
           ? storyRef
@@ -982,7 +1011,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         try {
           await Promise.all(
             remainingPages.map(async (page) => {
-              const scenePrompt = `${childName} ${page.imageDescription}`;
+              const scenePrompt = heroScene(childName, childAge, gender, page.imageDescription);
               const referenceUrl = storyRef
                 ? storyRef
                 : childImage;

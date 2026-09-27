@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import axios, { AxiosError } from "axios";
@@ -20,6 +21,7 @@ import {
   ShoppingBag,
   Package,
   PenLine,
+  Palette,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,11 +43,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
 import { STORY_LANGUAGES } from "../constants";
+import { getStoryTemplate } from "@/data/story-templates";
 import { CARTOON_ART_STYLES, DEFAULT_ART_STYLE, getArtStyle } from "../../../services/fal/cartoonGeneration";
 
 const STEPS = [
-  { title: "Your Hero", description: "Upload a photo of your child", icon: User },
-  { title: "Story Theme", description: "Pick the adventure", icon: BookOpen },
+  { title: "Your Hero", description: "Photo, name, age & gender", icon: User },
+  { title: "Story Style", description: "Art style, language & extras", icon: Palette },
   { title: "Generate", description: "Create your story", icon: Sparkles },
 ];
 
@@ -91,6 +94,9 @@ export function StoryGenerator() {
   // Form data
   const [childName, setChildName] = useState("");
   const [childAge, setChildAge] = useState(5);
+  // A photo tells the illustrator who the hero is; the gender tells the writer
+  // which pronouns and details to use for that same hero.
+  const [childGender, setChildGender] = useState<"" | "boy" | "girl">("");
   const [childImage, setChildImage] = useState<string | null>(null);
   const [childImagePreview, setChildImagePreview] = useState<string | null>(null);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
@@ -111,26 +117,46 @@ export function StoryGenerator() {
   const [customTemplateLoading, setCustomTemplateLoading] = useState(false);
   const [customTemplateError, setCustomTemplateError] = useState<string | null>(null);
 
+  /** The story picked on the shelf: the wizard is opened with ?templateId=... */
+  const shelfTemplateId = (searchParams?.get("templateId") ?? "").trim();
+  const customFromUrl = !!searchParams?.get("custom");
+
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
+  /**
+   * Catalogue entry for the shelf choice, so the wizard can name the story the
+   * parent picked even before (or without) the server template list.
+   */
+  const shelfStory = shelfTemplateId ? getStoryTemplate(shelfTemplateId) : undefined;
+  /**
+   * The server list is authoritative for generation. When the shelf story is
+   * missing from it we say so and stop, instead of quietly generating a
+   * different book than the one that was chosen.
+   */
+  const shelfStoryMissing =
+    templates.length > 0 &&
+    !!shelfTemplateId &&
+    !templates.some((t) => t.id === shelfTemplateId);
 
-  // Pre-fill from ?templateId, or open straight into "My Own Story" via ?custom=1
+  const storyName = customMode
+    ? customTemplateName || "Your own story"
+    : selectedTemplate?.name || shelfStory?.title || "";
+  const storyDescription = selectedTemplate?.description || shelfStory?.tagline || "";
+  const storyAgeRange = selectedTemplate?.ageRange || shelfStory?.ageRange || "";
+
+  // Open straight into "My Own Story" via ?custom=1
   useEffect(() => {
-    const params = searchParams;
-    if (!params) return;
+    if (!customFromUrl) return;
+    setCustomMode(true);
+    setCustomTemplateId(null);
+    setStep((current) => (current === 0 ? 1 : current));
+  }, [customFromUrl]);
 
-    if (params.get("custom")) {
-      setCustomMode(true);
-      setCustomTemplateId(null);
-      setStep((current) => (current === 0 ? 1 : current));
-      return;
-    }
-
-    const templateId = params.get("templateId");
-    if (templateId) {
-      setCustomMode(false);
-      setSelectedTemplateId(templateId);
-    }
-  }, [searchParams]);
+  // The story picked on the shelf always wins while the wizard is open.
+  useEffect(() => {
+    if (!shelfTemplateId) return;
+    setCustomMode(false);
+    setSelectedTemplateId(shelfTemplateId);
+  }, [shelfTemplateId]);
 
   // The database is the source of truth for the template list.
   useEffect(() => {
@@ -142,10 +168,9 @@ export function StoryGenerator() {
         if (cancelled) return;
         const list = response.data?.templates ?? [];
         setTemplates(list);
-        setSelectedTemplateId((current) => {
-          if (current && list.some((t) => t.id === current)) return current;
-          return list[0]?.id ?? "";
-        });
+        // Never swap a shelf choice for another story: only visitors who
+        // opened the wizard without picking a book get a default.
+        setSelectedTemplateId((current) => current || list[0]?.id || "");
       })
       .catch(() => {
         if (!cancelled) {
@@ -254,6 +279,7 @@ export function StoryGenerator() {
         {
           childName: childName.trim(),
           childAge,
+          gender: childGender || undefined,
           templateId,
           language: storyLanguage,
           artStyle,
@@ -309,8 +335,11 @@ export function StoryGenerator() {
 
   const canProceed = () => {
     switch (step) {
-      case 0: return !!childName.trim() && !!childImage;
-      case 1: return customMode ? !!customIdea.trim() : !!selectedTemplateId;
+      case 0: return !!childName.trim() && !!childImage && !!childGender;
+      case 1:
+        // A story the server cannot serve must never be replaced by another one.
+        if (shelfStoryMissing) return false;
+        return customMode ? !!customIdea.trim() : !!selectedTemplateId;
       case 2: return true;
       default: return false;
     }
@@ -630,10 +659,35 @@ export function StoryGenerator() {
                   />
                 </div>
               </div>
+
+              <div>
+                <Label>
+                  Hero&apos;s Gender <span className="text-red-500 font-bold">*</span>
+                </Label>
+                <div className="mt-1 grid grid-cols-2 gap-3">
+                  {(["girl", "boy"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      aria-pressed={childGender === option}
+                      onClick={() => setChildGender(option)}
+                      className={`rounded-xl border-2 px-4 py-3 text-sm font-bold capitalize transition-all ${childGender === option
+                        ? "border-primary bg-buttercup/20 text-violet-deep"
+                        : "border-border text-muted-foreground hover:border-primary/60"
+                        }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  Keeps the story&apos;s hero, pronouns and illustrations consistent with your child.
+                </p>
+              </div>
             </motion.div>
           )}
 
-          {/* Step 1: Story Theme */}
+          {/* Step 1: Story style - the story itself was chosen on the shelf */}
           {step === 1 && (
             <motion.div
               key="step1"
@@ -643,45 +697,14 @@ export function StoryGenerator() {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-display font-bold text-violet-deep">What&apos;s the Adventure?</h2>
-                <p className="text-muted-foreground mt-2">Choose a theme or write your own story idea</p>
-              </div>
-
-              <div className="space-y-3">
-                <Label>Quick Starters</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  <button
-                    onClick={() => { setCustomMode(true); setCustomTemplateId(null); }}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${customMode
-                      ? "border-primary bg-buttercup/10"
-                      : "border-dashed border-primary/50 hover:border-primary"
-                      }`}
-                  >
-                    <span className="block mb-1">
-                      <PenLine className="w-6 h-6 text-primary" />
-                    </span>
-                    <span className="text-sm font-bold text-violet-deep">My Own Story</span>
-                    <span className="block text-[11px] text-muted-foreground mt-0.5">
-                      No template — from your idea
-                    </span>
-                  </button>
-                  {templates.map((template) => (
-                    <button
-                      key={template.id}
-                      onClick={() => { setCustomMode(false); setSelectedTemplateId(template.id); }}
-                      title={template.description}
-                      className={`p-3 rounded-xl border-2 text-left transition-all ${!customMode && selectedTemplateId === template.id
-                        ? "border-primary bg-buttercup/10"
-                        : "border-border hover:border-border"
-                        }`}
-                    >
-                      <span className="text-sm font-medium text-violet-deep block">{template.name}</span>
-                      <span className="block text-[11px] text-muted-foreground mt-0.5">
-                        Ages {template.ageRange}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                <h2 className="text-3xl font-display font-bold text-violet-deep">
+                  {customMode ? "Tell us your story" : "Make it yours"}
+                </h2>
+                <p className="text-muted-foreground mt-2">
+                  {customMode
+                    ? "Describe the story you want and we will build it around your hero."
+                    : "Your story is already picked - now choose how it should look and read."}
+                </p>
               </div>
 
               {customMode ? (
@@ -768,12 +791,76 @@ export function StoryGenerator() {
                   </Button>
                 </motion.div>
               ) : (
-                selectedTemplate && (
+                <div className="space-y-4">
                   <div className="rounded-2xl border border-border bg-muted/30 p-5">
-                    <h3 className="font-display font-bold text-violet-deep">{selectedTemplate.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{selectedTemplate.description}</p>
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="flex items-start gap-4">
+                        {shelfStory && (
+                          <img
+                            src={shelfStory.coverImage}
+                            alt=""
+                            aria-hidden
+                            loading="lazy"
+                            decoding="async"
+                            className="hidden size-20 shrink-0 rounded-xl object-cover ring-1 ring-border sm:block"
+                          />
+                        )}
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
+                            Your chosen story
+                          </p>
+                          <h3 className="mt-1 font-display text-lg font-bold text-violet-deep">
+                            {storyName || "Loading your story..."}
+                          </h3>
+                          {storyDescription && (
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {storyDescription}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {storyAgeRange && (
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-muted-foreground">
+                          Ages {storyAgeRange}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-primary">
+                      <Link href="/books" className="hover:underline">
+                        Choose a different story
+                      </Link>
+                      {shelfTemplateId && (
+                        <Link href={`/books/${shelfTemplateId}`} className="hover:underline">
+                          Read the story details
+                        </Link>
+                      )}
+                      <Link href="/create-custom" className="hover:underline">
+                        Write your own story
+                      </Link>
+                    </div>
                   </div>
-                )
+
+                  {shelfStoryMissing && (
+                    <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+                      <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-bold">
+                          {shelfStory?.title ?? shelfTemplateId} is not available on the server yet.
+                        </p>
+                        <p>
+                          We will not replace it with a different story. Pick another book,
+                          or ask the admin to re-seed the story templates
+                          (<span className="font-mono">npm run seed:templates</span>) and reload
+                          this page.
+                        </p>
+                        <Link href="/books" className="inline-block font-bold text-primary hover:underline">
+                          Pick another story
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="grid sm:grid-cols-2 gap-4">
@@ -843,15 +930,14 @@ export function StoryGenerator() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Hero</span>
-                    <p className="font-medium text-violet-deep text-lg">{childName}, age {childAge}</p>
+                    <p className="font-medium text-violet-deep text-lg">
+                      {childName}, age {childAge}
+                      {childGender ? ` (${childGender})` : ""}
+                    </p>
                   </div>
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Story</span>
-                    <p className="font-medium text-violet-deep">
-                      {customMode
-                        ? customTemplateName || "Your own story"
-                        : selectedTemplate?.name || "—"}
-                    </p>
+                    <p className="font-medium text-violet-deep">{storyName || "—"}</p>
                   </div>
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Language</span>

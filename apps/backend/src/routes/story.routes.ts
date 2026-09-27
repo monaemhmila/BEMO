@@ -19,6 +19,7 @@ const GenerateStorySchema = z.object({
   artStyle: z.string().optional(),
   childName: z.string().optional(),
   childAge: z.number().min(3).max(12).optional(),
+  gender: z.enum(["boy", "girl"]).optional(),
   dedication: z.string().optional(),
   includeAudio: z.boolean().optional(),
   voiceId: z.string().optional(),
@@ -46,7 +47,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
-    const { modelId, templateId, artStyle, childName, childAge, dedication, includeAudio, voiceId, language } = validation.data;
+    const { modelId, templateId, artStyle, childName, childAge, gender, dedication, includeAudio, voiceId, language } = validation.data;
     const userId = req.userId!;
 
     // Verify model exists and is trained
@@ -109,6 +110,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
         template,
         dedication,
         language,
+        gender,
       })
       : await storyService.generateStoryScript(model.name, template.prompts.theme, language);
 
@@ -118,7 +120,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       modelId,
       script,
       artStyle || "",
-      { childName, childAge, template, dedication, includeAudio, voiceId }
+      { childName, childAge, template, dedication, includeAudio, voiceId, gender }
     );
 
     // Trigger image generation for each page

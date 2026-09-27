@@ -355,3 +355,37 @@ export const STORY_TEMPLATES: StoryTemplate[] = [
 export function getStoryTemplate(slug: string): StoryTemplate | undefined {
   return STORY_TEMPLATES.find((story) => story.slug === slug);
 }
+
+/**
+ * Where a catalogue card sends the visitor: straight into the create wizard
+ * with this story already selected, so the shelf and the wizard never disagree
+ * about which story is being personalised.
+ */
+export function createStoryHref(template: StoryTemplate): string {
+  return `/storybook/create?templateId=${template.slug}`;
+}
+
+/** Most-reviewed stories first - the “bestsellers” shelf. */
+export function bestsellerTemplates(limit = 8): StoryTemplate[] {
+  return [...STORY_TEMPLATES]
+    .sort((a, b) => (b.review?.count ?? 0) - (a.review?.count ?? 0))
+    .slice(0, limit);
+}
+
+/** Newest catalogue entries, newest first - the “new releases” shelf. */
+export function newReleaseTemplates(limit = 8): StoryTemplate[] {
+  return STORY_TEMPLATES.slice(-limit).reverse();
+}
+
+/**
+ * Stories written for girls or boys. Gender-neutral stories ("any") suit both
+ * shelves, so they appear on each.
+ */
+export function templatesForAudience(
+  audience: Exclude<StoryAudience, "any">,
+  limit = 8
+): StoryTemplate[] {
+  return STORY_TEMPLATES.filter(
+    (template) => template.audience === audience || template.audience === "any"
+  ).slice(0, limit);
+}

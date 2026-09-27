@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { BookCard } from "@/components/book-card";
+import { TemplateBookCard } from "@/components/template-book-grid";
 import { Button } from "@/components/ui/button";
 import {
   Carousel,
@@ -11,24 +11,29 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import type { Book } from "@/lib/data";
+import { type StoryTemplate } from "@/data/story-templates";
 import { cn } from "@/lib/utils";
 
-type BookRailProps = {
+type StoryRailProps = {
   eyebrow: string;
   title: string;
-  books: Book[];
+  templates: StoryTemplate[];
   viewAllHref?: string;
   className?: string;
 };
 
-export function BookRail({
+/**
+ * Storefront shelf of real story templates. Each card opens the story's detail
+ * page, where the "Personalise my book" button starts the create wizard with
+ * that template already selected.
+ */
+export function StoryRail({
   eyebrow,
   title,
-  books,
+  templates,
   viewAllHref = "/books",
   className,
-}: BookRailProps) {
+}: StoryRailProps) {
   return (
     <section className={cn("py-12 lg:py-16", className)}>
       <div className="shell">
@@ -51,12 +56,12 @@ export function BookRail({
           className="mt-8 [&_[data-slot=carousel-content]]:-ml-4"
         >
           <CarouselContent>
-            {books.map((book, i) => (
+            {templates.map((template, i) => (
               <CarouselItem
-                key={`${book.slug}-${i}`}
-                className="basis-[72%] pl-4 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                key={`${template.slug}-${i}`}
+                className="basis-[85%] pl-4 sm:basis-1/2 lg:basis-1/3"
               >
-                <BookCard book={book} />
+                <TemplateBookCard template={template} />
               </CarouselItem>
             ))}
           </CarouselContent>
