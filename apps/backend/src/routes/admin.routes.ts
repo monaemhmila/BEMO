@@ -745,11 +745,13 @@ const TemplateReviewSchema = z
 
 /**
  * Gallery slides and cover art. `src` may be a full http(s) URL or a
- * root-relative path such as /assets/previews/x.jpg, which is what the upload
- * endpoint returns. Anything else (javascript:, data:) is rejected so a stored
- * value can never execute in the storefront.
+ * root-relative path, which is what the upload endpoint returns (/assets/...) and
+ * what the seed uses for committed art in the web app's public folder
+ * (/templates/...). Anything else (javascript:, data:) is rejected so a stored
+ * value can never execute in the storefront, and a protocol-relative "//host"
+ * is rejected so a stored value can never be pulled from an unexpected origin.
  */
-const SAFE_IMAGE_URL = /^(https?:\/\/|\/assets\/)/i;
+const SAFE_IMAGE_URL = /^(https?:\/\/|\/(?!\/))/i;
 
 const TemplateImageUrlSchema = z
   .string()

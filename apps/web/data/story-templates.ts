@@ -1,4 +1,10 @@
-export type StoryCategory = "adventure" | "sentimental" | "educative";
+export type StoryCategory =
+  | "adventure"
+  | "sentimental"
+  | "educative"
+  | "underwater"
+  | "moral"
+  | "birthday";
 export type StoryAudience = "girl" | "boy" | "any";
 
 export interface StoryReview {
@@ -98,6 +104,24 @@ export const CATEGORY_META: Record<
     chip: "bg-emerald-100 text-emerald-700",
     accent: "from-emerald-500 to-teal-600",
     description: "Stories that teach while they delight.",
+  },
+  underwater: {
+    label: "Underwater",
+    chip: "bg-cyan-100 text-cyan-700",
+    accent: "from-cyan-500 to-blue-600",
+    description: "Deep dives, sea creatures, and whole ocean worlds.",
+  },
+  moral: {
+    label: "Moral",
+    chip: "bg-amber-100 text-amber-700",
+    accent: "from-amber-500 to-orange-600",
+    description: "Courage, kindness, and doing the right thing.",
+  },
+  birthday: {
+    label: "Birthday",
+    chip: "bg-pink-100 text-pink-700",
+    accent: "from-pink-500 to-rose-600",
+    description: "Candles, cake, and stories made for their big day.",
   },
 };
 

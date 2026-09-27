@@ -73,25 +73,25 @@ interface CharacterProfile {
 const AGE_GUIDANCE = {
   "3-5": {
     language:
-      "very simple words, short sentences, basic concepts like colors and fun",
+      "very simple words, short sentences, basic concepts",
     themes: "friendship, sharing, bedtime, animals, fun",
-    textLength: "2-3 short sentences per page",
-    minPageWords: 30,
-    targetPageWords: "35-45",
+    textLength: "1 short sentences per page",
+    minPageWords: 15,
+    targetPageWords: "15-20",
   },
   "6-8": {
     language: "simple and clear vocabulary, short complete sentences",
     themes: "adventure, problem-solving, friendship, family, nature",
-    textLength: "3-4 short sentences per page",
-    minPageWords: 40,
-    targetPageWords: "45-55",
+    textLength: "2 short sentences per page",
+    minPageWords: 20,
+    targetPageWords: "20-25",
   },
   "9-12": {
     language: "clear and engaging vocabulary, short sentence structures",
     themes: "bravery, teamwork, moral lessons, discovery, mystery",
-    textLength: "4-5 sentences per page",
-    minPageWords: 45,
-    targetPageWords: "50-65",
+    textLength: "3 sentences per page",
+    minPageWords: 25,
+    targetPageWords: "25-30",
   },
 } as const;
 
@@ -141,8 +141,8 @@ Tone & Style:
 - Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
 
 For each page:
-- Write a charming paragraph of 2-4 sentences of story text with heart and imagination.
-- Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES (vibrant colors, beautiful lighting, engaging scenery, cute side characters).
+- Write a charming paragraph of 2 sentences of story text with heart and imagination.
+- Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES .
 - Keep the hero as the main character. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never shorts).
@@ -219,8 +219,7 @@ Return ONLY valid JSON:
 
     if (!Array.isArray(beats) || beats.length !== pageCount) {
       throw new Error(
-        `Template "${template.id}" must define exactly ${pageCount} beats, received ${
-          Array.isArray(beats) ? beats.length : "none"
+        `Template "${template.id}" must define exactly ${pageCount} beats, received ${Array.isArray(beats) ? beats.length : "none"
         }`
       );
     }
@@ -232,14 +231,12 @@ Return ONLY valid JSON:
     // Gender is optional so older clients keep working, but when the parent
     // told us, keep the prose consistent instead of leaving the model to infer
     // it from the hero's name.
-    const heroDescription = `${input.childAge}-year-old${
-      input.gender ? ` ${input.gender}` : ""
-    } named "${input.childName}"`;
+    const heroDescription = `${input.childAge}-year-old${input.gender ? ` ${input.gender}` : ""
+      } named "${input.childName}"`;
 
     const genderRule = input.gender
-      ? `- Hero's gender: the hero is a ${input.gender}. Use ${
-          input.gender === "boy" ? "he/him" : "she/her"
-        } pronouns and gendered details consistently on every page, and describe the hero's clothing and presentation as a ${input.gender}'s.\n`
+      ? `- Hero's gender: the hero is a ${input.gender}. Use ${input.gender === "boy" ? "he/him" : "she/her"
+      } pronouns and gendered details consistently on every page, and describe the hero's clothing and presentation as a ${input.gender}'s.\n`
       : "";
 
     const prompt = `
@@ -285,7 +282,7 @@ For each page:
 - Write the story text with warmth and charm, following that page's beat.
 - Build the imageDescription by covering the ENTIRE background in four consecutive zones, one after the other: describe what is on the RIGHT side, then the LEFT side, then the TOP, then the BOTTOM, so every part of the backdrop is fully described with absolutely no un-described area.
 - Keep all four zones part of ONE continuous, seamless background scene: same location, same time of day, same weather, same lighting and the same color palette across right/left/top/bottom. The zones must blend smoothly into each other where they meet (no hard seams, no abrupt color or style changes, no cut-off objects at any edge), so the whole frame reads as a single homogeneous environment rather than four separate panels.
-- Make the ENVIRONMENT and any SIDE CHARACTERS/CREATURES colorful, imaginative, and detailed.
+- Make the ENVIRONMENT and any SIDE CHARACTERS/CREATURES imaginative, and detailed.
 - The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
 - The imageDescription must NEVER mention or imply any art style, illustration style, medium, or drawing technique - never use words like illustration, storybook, cartoon, anime, painting, watercolor, 3D, drawing, sketch, render, or any similar artistic term. Descriptions are purely about the scene CONTENT: the setting, time of day, weather, lighting, colors, characters, objects, and atmosphere. The artwork's visual style is applied separately and is not part of the description.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
@@ -416,8 +413,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
       };
     } catch (error) {
       logger.warn(
-        `Story page length: repair pass failed, keeping original text: ${
-          error instanceof Error ? error.message : String(error)
+        `Story page length: repair pass failed, keeping original text: ${error instanceof Error ? error.message : String(error)
         }`
       );
 
@@ -484,7 +480,8 @@ Design ONE reusable story template with these rules:
   11. the low point
   12. the turning point
   13. resolution where the lesson is lived out
-  14. a warm, gentle closing
+  14. a quiet moment to look back at what changed
+  15. a warm, gentle closing
 - Keep the story safe, kind and age-appropriate. No violence, no scary imagery, no weapons, no romance, no brand names, no real people.
 - Write everything in English, with simple and clear vocabulary suitable for a ${input.ageRange} year old: ${guidance.language}.
 - Give 3-5 short lowercase tags describing the template (for example: adventure, friendship, courage).
@@ -530,18 +527,18 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
         : 1;
       const tags = Array.isArray(raw.tags)
         ? raw.tags
-            .filter((tag: unknown): tag is string => typeof tag === "string")
-            .map((tag: string) => tag.trim().toLowerCase())
-            .filter(Boolean)
-            .slice(0, 5)
+          .filter((tag: unknown): tag is string => typeof tag === "string")
+          .map((tag: string) => tag.trim().toLowerCase())
+          .filter(Boolean)
+          .slice(0, 5)
         : [];
 
       const rawPrompts = (raw.prompts ?? {}) as Partial<StoryTemplatePrompts>;
       const beats = Array.isArray(rawPrompts.beats)
         ? rawPrompts.beats.filter(
-            (beat: unknown): beat is string =>
-              typeof beat === "string" && beat.trim().length > 0
-          )
+          (beat: unknown): beat is string =>
+            typeof beat === "string" && beat.trim().length > 0
+        )
         : [];
 
       if (!name || !description) {

@@ -30,7 +30,7 @@ export type TextPosition =
  */
 export type CharacterSide = "left" | "right";
 
-export const STORYBOOK_PAGE_COUNT = 14;
+export const STORYBOOK_PAGE_COUNT = 15;
 
 export const STORYBOOK_IMAGE_ASPECT_RATIO = "16:9";
 export const STORYBOOK_SQUARE_ASPECT_RATIO = "1:1";

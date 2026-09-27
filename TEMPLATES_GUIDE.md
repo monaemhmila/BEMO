@@ -129,7 +129,7 @@ A template is defined in **one** place: `STOREFRONT_TEMPLATES` in
 sync — the storefront renders whatever the database returns.
 
 1. Add the row, including the catalogue copy. The `beats` array **must be exactly
-   `BEAT_COUNT` (14) entries long** — `seedStoryTemplates` throws on any other
+   `BEAT_COUNT` (15) entries long** — `seedStoryTemplates` throws on any other
    count, and `loadUsableTemplate` in `storybook.routes.ts` rejects templates
    that do not match, so the wizard would fail with a "no usable template" error.
 
@@ -150,10 +150,10 @@ sync — the storefront renders whatever the database returns.
      artStyle: "vibrant prehistoric storybook illustration",
       coverImage: "https://...",
       previews: [
-        { src: "https://...", type: "image", mimeType: "image/jpeg", caption: "Page 3" },
+        { src: "/templates/dinosaurs/preview-1.jpg", type: "image", mimeType: "image/jpeg", caption: "Page 3" },
       ],
       review: { rating: 5, count: 120, quote: "...", author: "A. Reader" },
-     prompts: { theme, moralLesson, educationalFocus, worldContext, beats: [/* 14 */] },
+      prompts: { theme, moralLesson, educationalFocus, worldContext, beats: [/* 15 */] },
    }
    ```
 
@@ -173,10 +173,16 @@ sync — the storefront renders whatever the database returns.
   instead of a broken image.
 - `previews` is an ordered array of gallery slides for the book detail page. When
   it is empty the page falls back to neutral "Preview N" placeholders, so a
-  template is never left with a broken carousel.
-- Image URLs must be `http(s)://` or root-relative `/assets/...`. Anything else
-  (`javascript:`, `data:`) is rejected on write and stripped on read, so a stored
-  value can never execute in the storefront.
+  template is never left with a broken carousel. Predefined templates commit
+  their art to `apps/web/public/templates/<id>/` and use root-relative
+  `/templates/...` srcs, so a fresh clone renders the gallery with no upload
+  step. Cap is 12 slides; the seed throws past that.
+- Image URLs must be `http(s)://` or a root-relative path starting with a single
+  `/`. Anything else (`javascript:`, `data:`, and protocol-relative `//host` so a
+  stored value can never be pulled from an unexpected origin) is rejected on
+  write and stripped on read, so a stored value can never execute in the
+  storefront. The seed mirrors this rule in `SAFE_IMAGE_URL`, and so does the
+  storefront mapper in `apps/web/lib/story-templates.ts`.
 
 ### Uploading cover and preview images
 

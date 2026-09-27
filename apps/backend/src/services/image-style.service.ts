@@ -91,7 +91,7 @@ export function applyArtStyle(sceneDescription: string, artStyle?: string): stri
 export function getCharacterEdgeDirective(side: "left" | "right"): string {
   const farSide = side === "left" ? "FAR LEFT" : "FAR RIGHT";
   const otherSide = side === "left" ? "right" : "left";
-  return `Position the child at the ${farSide} edge of the frame. He must never be in the center, middle, or ${otherSide} side of the image - anchor the child to the far ${side} edge of the canvas while the background scene fills the rest of the frame.`;
+  return `Position the child at the ${farSide} of the composition naturally integrated into the scene.`;
 }
 
 /**
@@ -112,8 +112,6 @@ Create the following scene:
 [SCENE]
 
 [EDGE_PLACEMENT]Create a completely new, rich, immersive environment around the child. The environment must naturally surround and integrate the child with detailed foreground, middle-ground, and background elements.
-
-The artwork must completely fill the entire [FILL_CANVAS] canvas from the extreme left edge to the extreme right edge and from the top edge to the bottom edge. Generate the environment continuously across the entire canvas. No empty areas, no white areas, no blank background, no inherited background, no side margins, no borders, no letterboxing, and no pillarboxing.
 
 The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings. The result must look like one cohesive scene, not a face pasted onto a generated body or background.
 

@@ -23,6 +23,9 @@ const CATEGORY_OPTIONS: { value: StoryCategory; label: string }[] = [
   { value: "educative", label: CATEGORY_META.educative.label },
   { value: "adventure", label: CATEGORY_META.adventure.label },
   { value: "sentimental", label: CATEGORY_META.sentimental.label },
+  { value: "underwater", label: CATEGORY_META.underwater.label },
+  { value: "moral", label: CATEGORY_META.moral.label },
+  { value: "birthday", label: CATEGORY_META.birthday.label },
 ];
 
 type FilterOption = { value: string; label: string };

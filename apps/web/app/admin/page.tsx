@@ -1234,7 +1234,7 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
 // ─── Story Template Management ────────────────────────────────────────────────
 
 /** The generator only accepts a template whose beat count matches exactly. */
-const TEMPLATE_BEAT_COUNT = 14;
+const TEMPLATE_BEAT_COUNT = 15;
 
 const TEMPLATE_CATEGORIES = [
   "adventure", "bedtime", "birthday", "dinosaurs", "fantasy", "friendship",
