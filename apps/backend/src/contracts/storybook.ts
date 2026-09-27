@@ -288,3 +288,154 @@ export function normalizeStoryCategory(rawCategory?: string | null): string {
     ? normalized
     : "adventure";
 }
+
+/** A customer review stored alongside a template, rendered on the detail page. */
+export interface StorefrontReview {
+  rating: number;
+  count: number;
+  quote: string;
+  author: string;
+}
+
+/** One gallery slide on the book detail page. */
+export interface StorefrontPreview {
+  src: string;
+  type: "image" | "video";
+  mimeType?: string;
+  caption?: string;
+}
+
+/**
+ * The catalogue payload `GET /storybook/templates` and
+ * `POST /storybook/templates/custom` both return. One shape for the storefront
+ * and the generator, so a template added in the database appears on /books with
+ * no frontend change.
+ */
+export interface StorefrontTemplate {
+  /** Primary key. Also the storefront slug: /books/<id>. */
+  id: string;
+  title: string;
+  description: string;
+  tagline: string | null;
+  excerpt: string | null;
+  emoji: string | null;
+  audience: string;
+  ageRange: string;
+  category: string;
+  difficulty: number;
+  tags: string[];
+  coverImage: string | null;
+  /** Gallery slides for the detail page. Empty means "use the filler previews". */
+  previews: StorefrontPreview[];
+  theme: string;
+  moral: string | null;
+  learning: string | null;
+  artStyle: string | null;
+  review: StorefrontReview | null;
+}
+
+/** The subset of a `StoryTemplate` row the storefront payload is built from. */
+interface StoryTemplateRow {
+  id: string;
+  name: string;
+  description: string;
+  ageRange: string;
+  category: string;
+  difficulty: number;
+  tags: string[];
+  coverImage: string | null;
+  sampleImage: string | null;
+  tagline: string | null;
+  excerpt: string | null;
+  emoji: string | null;
+  audience: string;
+  artStyle: string | null;
+  review: unknown;
+  previews: unknown;
+  prompts: unknown;
+}
+
+function readPromptField(prompts: unknown, field: string): string | null {
+  if (!prompts || typeof prompts !== "object") return null;
+  const value = (prompts as Record<string, unknown>)[field];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function readReview(review: unknown): StorefrontReview | null {
+  if (!review || typeof review !== "object") return null;
+
+  const { rating, count, quote, author } = review as Record<string, unknown>;
+  if (typeof quote !== "string" || typeof author !== "string") return null;
+
+  return {
+    rating: typeof rating === "number" ? rating : 0,
+    count: typeof count === "number" ? count : 0,
+    quote,
+    author,
+  };
+}
+
+/**
+ * Read the stored preview list. Anything malformed is dropped rather than
+ * rejected, because a single bad row must not take the whole shop page down.
+ */
+function readPreviews(previews: unknown): StorefrontPreview[] {
+  if (!Array.isArray(previews)) return [];
+
+  const slides: StorefrontPreview[] = [];
+
+  for (const entry of previews) {
+    if (!entry || typeof entry !== "object") continue;
+
+    const { src, type, mimeType, caption } = entry as Record<string, unknown>;
+    if (typeof src !== "string" || !src.trim()) continue;
+    // Only http(s) and root-relative asset paths, so a stored value can never
+    // turn into a javascript: or data: URL in the storefront.
+    const isSafe = /^(https?:\/\/|\/)/i.test(src.trim());
+    if (!isSafe) continue;
+
+    const slide: StorefrontPreview = {
+      src: src.trim(),
+      type: type === "video" ? "video" : "image",
+    };
+
+    if (typeof mimeType === "string" && mimeType.trim()) {
+      slide.mimeType = mimeType.trim().slice(0, 100);
+    }
+    if (typeof caption === "string" && caption.trim()) {
+      slide.caption = caption.trim().slice(0, 200);
+    }
+
+    slides.push(slide);
+  }
+
+  return slides;
+}
+
+/**
+ * Turn a `StoryTemplate` row into the storefront payload. The generation prompt
+ * document is flattened into `theme`/`moral`/`learning` because those are the
+ * three parts the storefront actually shows.
+ */
+export function toStorefrontTemplate(row: StoryTemplateRow): StorefrontTemplate {
+  return {
+    id: row.id,
+    title: row.name,
+    description: row.description,
+    tagline: row.tagline,
+    excerpt: row.excerpt,
+    emoji: row.emoji,
+    audience: row.audience || "any",
+    ageRange: row.ageRange,
+    category: row.category,
+    difficulty: row.difficulty,
+    tags: row.tags,
+    coverImage: row.coverImage ?? row.sampleImage,
+    previews: readPreviews(row.previews),
+    theme: readPromptField(row.prompts, "theme") ?? "",
+    moral: readPromptField(row.prompts, "moralLesson"),
+    learning: readPromptField(row.prompts, "educationalFocus"),
+    artStyle: row.artStyle,
+    review: readReview(row.review),
+  };
+}

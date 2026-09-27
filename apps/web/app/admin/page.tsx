@@ -1,9 +1,10 @@
 "use client";
 
 import { useAuth, useUser } from "@clerk/nextjs";
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
 import { BACKEND_URL } from "../config";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import type { ZodIssue } from "zod";
 import {
   Users, BookOpen, Sparkles, ShieldCheck, RefreshCw, Gift, Search,
   Trash2, Play, CheckCircle2, HardDrive, Cpu, Key, TrendingUp, Activity,
@@ -14,6 +15,8 @@ import {
   ShoppingBag, Truck, Package, MapPin,
   Menu,
   MousePointerClick,
+  Plus, BookCopy, Power, Copy, ExternalLink, AlertTriangle,
+  Loader2, ChevronLeft, ChevronRight,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { handleImageError } from "../../components/ui/image-fallback";
@@ -122,7 +125,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "facelab" | "orders" | "models" | "activity" | "analytics";
+type TabType = "overview" | "users" | "stories" | "templates" | "facelab" | "orders" | "models" | "activity" | "analytics";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -422,7 +425,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
         <h3 className="font-semibold text-white mb-1">Test Face Detection</h3>
         <p className="text-white/40 text-xs mb-4">
           Upload a child photo — detection runs locally (tiny face detector), then the
-          image is cropped as tightly as possible to the child's face. That crop is the
+          image is cropped as tightly as possible to the child&rsquo;s face. That crop is the
           reference fed to the AI edit model (no white canvas). No image API is called.
         </p>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
@@ -1228,6 +1231,1147 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+// ─── Story Template Management ────────────────────────────────────────────────
+
+/** The generator only accepts a template whose beat count matches exactly. */
+const TEMPLATE_BEAT_COUNT = 14;
+
+const TEMPLATE_CATEGORIES = [
+  "adventure", "bedtime", "birthday", "dinosaurs", "fantasy", "friendship",
+  "learning", "animals", "moral", "seasonal", "science", "history", "emotions",
+  "family", "sentimental", "pirate", "space", "underwater", "sports", "cooking",
+];
+const TEMPLATE_AUDIENCES = ["any", "girl", "boy"];
+
+interface AdminTemplateReview {
+  rating: number;
+  count: number;
+  quote: string;
+  author: string;
+}
+
+/** One gallery slide on the book detail page. */
+interface AdminTemplatePreview {
+  src: string;
+  type: "image" | "video";
+  mimeType?: string;
+  caption?: string;
+}
+
+/** Mirrors MAX_PREVIEWS in apps/backend/src/lib/previews.ts */
+const TEMPLATE_PREVIEW_LIMIT = 12;
+
+interface AdminTemplate {
+  id: string;
+  name: string;
+  description: string;
+  ageRange: string;
+  category: string;
+  difficulty: number;
+  tags: string[];
+  isActive: boolean;
+  source: "PREDEFINED" | "CUSTOM";
+  coverImage: string | null;
+  sampleImage: string | null;
+  tagline: string | null;
+  excerpt: string | null;
+  emoji: string | null;
+  audience: string;
+  artStyle: string | null;
+  review: AdminTemplateReview | null;
+  previews: AdminTemplatePreview[] | null;
+  prompts: {
+    theme: string;
+    moralLesson?: string;
+    educationalFocus?: string;
+    worldContext?: string;
+    beats: string[];
+  };
+  storiesCount: number;
+  beatsCount: number;
+  isUsable: boolean;
+  createdAt: string;
+  updatedAt: string;
+  ownerUserId: string | null;
+}
+
+/**
+ * Form-shaped template. Nullable database columns are kept as strings here so a
+ * field can be cleared in the form, and only converted to null on submit.
+ */
+interface TemplateDraft {
+  id: string;
+  name: string;
+  description: string;
+  ageRange: string;
+  category: string;
+  difficulty: number;
+  tags: string;
+  isActive: boolean;
+  coverImage: string;
+  sampleImage: string;
+  tagline: string;
+  excerpt: string;
+  emoji: string;
+  audience: string;
+  artStyle: string;
+  reviewRating: string;
+  reviewCount: string;
+  reviewQuote: string;
+  reviewAuthor: string;
+  theme: string;
+  moralLesson: string;
+  educationalFocus: string;
+  worldContext: string;
+  beats: string[];
+  previews: AdminTemplatePreview[];
+}
+
+function emptyTemplateDraft(): TemplateDraft {
+  return {
+    id: "",
+    name: "",
+    description: "",
+    ageRange: "4-8",
+    category: "adventure",
+    difficulty: 1,
+    tags: "",
+    isActive: true,
+    coverImage: "",
+    sampleImage: "",
+    tagline: "",
+    excerpt: "",
+    emoji: "",
+    audience: "any",
+    artStyle: "",
+    reviewRating: "5",
+    reviewCount: "0",
+    reviewQuote: "",
+    reviewAuthor: "",
+    theme: "",
+    moralLesson: "",
+    educationalFocus: "",
+    worldContext: "",
+    beats: Array.from({ length: TEMPLATE_BEAT_COUNT }, () => ""),
+    previews: [],
+  };
+}
+
+function toTemplateDraft(template: AdminTemplate): TemplateDraft {
+  const prompts = template.prompts ?? { theme: "", beats: [] };
+  const beats = Array.from({ length: TEMPLATE_BEAT_COUNT }, (_, i) => prompts.beats?.[i] ?? "");
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    ageRange: template.ageRange,
+    category: template.category,
+    difficulty: template.difficulty,
+    tags: (template.tags ?? []).join(", "),
+    isActive: template.isActive,
+    coverImage: template.coverImage ?? "",
+    sampleImage: template.sampleImage ?? "",
+    tagline: template.tagline ?? "",
+    excerpt: template.excerpt ?? "",
+    emoji: template.emoji ?? "",
+    audience: template.audience,
+    artStyle: template.artStyle ?? "",
+    reviewRating: template.review ? String(template.review.rating) : "",
+    reviewCount: template.review ? String(template.review.count) : "",
+    reviewQuote: template.review?.quote ?? "",
+    reviewAuthor: template.review?.author ?? "",
+    theme: prompts.theme ?? "",
+    moralLesson: prompts.moralLesson ?? "",
+    educationalFocus: prompts.educationalFocus ?? "",
+    worldContext: prompts.worldContext ?? "",
+    beats,
+    previews: (template.previews ?? []).filter(
+      (preview) => preview && typeof preview.src === "string" && preview.src.trim(),
+    ),
+  };
+}
+
+const orNull = (value: string) => (value.trim() === "" ? null : value.trim());
+
+function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
+  template: AdminTemplate | null;
+  authHeaders: () => Promise<Record<string, string>>;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const isNew = template === null;
+  const [draft, setDraft] = useState<TemplateDraft>(() =>
+    template ? toTemplateDraft(template) : emptyTemplateDraft()
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverError, setCoverError] = useState("");
+  const previewInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // The prompt id is the storefront URL, so it is fixed once a template exists.
+  const lockedId = !isNew;
+  const filledBeats = draft.beats.filter((b) => b.trim() !== "").length;
+
+  const set = <K extends keyof TemplateDraft>(key: K, value: TemplateDraft[K]) =>
+    setDraft((prev) => ({ ...prev, [key]: value }));
+
+  const setBeat = (index: number, value: string) =>
+    setDraft((prev) => ({
+      ...prev,
+      beats: prev.beats.map((beat, i) => (i === index ? value : beat)),
+    }));
+
+  const setPreview = (index: number, patch: Partial<AdminTemplatePreview>) =>
+    setDraft((prev) => ({
+      ...prev,
+      previews: prev.previews.map((preview, i) => (i === index ? { ...preview, ...patch } : preview)),
+    }));
+
+  const movePreview = (index: number, delta: number) =>
+    setDraft((prev) => {
+      const target = index + delta;
+      if (target < 0 || target >= prev.previews.length) return prev;
+      // Both bounds are checked above, so the source slot is never empty.
+      const previews = [...prev.previews];
+      const [moved] = previews.splice(index, 1);
+      previews.splice(target, 0, moved!);
+      return { ...prev, previews };
+    });
+
+  const removePreview = (index: number) =>
+    setDraft((prev) => ({
+      ...prev,
+      previews: prev.previews.filter((_, i) => i !== index),
+    }));
+
+  /**
+   * Send one file to the backend, which re-encodes it and returns a public URL.
+   * Uploading is separate from saving: the URL only lands on the template when
+   * Save is pressed, so a half-finished edit never changes the storefront.
+   */
+  const uploadImage = async (file: File, folder: "previews" | "covers") => {
+    const headers = await authHeaders();
+    const response = await fetch(
+      `${BACKEND_URL}/admin/templates/images/upload?folder=${folder}` +
+        `&filename=${encodeURIComponent(file.name)}`,
+      {
+        method: "POST",
+        headers: { ...headers, "Content-Type": file.type },
+        body: file,
+      }
+    );
+    const body = await response.json();
+    if (!response.ok) throw new Error(body?.message || "Upload failed");
+    return body.image.url as string;
+  };
+
+  const uploadCover = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+
+    setCoverError("");
+    if (!file.type.startsWith("image/")) {
+      setCoverError("Pick an image file (JPG, PNG or WebP).");
+      return;
+    }
+
+    setUploadingCover(true);
+    try {
+      set("coverImage", await uploadImage(file, "covers"));
+    } catch (err) {
+      setCoverError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadingCover(false);
+      if (coverInputRef.current) coverInputRef.current.value = "";
+    }
+  };
+
+  /**
+   * Upload each preview file. The URLs are only held in the draft until Save,
+   * so a half-finished edit never changes what the storefront shows.
+   */
+  const uploadPreviews = async (files: FileList | null) => {
+    if (!files?.length) return;
+
+    setUploadError("");
+    const room = TEMPLATE_PREVIEW_LIMIT - draft.previews.length;
+    if (room <= 0) {
+      setUploadError(`A template can have at most ${TEMPLATE_PREVIEW_LIMIT} previews.`);
+      return;
+    }
+
+    const chosen = Array.from(files)
+      .filter((file) => file.type.startsWith("image/"))
+      .slice(0, room);
+
+    const skipped = Array.from(files).length - chosen.length;
+    if (!chosen.length) {
+      setUploadError("Pick image files (JPG, PNG or WebP).");
+      return;
+    }
+
+    setUploading(true);
+    const added: AdminTemplatePreview[] = [];
+    const failures: string[] = [];
+
+    // Sequential so a large multi-file drop cannot open 12 parallel uploads.
+    for (const file of chosen) {
+      try {
+        added.push({
+          src: await uploadImage(file, "previews"),
+          type: "image",
+          mimeType: "image/jpeg",
+          caption: `Preview ${draft.previews.length + added.length + 1}`,
+        });
+      } catch (err) {
+        failures.push(`${file.name}: ${err instanceof Error ? err.message : "Upload failed"}`);
+      }
+    }
+
+    if (added.length) {
+      setDraft((prev) => ({ ...prev, previews: [...prev.previews, ...added] }));
+    }
+
+    const notes = [...failures];
+    if (skipped > 0) notes.push(`${skipped} file(s) skipped — only images are allowed`);
+    if (added.length) toast.success(`Uploaded ${added.length} preview${added.length > 1 ? "s" : ""}`);
+    setUploadError(notes.join(" · "));
+    setUploading(false);
+
+    if (previewInputRef.current) previewInputRef.current.value = "";
+  };
+
+  const save = async () => {
+    setError("");
+
+    if (draft.name.trim() === "" || draft.description.trim() === "") {
+      setError("Name and description are required.");
+      return;
+    }
+    if (draft.theme.trim() === "") {
+      setError("Theme is required — the generator needs it to write the story.");
+      return;
+    }
+    if (!lockedId && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.id.trim()) && draft.id.trim() !== "") {
+      setError("Id must be a lowercase URL slug, e.g. space-expedition.");
+      return;
+    }
+    if (filledBeats !== TEMPLATE_BEAT_COUNT) {
+      setError(
+        `All ${TEMPLATE_BEAT_COUNT} beats must be filled in — the generator rejects any other count. ` +
+          `${TEMPLATE_BEAT_COUNT - filledBeats} still empty.`
+      );
+      return;
+    }
+    if ((draft.reviewQuote.trim() === "") !== (draft.reviewAuthor.trim() === "")) {
+      setError("A review needs both a quote and an author, or neither.");
+      return;
+    }
+
+    const hasReview = draft.reviewQuote.trim() !== "";
+    const payload = {
+      ...(isNew && draft.id.trim() ? { id: draft.id.trim() } : {}),
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      ageRange: draft.ageRange.trim(),
+      category: draft.category,
+      difficulty: Number(draft.difficulty) || 1,
+      tags: draft.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+      isActive: draft.isActive,
+      coverImage: orNull(draft.coverImage),
+      sampleImage: orNull(draft.sampleImage),
+      tagline: orNull(draft.tagline),
+      excerpt: orNull(draft.excerpt),
+      emoji: orNull(draft.emoji),
+      audience: draft.audience,
+      artStyle: orNull(draft.artStyle),
+      review: hasReview
+        ? {
+            rating: Math.min(5, Math.max(0, Number(draft.reviewRating) || 0)),
+            count: Math.max(0, parseInt(draft.reviewCount, 10) || 0),
+            quote: draft.reviewQuote.trim(),
+            author: draft.reviewAuthor.trim(),
+          }
+        : null,
+      previews: draft.previews,
+      prompts: {
+        theme: draft.theme.trim(),
+        moralLesson: draft.moralLesson.trim(),
+        educationalFocus: draft.educationalFocus.trim(),
+        worldContext: draft.worldContext.trim(),
+        beats: draft.beats.map((b) => b.trim()),
+      },
+    };
+
+    setSaving(true);
+    try {
+      const headers = await authHeaders();
+      if (isNew) {
+        await axios.post(`${BACKEND_URL}/admin/templates`, payload, { headers });
+        toast.success("Template created");
+      } else {
+        await axios.put(`${BACKEND_URL}/admin/templates/${template.id}`, payload, { headers });
+        toast.success("Template saved");
+      }
+      onSaved();
+      onClose();
+    } catch (err) {
+      const data = (err as AxiosError<{ issues?: ZodIssue[]; message?: string }>)?.response?.data;
+      const issue = data?.issues?.[0];
+      setError(
+        issue
+          ? `${issue.path.join(".")}: ${issue.message}`
+          : data?.message ?? "Failed to save template"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div
+        className="bg-[#17171a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl h-[92vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-[#0f0f11]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 bg-purple-500/20 text-purple-400 rounded-lg flex items-center justify-center shrink-0">
+              <BookCopy className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-white text-base">
+                {isNew ? "New Story Template" : "Edit Story Template"}
+              </h3>
+              <p className="text-white/40 text-xs truncate">
+                {isNew ? "Publishes to /books within a minute" : template.id}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl text-white/50 hover:text-white transition-all">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          {error && (
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Shop copy */}
+          <section className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">Shop listing</h4>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Name</span>
+                <input className={adminInputCls} value={draft.name} onChange={(e) => set("name", e.target.value)} placeholder="Space Expedition" />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Url slug (id)</span>
+                <input
+                  className={`${adminInputCls} disabled:opacity-50`}
+                  value={draft.id}
+                  onChange={(e) => set("id", e.target.value)}
+                  placeholder="auto from name"
+                  disabled={lockedId}
+                />
+                <span className="text-[10px] text-white/30">
+                  {lockedId ? "Cannot be changed — it is the shop URL." : "Leave blank to derive from the name."}
+                </span>
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Emoji</span>
+                <input className={adminInputCls} value={draft.emoji} onChange={(e) => set("emoji", e.target.value)} placeholder="🚀" />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Tagline</span>
+                <input className={adminInputCls} value={draft.tagline} onChange={(e) => set("tagline", e.target.value)} placeholder="One-line hook shown on the card" />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Description</span>
+                <textarea className={`${adminInputCls} min-h-[70px]`} value={draft.description} onChange={(e) => set("description", e.target.value)} />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Excerpt (pull quote)</span>
+                <textarea className={`${adminInputCls} min-h-[70px]`} value={draft.excerpt} onChange={(e) => set("excerpt", e.target.value)} />
+              </label>
+              <div className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Cover image</span>
+                <div className="flex items-start gap-3">
+                  {draft.coverImage ? (
+                    <div className="relative size-20 shrink-0 overflow-hidden rounded-md border border-white/10 bg-black/30">
+                      <img
+                        src={draft.coverImage}
+                        alt="Cover preview"
+                        className="size-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <input
+                      className={adminInputCls}
+                      value={draft.coverImage}
+                      onChange={(e) => set("coverImage", e.target.value)}
+                      placeholder="https://…  or upload a file  (blank shows a category gradient)"
+                    />
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        ref={coverInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => uploadCover(e.target.files)}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => coverInputRef.current?.click()}
+                        disabled={uploadingCover}
+                        className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-xs font-semibold inline-flex items-center gap-1.5"
+                      >
+                        {uploadingCover ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Upload className="w-3.5 h-3.5" />
+                        )}
+                        {uploadingCover ? "Uploading…" : "Upload cover"}
+                      </button>
+                      {draft.coverImage && (
+                        <button
+                          type="button"
+                          onClick={() => set("coverImage", "")}
+                          className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 transition-all text-xs font-semibold"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+
+                    {coverError && (
+                      <p className="text-xs text-red-300 break-words">{coverError}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Gallery previews */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">
+                Gallery previews
+              </h4>
+              <span className="text-xs text-white/40">
+                {draft.previews.length} / {TEMPLATE_PREVIEW_LIMIT}
+              </span>
+            </div>
+
+            <p className="text-xs text-white/40">
+              These fill the carousel on the book detail page. Leave empty and the page
+              shows neutral &ldquo;Preview N&rdquo; placeholders instead.
+            </p>
+
+            <input
+              ref={previewInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => uploadPreviews(e.target.files)}
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => previewInputRef.current?.click()}
+                disabled={uploading || draft.previews.length >= TEMPLATE_PREVIEW_LIMIT}
+                className="px-3 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-sm font-semibold inline-flex items-center gap-2"
+              >
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {uploading ? "Uploading…" : "Upload previews"}
+              </button>
+              <span className="text-xs text-white/40">
+                JPG, PNG or WebP. Resized to 1600px and converted to JPEG.
+              </span>
+            </div>
+
+            {uploadError && (
+              <p className="text-xs text-red-300 break-words">{uploadError}</p>
+            )}
+
+            {draft.previews.length > 0 && (
+              <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {draft.previews.map((preview, index) => (
+                  <li
+                    key={preview.src}
+                    className="rounded-lg border border-white/10 bg-white/5 p-2 space-y-2"
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-md bg-black/30">
+                      <img
+                        src={preview.src}
+                        alt={preview.caption || `Preview ${index + 1}`}
+                        className="size-full object-cover"
+                        loading="lazy"
+                      />
+                      <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        {index + 1}
+                      </span>
+                    </div>
+
+                    <input
+                      className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-white placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      value={preview.caption ?? ""}
+                      onChange={(e) => setPreview(index, { caption: e.target.value })}
+                      placeholder="Caption (optional)"
+                      maxLength={200}
+                    />
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => movePreview(index, -1)}
+                        disabled={index === 0}
+                        aria-label={`Move preview ${index + 1} earlier`}
+                        className="p-1 rounded bg-white/5 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => movePreview(index, 1)}
+                        disabled={index === draft.previews.length - 1}
+                        aria-label={`Move preview ${index + 1} later`}
+                        className="p-1 rounded bg-white/5 hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removePreview(index)}
+                        aria-label={`Remove preview ${index + 1}`}
+                        className="ml-auto p-1 rounded bg-white/5 hover:bg-red-500/30 transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* Generation settings */}
+          <section className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">Generation settings</h4>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <label className="block">
+                <span className="text-xs text-white/50">Category</span>
+                <select className={adminInputCls} value={draft.category} onChange={(e) => set("category", e.target.value)}>
+                  {TEMPLATE_CATEGORIES.map((c) => (
+                    <option key={c} value={c} className="bg-[#17171a]">{c}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Audience</span>
+                <select className={adminInputCls} value={draft.audience} onChange={(e) => set("audience", e.target.value)}>
+                  {TEMPLATE_AUDIENCES.map((a) => (
+                    <option key={a} value={a} className="bg-[#17171a]">{a}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Age range</span>
+                <input className={adminInputCls} value={draft.ageRange} onChange={(e) => set("ageRange", e.target.value)} placeholder="4-8" />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Difficulty (1-5)</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  className={adminInputCls}
+                  value={draft.difficulty}
+                  onChange={(e) => set("difficulty", Number(e.target.value))}
+                />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Tags (comma separated)</span>
+                <input className={adminInputCls} value={draft.tags} onChange={(e) => set("tags", e.target.value)} placeholder="space, courage, science" />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Art style</span>
+                <input className={adminInputCls} value={draft.artStyle} onChange={(e) => set("artStyle", e.target.value)} placeholder="vibrant retro space storybook illustration" />
+              </label>
+              <label className="block sm:col-span-3">
+                <span className="text-xs text-white/50">Theme</span>
+                <textarea className={`${adminInputCls} min-h-[70px]`} value={draft.theme} onChange={(e) => set("theme", e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Moral lesson</span>
+                <textarea className={`${adminInputCls} min-h-[60px]`} value={draft.moralLesson} onChange={(e) => set("moralLesson", e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Educational focus</span>
+                <textarea className={`${adminInputCls} min-h-[60px]`} value={draft.educationalFocus} onChange={(e) => set("educationalFocus", e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">World context</span>
+                <textarea className={`${adminInputCls} min-h-[60px]`} value={draft.worldContext} onChange={(e) => set("worldContext", e.target.value)} />
+              </label>
+            </div>
+          </section>
+
+          {/* Review */}
+          <section className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">Customer review (optional)</h4>
+            <div className="grid sm:grid-cols-4 gap-3">
+              <label className="block">
+                <span className="text-xs text-white/50">Rating (0-5)</span>
+                <input type="number" min={0} max={5} step={0.5} className={adminInputCls} value={draft.reviewRating} onChange={(e) => set("reviewRating", e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Count</span>
+                <input type="number" min={0} className={adminInputCls} value={draft.reviewCount} onChange={(e) => set("reviewCount", e.target.value)} />
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="text-xs text-white/50">Author</span>
+                <input className={adminInputCls} value={draft.reviewAuthor} onChange={(e) => set("reviewAuthor", e.target.value)} />
+              </label>
+              <label className="block sm:col-span-4">
+                <span className="text-xs text-white/50">Quote</span>
+                <textarea className={`${adminInputCls} min-h-[60px]`} value={draft.reviewQuote} onChange={(e) => set("reviewQuote", e.target.value)} />
+              </label>
+            </div>
+          </section>
+
+          {/* Beats */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">Story beats</h4>
+              <span
+                className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  filledBeats === TEMPLATE_BEAT_COUNT
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-amber-500/20 text-amber-400"
+                }`}
+              >
+                {filledBeats} / {TEMPLATE_BEAT_COUNT}
+              </span>
+            </div>
+            <p className="text-[11px] text-white/30">
+              The generator rejects a template unless it has exactly {TEMPLATE_BEAT_COUNT} beats.
+            </p>
+            <div className="space-y-2">
+              {draft.beats.map((beat, index) => (
+                <label key={index} className="block">
+                  <span className="text-[10px] text-white/30 uppercase tracking-wider">Beat {index + 1}</span>
+                  <textarea
+                    className={`${adminInputCls} min-h-[50px] text-xs`}
+                    value={beat}
+                    onChange={(e) => setBeat(index, e.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <label className="flex items-center gap-2 text-sm text-white/70 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={draft.isActive}
+              onChange={(e) => set("isActive", e.target.checked)}
+              className="w-4 h-4 accent-purple-500"
+            />
+            Active — visible in the shop and selectable in the wizard
+          </label>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-white/10 flex items-center justify-between gap-3 bg-[#0f0f11]">
+          <p className="text-[11px] text-white/30">
+            {isNew ? "Saved as a predefined template." : "Changes go live on /books within a minute."}
+          </p>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} disabled={saving} className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white/70 rounded-xl text-sm font-semibold transition-all disabled:opacity-50">
+              Cancel
+            </button>
+            <button
+              onClick={save}
+              disabled={saving}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-semibold transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              {saving ? (
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {isNew ? "Create template" : "Save changes"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
+  templates: AdminTemplate[];
+  authHeaders: () => Promise<Record<string, string>>;
+  onChanged: () => void;
+  onEdit: (template: AdminTemplate | null) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [busyId, setBusyId] = useState("");
+
+  const filtered = templates.filter((t) => {
+    if (sourceFilter !== "all" && t.source !== sourceFilter) return false;
+    if (activeFilter === "active" && !t.isActive) return false;
+    if (activeFilter === "inactive" && t.isActive) return false;
+    if (activeFilter === "unusable" && t.isUsable) return false;
+    if (search) {
+      const needle = search.toLowerCase();
+      const haystack = `${t.name} ${t.id} ${t.description} ${(t.tags ?? []).join(" ")}`.toLowerCase();
+      if (!haystack.includes(needle)) return false;
+    }
+    return true;
+  });
+
+  const run = async (id: string, label: string, action: () => Promise<void>) => {
+    setBusyId(id);
+    try {
+      await action();
+      onChanged();
+    } catch (error) {
+      const message = (error as AxiosError<{ message?: string }>)?.response?.data?.message;
+      toast.error(message ?? `Failed to ${label}`);
+    } finally {
+      setBusyId("");
+    }
+  };
+
+  const toggle = (template: AdminTemplate) =>
+    run(template.id, "toggle template", async () => {
+      const headers = await authHeaders();
+      await axios.patch(`${BACKEND_URL}/admin/templates/${template.id}/toggle`, {}, { headers });
+      toast.success(template.isActive ? "Template hidden from the shop" : "Template published");
+    });
+
+  const duplicate = (template: AdminTemplate) =>
+    run(template.id, "duplicate template", async () => {
+      const headers = await authHeaders();
+      const prompts = template.prompts ?? { theme: "", beats: [] };
+      await axios.post(
+        `${BACKEND_URL}/admin/templates`,
+        {
+          name: `${template.name} (copy)`,
+          description: template.description,
+          ageRange: template.ageRange,
+          category: template.category,
+          difficulty: template.difficulty,
+          tags: template.tags ?? [],
+          // A copy starts hidden so it can be reviewed before it goes live.
+          isActive: false,
+          coverImage: template.coverImage,
+          sampleImage: template.sampleImage,
+          tagline: template.tagline,
+          excerpt: template.excerpt,
+          emoji: template.emoji,
+          audience: template.audience,
+          artStyle: template.artStyle,
+          review: template.review,
+          // Previews are deliberately not copied. They point at files on disk that
+          // the original template still owns, and deleting the copy would delete
+          // the original's images. Re-upload them on the copy instead.
+          prompts: {
+            theme: prompts.theme ?? "",
+            moralLesson: prompts.moralLesson ?? "",
+            educationalFocus: prompts.educationalFocus ?? "",
+            worldContext: prompts.worldContext ?? "",
+            beats: Array.from({ length: TEMPLATE_BEAT_COUNT }, (_, i) => prompts.beats?.[i] ?? ""),
+          },
+        },
+        { headers }
+      );
+      toast.success("Template duplicated — review it while it is hidden");
+    });
+
+  const remove = (template: AdminTemplate) => {
+    const force = template.storiesCount > 0;
+    const question = force
+      ? `Delete "${template.name}"? ${template.storiesCount} existing story/stories will be detached from it but kept.`
+      : `Delete "${template.name}" permanently?`;
+    if (!confirm(question)) return;
+
+    run(template.id, "delete template", async () => {
+      const headers = await authHeaders();
+      const res = await axios.delete(
+        `${BACKEND_URL}/admin/templates/${template.id}${force ? "?force=true" : ""}`,
+        { headers }
+      );
+      const detached = res.data?.storiesDetached ?? 0;
+      toast.success(
+        detached > 0
+          ? `Template deleted · ${detached} story/stories detached`
+          : "Template deleted"
+      );
+    });
+  };
+
+  const stats = {
+    total: templates.length,
+    active: templates.filter((t) => t.isActive).length,
+    predefined: templates.filter((t) => t.source === "PREDEFINED").length,
+    custom: templates.filter((t) => t.source === "CUSTOM").length,
+    unusable: templates.filter((t) => !t.isUsable).length,
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Templates", value: stats.total, tone: "purple" },
+          { label: "Live In Shop", value: stats.active, tone: "emerald" },
+          { label: "Predefined", value: stats.predefined, tone: "blue" },
+          { label: "User Created", value: stats.custom, tone: "amber" },
+        ].map((s) => (
+          <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <p className="text-white/40 text-xs font-semibold uppercase tracking-wider">{s.label}</p>
+            <p className="text-3xl font-bold text-white mt-1">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {stats.unusable > 0 && (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span>
+            {stats.unusable} template{stats.unusable === 1 ? "" : "s"} do not have exactly{" "}
+            {TEMPLATE_BEAT_COUNT} beats. The generator will refuse to use{" "}
+            {stats.unusable === 1 ? "it" : "them"} — open one and fill in the missing beats.
+          </span>
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div className="flex flex-col lg:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+          <input
+            type="text"
+            placeholder="Search templates..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {["all", "active", "inactive", "unusable"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setActiveFilter(f)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${
+                activeFilter === f ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          {["all", "PREDEFINED", "CUSTOM"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setSourceFilter(f)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+                sourceFilter === f ? "bg-blue-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+              }`}
+            >
+              {f === "all" ? "All sources" : f === "PREDEFINED" ? "Predefined" : "User created"}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => onEdit(null)}
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          New Template
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-white/40 text-xs uppercase font-semibold tracking-wider">
+                <th className="text-left py-3.5 px-4">Template</th>
+                <th className="text-left py-3.5 px-4">Category</th>
+                <th className="text-left py-3.5 px-4">Ages</th>
+                <th className="text-left py-3.5 px-4">Beats</th>
+                <th className="text-left py-3.5 px-4">Stories</th>
+                <th className="text-left py-3.5 px-4">Status</th>
+                <th className="text-right py-3.5 px-4">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {filtered.map((t) => (
+                <tr key={t.id} className={`hover:bg-white/5 transition-colors ${t.isActive ? "" : "opacity-60"}`}>
+                  <td className="py-3.5 px-4">
+                    <div className="flex items-center gap-3">
+                      {t.emoji ? (
+                        <span className="text-lg">{t.emoji}</span>
+                      ) : (
+                        <div className="w-8 h-8 bg-purple-500/20 text-purple-400 rounded-lg flex items-center justify-center shrink-0">
+                          <BookCopy className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-semibold text-white truncate">{t.name}</p>
+                        <p className="text-white/40 text-xs truncate font-mono">/books/{t.id}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span className="px-2 py-0.5 bg-white/10 text-white/60 rounded-full text-xs capitalize">{t.category}</span>
+                    <p className="text-white/30 text-[10px] mt-0.5 capitalize">{t.audience} · diff {t.difficulty}</p>
+                  </td>
+                  <td className="py-3.5 px-4 text-white/60 text-xs">{t.ageRange}</td>
+                  <td className="py-3.5 px-4">
+                    {t.isUsable ? (
+                      <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full text-xs font-semibold">
+                        {t.beatsCount}/{TEMPLATE_BEAT_COUNT}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 bg-amber-500/20 text-amber-400 rounded-full text-xs font-semibold" title="The generator will refuse this template">
+                        {t.beatsCount}/{TEMPLATE_BEAT_COUNT}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-4 text-white/60 text-xs">{t.storiesCount}</td>
+                  <td className="py-3.5 px-4 text-white/60 text-xs">
+                    {(t.previews?.length ?? 0) > 0 ? (
+                      <span
+                        className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full text-xs font-semibold"
+                        title={t.previews!.map((p) => p.caption || p.src).join("\n")}
+                      >
+                        {t.previews!.length}
+                      </span>
+                    ) : (
+                      <span
+                        className="px-2 py-0.5 bg-white/5 text-white/40 rounded-full text-xs font-semibold"
+                        title="No previews — the detail page shows placeholders"
+                      >
+                        0
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <div className="flex flex-col gap-1 items-start">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          t.isActive
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : "bg-white/10 text-white/40"
+                        }`}
+                      >
+                        {t.isActive ? "Live" : "Hidden"}
+                      </span>
+                      {t.source === "CUSTOM" && (
+                        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full text-[10px] font-semibold">
+                          User created
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => duplicate(t)}
+                        disabled={busyId === t.id}
+                        className="p-1.5 bg-white/10 text-white/60 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
+                        title="Duplicate as a new hidden template"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                      <a
+                        href={`/books/${t.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg transition-colors"
+                        title="View in shop"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                      <button
+                        onClick={() => toggle(t)}
+                        disabled={busyId === t.id}
+                        className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                          t.isActive
+                            ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                            : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
+                        }`}
+                        title={t.isActive ? "Hide from shop" : "Publish to shop"}
+                      >
+                        <Power className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => onEdit(t)}
+                        disabled={busyId === t.id}
+                        className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors disabled:opacity-50"
+                        title="Edit Template"
+                      >
+                        <PencilLine className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => remove(t)}
+                        disabled={busyId === t.id}
+                        className="p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors disabled:opacity-50"
+                        title="Delete Template"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-white/30">
+                    No templates match these filters
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
@@ -1249,6 +2393,9 @@ export default function AdminPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<AdminTemplate[]>([]);
+  const [editingTemplate, setEditingTemplate] = useState<AdminTemplate | null>(null);
+  const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [orderSummary, setOrderSummary] = useState<OrdersSummary | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1304,7 +2451,7 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const headers = await authHeaders();
-      const [statsRes, usersRes, storiesRes, modelsRes, activityRes, ordersRes] =
+      const [statsRes, usersRes, storiesRes, modelsRes, activityRes, ordersRes, templatesRes] =
         await Promise.allSettled([
           axios.get(`${BACKEND_URL}/admin/stats`, { headers }),
           axios.get(`${BACKEND_URL}/admin/users`, { headers }),
@@ -1312,6 +2459,7 @@ export default function AdminPage() {
           axios.get(`${BACKEND_URL}/admin/models`, { headers }),
           axios.get(`${BACKEND_URL}/admin/activity`, { headers }),
           axios.get(`${BACKEND_URL}/admin/orders`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/templates`, { headers }),
         ]);
 
       // Tolerate individual endpoint failures so one bad request can't blank
@@ -1326,6 +2474,11 @@ export default function AdminPage() {
         setOrderSummary(ordersRes.value.data.summary || null);
       } else {
         console.warn("Admin orders endpoint failed", ordersRes.reason);
+      }
+      if (templatesRes.status === "fulfilled") {
+        setTemplates(templatesRes.value.data.templates || []);
+      } else {
+        console.warn("Admin templates endpoint failed", templatesRes.reason);
       }
     } catch (err) {
       toast.error("Failed to load admin data");
@@ -1448,6 +2601,7 @@ export default function AdminPage() {
     { id: "overview", label: "Overview", icon: <BarChart3 className="w-4 h-4" /> },
     { id: "users", label: "Users", icon: <Users className="w-4 h-4" />, count: users.length },
     { id: "stories", label: "Stories", icon: <BookOpen className="w-4 h-4" />, count: stories.length },
+    { id: "templates", label: "Templates", icon: <BookCopy className="w-4 h-4" />, count: templates.length },
     { id: "facelab", label: "Face Lab", icon: <ScanFace className="w-4 h-4" /> },
     { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" />, count: orders.length },
     { id: "models", label: "AI Models", icon: <Sparkles className="w-4 h-4" />, count: models.length },
@@ -1482,6 +2636,14 @@ export default function AdminPage() {
           authHeaders={authHeaders}
           onClose={() => setEditingStoryId(null)}
           onChanged={fetchAll}
+        />
+      )}
+      {templateEditorOpen && (
+        <TemplateEditor
+          template={editingTemplate}
+          authHeaders={authHeaders}
+          onClose={() => setTemplateEditorOpen(false)}
+          onSaved={fetchAll}
         />
       )}
       {pdfPreviewUrl && (
@@ -1629,9 +2791,11 @@ export default function AdminPage() {
                       ? "Face Detection Lab"
                       : activeTab === "orders"
                         ? "Order Management"
-                        : activeTab === "analytics"
-                          ? "Analytics & Traffic"
-                          : activeTab}
+                        : activeTab === "templates"
+                          ? "Story Templates"
+                          : activeTab === "analytics"
+                            ? "Analytics & Traffic"
+                            : activeTab}
                 </h1>
                 <p className="text-white/40 text-xs mt-0.5">StoryBook AI · Super Admin</p>
               </div>
@@ -1791,7 +2955,8 @@ export default function AdminPage() {
                           <th className="text-left py-3.5 px-4">User</th>
                           <th className="text-left py-3.5 px-4">Free Stories</th>
                           <th className="text-left py-3.5 px-4">Models</th>
-                          <th className="text-left py-3.5 px-4">Stories</th>
+                <th className="text-left py-3.5 px-4">Stories</th>
+                <th className="text-left py-3.5 px-4">Previews</th>
                           <th className="text-left py-3.5 px-4">Joined</th>
                           <th className="text-left py-3.5 px-4">Quick Add</th>
                           <th className="text-right py-3.5 px-4">Actions</th>
@@ -1930,6 +3095,19 @@ export default function AdminPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* ── TEMPLATES TAB ────────────────────────────────────────────── */}
+            {activeTab === "templates" && (
+              <TemplatesTab
+                templates={templates}
+                authHeaders={authHeaders}
+                onChanged={fetchAll}
+                onEdit={(template) => {
+                  setEditingTemplate(template);
+                  setTemplateEditorOpen(true);
+                }}
+              />
             )}
 
             {/* ── FACE LAB TAB ─────────────────────────────────────────────── */}

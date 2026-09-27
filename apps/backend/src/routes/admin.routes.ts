@@ -1,4 +1,4 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { prismaClient } from "../lib/prisma";
@@ -8,6 +8,14 @@ import { logger } from "../lib/logger";
 import { PDFService } from "../services/pdf.service";
 import { faceCanvasService } from "../services/face-canvas.service";
 import { z } from "zod";
+import { STORYBOOK_PAGE_COUNT } from "../contracts/storybook";
+import {
+  deleteTemplateImage,
+  isTemplateImageFolder,
+  MAX_PREVIEWS,
+  MAX_TEMPLATE_IMAGE_BYTES,
+  saveTemplateImage,
+} from "../lib/template-images";
 
 const router = Router();
 
@@ -692,6 +700,446 @@ router.post("/face-lab", async (req, res) => {
   } catch (error) {
     logger.error({ error }, "Admin face lab failed");
     res.status(500).json({ message: "Face detection / reference generation failed" });
+  }
+});
+
+// ─────────────────────────────────────────
+// STORY TEMPLATES
+// ─────────────────────────────────────────
+
+const TEMPLATE_CATEGORY_VALUES = [
+  "adventure", "bedtime", "birthday", "dinosaurs", "fantasy", "friendship",
+  "learning", "animals", "moral", "seasonal", "science", "history", "emotions",
+  "family", "sentimental", "pirate", "space", "underwater", "sports", "cooking",
+] as const;
+const TEMPLATE_AUDIENCE_VALUES = ["any", "girl", "boy"] as const;
+
+/**
+ * A template is only usable by the generator when its `prompts.beats` array has
+ * exactly STORYBOOK_PAGE_COUNT entries — `loadUsableTemplate` in
+ * storybook.routes.ts rejects anything else, which would surface to the user as
+ * a confusing "no usable template" error. Validating here means a bad template
+ * can never be saved from the admin.
+ */
+const TemplatePromptsSchema = z.object({
+  theme: z.string().trim().min(1, "Theme is required").max(2000),
+  moralLesson: z.string().trim().max(1000).default(""),
+  educationalFocus: z.string().trim().max(1000).default(""),
+  worldContext: z.string().trim().max(2000).default(""),
+  beats: z
+    .array(z.string().trim().min(1, "Each beat needs some text").max(2000))
+    .length(
+      STORYBOOK_PAGE_COUNT,
+      `Beats must be exactly ${STORYBOOK_PAGE_COUNT} entries`
+    ),
+});
+
+const TemplateReviewSchema = z
+  .object({
+    rating: z.number().min(0).max(5),
+    count: z.number().int().min(0),
+    quote: z.string().trim().min(1).max(500),
+    author: z.string().trim().min(1).max(120),
+  })
+  .nullable();
+
+/**
+ * Gallery slides and cover art. `src` may be a full http(s) URL or a
+ * root-relative path such as /assets/previews/x.jpg, which is what the upload
+ * endpoint returns. Anything else (javascript:, data:) is rejected so a stored
+ * value can never execute in the storefront.
+ */
+const SAFE_IMAGE_URL = /^(https?:\/\/|\/assets\/)/i;
+
+const TemplateImageUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "Image URL cannot be blank - clear the field instead")
+  .max(2000)
+  .refine(
+    (value) => SAFE_IMAGE_URL.test(value),
+    "Image must be an http(s) URL or an /assets path"
+  );
+
+const TemplatePreviewsSchema = z
+  .array(
+    z.object({
+      src: TemplateImageUrlSchema,
+      type: z.enum(["image", "video"]).default("image"),
+      mimeType: z.string().trim().max(100).optional(),
+      caption: z.string().trim().max(200).optional(),
+    })
+  )
+  .max(MAX_PREVIEWS, `A template can have at most ${MAX_PREVIEWS} previews`);
+
+/** Fields shared by create and update. `.partial()` is applied for updates. */
+const TemplateFieldsSchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use a lowercase URL slug, e.g. space-expedition")
+    .optional(),
+  name: z.string().trim().min(1, "Name is required").max(200),
+  description: z.string().trim().min(1, "Description is required").max(2000),
+  ageRange: z.string().trim().min(1, "Age range is required").max(40),
+  category: z.enum(TEMPLATE_CATEGORY_VALUES).default("adventure"),
+  difficulty: z.number().int().min(1).max(5).default(1),
+  tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  isActive: z.boolean().default(true),
+  coverImage: TemplateImageUrlSchema.nullable().optional(),
+  sampleImage: TemplateImageUrlSchema.nullable().optional(),
+  tagline: z.string().trim().max(300).nullable().optional(),
+  excerpt: z.string().trim().max(2000).nullable().optional(),
+  emoji: z.string().trim().max(16).nullable().optional(),
+  audience: z.enum(TEMPLATE_AUDIENCE_VALUES).default("any"),
+  artStyle: z.string().trim().max(500).nullable().optional(),
+  review: TemplateReviewSchema.optional(),
+  previews: TemplatePreviewsSchema.optional(),
+  prompts: TemplatePromptsSchema,
+});
+
+const CreateTemplateSchema = TemplateFieldsSchema;
+const UpdateTemplateSchema = TemplateFieldsSchema.partial();
+
+/** Turn a template name into the URL slug the storefront uses. */
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+/** Append -2, -3, ... until the slug is free. */
+async function uniqueTemplateId(base: string): Promise<string> {
+  let candidate = base;
+  let suffix = 2;
+  // Bounded so a pathological collision loop can never spin forever.
+  while (suffix < 100) {
+    const clash = await prismaClient.storyTemplate.findUnique({
+      where: { id: candidate },
+      select: { id: true },
+    });
+    if (!clash) return candidate;
+    candidate = `${base.slice(0, 77)}-${suffix}`;
+    suffix += 1;
+  }
+  return `${base.slice(0, 71)}-${Date.now()}`;
+}
+
+/** Normalise optional copy so the column stores null rather than "". */
+function nullable(value: string | null | undefined): string | null {
+  if (value === undefined || value === null) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
+/**
+ * POST /admin/templates/images/upload?folder=covers&filename=my-cover.png
+ * Store one catalogue image - a cover or a gallery preview - and return the URL
+ * to save on the template.
+ *
+ * The body is the raw image, not JSON, which keeps a 4MB photo from becoming
+ * 5.5MB of base64. The caller then PUTs the returned URL on the template, so
+ * uploading and saving stay separate, retryable steps.
+ */
+router.post(
+  "/templates/images/upload",
+  express.raw({ type: "image/*", limit: MAX_TEMPLATE_IMAGE_BYTES }),
+  async (req, res) => {
+    const folder = req.query.folder;
+    if (!isTemplateImageFolder(folder)) {
+      res.status(400).json({ message: "folder must be one of: previews, covers" });
+      return;
+    }
+
+    try {
+      const buffer = req.body as Buffer;
+
+      if (!Buffer.isBuffer(buffer) || !buffer.length) {
+        res.status(400).json({ message: "Send the image as the raw request body" });
+        return;
+      }
+      if (!/^image\//i.test(req.headers["content-type"] ?? "")) {
+        res.status(415).json({ message: "Content-Type must be an image" });
+        return;
+      }
+
+      const filename = (req.query.filename as string) || "image";
+      const image = await saveTemplateImage(buffer, filename, folder);
+
+      res.status(201).json({ image });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      logger.warn({ error }, "Rejected catalogue image upload");
+      res.status(400).json({ message });
+    }
+  }
+);
+
+/**
+ * GET /admin/templates
+ * Every template, both predefined and user-created, with the beat count and the
+ * number of stories using it so the dashboard can flag rows that the generator
+ * would reject.
+ */
+router.get("/templates", async (req, res) => {
+  try {
+    const { search, source, isActive } = req.query as Record<string, string>;
+
+    const where: any = {};
+    if (source && source !== "all" && ["PREDEFINED", "CUSTOM"].includes(source)) {
+      where.source = source;
+    }
+    if (isActive === "true" || isActive === "false") {
+      where.isActive = isActive === "true";
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { id: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { tags: { has: search } },
+      ];
+    }
+
+    const templates = await prismaClient.storyTemplate.findMany({
+      where,
+      orderBy: [{ source: "asc" }, { name: "asc" }],
+      include: { _count: { select: { stories: true } } },
+    });
+
+    res.json({
+      templates: templates.map((template) => {
+        const prompts = template.prompts as unknown as { beats?: unknown };
+        const beats = Array.isArray(prompts?.beats) ? prompts.beats.length : 0;
+        return {
+          ...template,
+          storiesCount: template._count.stories,
+          beatsCount: beats,
+          // Mirrors loadUsableTemplate so an unusable row is visible before a
+          // customer hits it in the wizard.
+          isUsable: beats === STORYBOOK_PAGE_COUNT,
+        };
+      }),
+    });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch admin story templates");
+    res.status(500).json({ message: "Failed to fetch templates" });
+  }
+});
+
+/**
+ * POST /admin/templates
+ * Create a predefined template. The id doubles as the storefront slug, so it is
+ * derived from the name unless one is supplied.
+ */
+router.post("/templates", async (req, res) => {
+  const parsed = CreateTemplateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid template", issues: parsed.error.issues });
+    return;
+  }
+
+  try {
+    const data = parsed.data;
+    const requested = data.id ?? slugify(data.name);
+    const id = await uniqueTemplateId(requested || "template");
+
+    const created = await prismaClient.storyTemplate.create({
+      data: {
+        id,
+        name: data.name,
+        description: data.description,
+        ageRange: data.ageRange,
+        category: data.category,
+        difficulty: data.difficulty,
+        tags: data.tags,
+        isActive: data.isActive,
+        source: "PREDEFINED",
+        coverImage: nullable(data.coverImage),
+        sampleImage: nullable(data.sampleImage),
+        tagline: nullable(data.tagline),
+        excerpt: nullable(data.excerpt),
+        emoji: nullable(data.emoji),
+        audience: data.audience,
+        artStyle: nullable(data.artStyle),
+        review: (data.review ?? null) as any,
+        previews: (data.previews ?? null) as any,
+        prompts: data.prompts as any,
+      },
+    });
+
+    logger.info({ templateId: created.id }, "Admin created story template");
+    res.status(201).json({ template: created });
+  } catch (error) {
+    logger.error({ error }, "Failed to create story template");
+    res.status(500).json({ message: "Failed to create template" });
+  }
+});
+
+/**
+ * PUT /admin/templates/:id
+ * Update a template. The id is immutable because it is the storefront URL, so
+ * renaming a template never breaks a link.
+ */
+router.put("/templates/:id", async (req, res) => {
+  const parsed = UpdateTemplateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid template", issues: parsed.error.issues });
+    return;
+  }
+
+  const { id: ignoredId, ...data } = parsed.data;
+
+  try {
+    const existing = await prismaClient.storyTemplate.findUnique({
+      where: { id: req.params.id },
+      select: { id: true },
+    });
+    if (!existing) {
+      res.status(404).json({ message: "Template not found" });
+      return;
+    }
+
+    const updated = await prismaClient.storyTemplate.update({
+      where: { id: req.params.id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.ageRange !== undefined && { ageRange: data.ageRange }),
+        ...(data.category !== undefined && { category: data.category }),
+        ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
+        ...(data.tags !== undefined && { tags: data.tags }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.audience !== undefined && { audience: data.audience }),
+        ...(data.coverImage !== undefined && { coverImage: nullable(data.coverImage) }),
+        ...(data.sampleImage !== undefined && { sampleImage: nullable(data.sampleImage) }),
+        ...(data.tagline !== undefined && { tagline: nullable(data.tagline) }),
+        ...(data.excerpt !== undefined && { excerpt: nullable(data.excerpt) }),
+        ...(data.emoji !== undefined && { emoji: nullable(data.emoji) }),
+        ...(data.artStyle !== undefined && { artStyle: nullable(data.artStyle) }),
+        ...(data.review !== undefined && { review: data.review as any }),
+        ...(data.previews !== undefined && { previews: data.previews as any }),
+        ...(data.prompts !== undefined && { prompts: data.prompts as any }),
+      },
+    });
+
+    logger.info({ templateId: updated.id }, "Admin updated story template");
+    res.json({ template: updated });
+  } catch (error) {
+    logger.error({ error, templateId: req.params.id }, "Failed to update story template");
+    res.status(500).json({ message: "Failed to update template" });
+  }
+});
+
+/**
+ * PATCH /admin/templates/:id/toggle
+ * Flip isActive. Deactivating is the safe alternative to deleting a template
+ * that customers have already used — it removes it from the shop and the wizard
+ * while keeping every existing story intact.
+ */
+router.patch("/templates/:id/toggle", async (req, res) => {
+  try {
+    const existing = await prismaClient.storyTemplate.findUnique({
+      where: { id: req.params.id },
+      select: { isActive: true },
+    });
+    if (!existing) {
+      res.status(404).json({ message: "Template not found" });
+      return;
+    }
+
+    const updated = await prismaClient.storyTemplate.update({
+      where: { id: req.params.id },
+      data: { isActive: !existing.isActive },
+    });
+
+    logger.info(
+      { templateId: updated.id, isActive: updated.isActive },
+      "Admin toggled story template"
+    );
+    res.json({ template: updated });
+  } catch (error) {
+    logger.error({ error, templateId: req.params.id }, "Failed to toggle story template");
+    res.status(500).json({ message: "Failed to toggle template" });
+  }
+});
+
+/**
+ * DELETE /admin/templates/:id
+ * Story.templateId is a foreign key with no ON DELETE action, so a template that
+ * existing stories point at cannot simply be removed. Without ?force=true that
+ * is reported as a 409 so the admin can choose; with it, the references are
+ * detached first and the stories themselves are kept.
+ */
+router.delete("/templates/:id", async (req, res) => {
+  const force = req.query.force === "true";
+
+  try {
+    const existing = await prismaClient.storyTemplate.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        previews: true,
+        coverImage: true,
+        sampleImage: true,
+        _count: { select: { stories: true } },
+      },
+    });
+    if (!existing) {
+      res.status(404).json({ message: "Template not found" });
+      return;
+    }
+
+    const storiesCount = existing._count.stories;
+    if (storiesCount > 0 && !force) {
+      res.status(409).json({
+        message:
+          `${storiesCount} story${storiesCount === 1 ? "" : " stories"} still use this template. ` +
+          `Deactivate it to hide it from the shop, or delete anyway to detach those stories.`,
+        storiesCount,
+      });
+      return;
+    }
+
+    await prismaClient.$transaction(async (tx) => {
+      if (storiesCount > 0) {
+        await tx.story.updateMany({
+          where: { templateId: existing.id },
+          data: { templateId: null },
+        });
+      }
+      await tx.storyTemplate.delete({ where: { id: existing.id } });
+    });
+
+    // Remove the uploaded files too, so deleting a template does not leave
+    // orphaned images in assets/. deleteTemplateImage ignores anything that
+    // is not a locally uploaded catalogue image.
+    const localImageUrls = [
+      ...(Array.isArray(existing.previews)
+        ? (existing.previews as { src?: string }[]).map((preview) => preview?.src)
+        : []),
+      existing.coverImage,
+      existing.sampleImage,
+    ].filter(
+      (value): value is string => typeof value === "string" && value.includes("/assets/")
+    );
+
+    for (const src of localImageUrls) deleteTemplateImage(src);
+
+    logger.info(
+      { templateId: existing.id, storiesDetached: storiesCount, imagesRemoved: localImageUrls.length },
+      "Admin deleted story template"
+    );
+    res.json({ success: true, storiesDetached: storiesCount, imagesRemoved: localImageUrls.length });
+  } catch (error) {
+    logger.error({ error, templateId: req.params.id }, "Failed to delete story template");
+    res.status(500).json({ message: "Failed to delete template" });
   }
 });
 

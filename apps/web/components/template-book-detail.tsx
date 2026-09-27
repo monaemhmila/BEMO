@@ -11,7 +11,6 @@ import {
   CATEGORY_META,
   createStoryHref,
   fillerSlides,
-  STORY_TEMPLATES,
   type StoryTemplate,
 } from "@/data/story-templates";
 
@@ -107,13 +106,21 @@ function ReviewHighlight({ template }: { template: StoryTemplate }) {
   );
 }
 
-export function TemplateBookDetail({ template }: { template: StoryTemplate }) {
+export interface TemplateBookDetailProps {
+  template: StoryTemplate;
+  /** Other catalogue books to show under "More stories to love". */
+  moreStories?: StoryTemplate[];
+}
+
+export function TemplateBookDetail({
+  template,
+  moreStories = [],
+}: TemplateBookDetailProps) {
   const review = template.review;
   const ctaHref = createStoryHref(template);
-  const slides = template.media?.length ? template.media : fillerSlides();
-  const moreStories = STORY_TEMPLATES.filter(
-    (item) => item.slug !== template.slug
-  ).slice(0, 3);
+  // Real previews uploaded in /admin win; the filler slides are only a
+  // placeholder for a template that has none yet.
+  const slides = template.previews?.length ? template.previews : fillerSlides();
 
   return (
     <div className="min-h-screen bg-paper">

@@ -1,10 +1,14 @@
 import type { MetadataRoute } from "next";
 
 import { blogPosts } from "@/data/blog-posts";
-import { STORY_TEMPLATES } from "@/data/story-templates";
 import { SITE_URL } from "@/lib/site";
+import { getStoreTemplates } from "@/lib/story-templates";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Catalogue URLs come from the database, so a new template is discoverable
+// without a redeploy.
+export const revalidate = 60;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -20,7 +24,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/support/privacy-policy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
-  const templateRoutes: MetadataRoute.Sitemap = STORY_TEMPLATES.map((template) => ({
+  const templates = await getStoreTemplates();
+
+  const templateRoutes: MetadataRoute.Sitemap = templates.map((template) => ({
     url: `${SITE_URL}/stories/templates/${template.slug}`,
     lastModified: now,
     changeFrequency: "monthly" as const,

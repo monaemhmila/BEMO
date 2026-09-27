@@ -6,17 +6,38 @@ This document provides a comprehensive overview of where story templates are sto
 
 ## 📁 1. Where Story Templates Are Stored
 
-The template system is modularly distributed across database schemas, backend APIs, prompt utility services, and frontend UI components:
+**The database is the only catalogue.** There is no hard-coded template list in
+the frontend: a `StoryTemplate` row flows database → backend → storefront, so a
+template added in the database appears on `/books` within a minute, with no
+frontend change and no rebuild.
+
+```
+StoryTemplate row (Prisma / Postgres)
+        │
+        ▼
+GET /storybook/templates          apps/backend/src/routes/storybook.routes.ts
+        │  mapped by toStorefrontTemplate()
+        ▼
+StorefrontTemplate payload         apps/backend/src/contracts/storybook.ts
+        │
+        ▼
+getStoreTemplates()                apps/web/lib/story-templates.ts   (server, ISR 60s)
+        │
+        ▼
+/books, /books/[slug], /stories/templates/[slug], homepage shelves, sitemap
+```
 
 | Component Layer | File Location | Description & Role |
 | :--- | :--- | :--- |
-| **Backend API Service** | [`apps/backend/src/routes/storybook.routes.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/routes/storybook.routes.ts#L65-L145) | Exposes `GET /storybook/templates` returning pre-configured story templates (id, name, description, ageRange, category, theme). |
-| **Frontend Generator Registry** | [`apps/web/features/generator/components/StoryGenerator.tsx`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/features/generator/components/StoryGenerator.tsx#L42-L51) | Client-side map matching backend template IDs to auto-populate theme and category in the story generator wizard. |
-| **Prompt Engineering & Quick Starters** | [`apps/web/utils/prompts/storyPrompts.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/utils/prompts/storyPrompts.ts#L126-L183) | Stores `STORY_STARTERS` list (theme, category, icon), `AGE_GUIDANCE` rules (3-5, 6-8, 9-12 years), and prompt builders for LLM story script generation. |
-| **Database Model (Prisma)** | `packages/db/prisma/schema.prisma` | Defines the `StoryTemplate` database schema for persistent custom/admin templates and relates them to `Story.templateId`. **(Seeded with 1 template)** |
-| **Storefront Catalogue (frontend)** | `apps/web/data/story-templates.ts` | The `STORY_TEMPLATES` array behind `/books`, `/books/[slug]` and `/stories/templates/[slug]`. Must stay slug-aligned with the seed below. |
-| **Template Seed (database)** | `packages/db/prisma/seed-templates.ts` | `STOREFRONT_TEMPLATES` — the canonical `prompts` document (theme, moral lesson, educational focus, world context, 14 beats) upserted into `StoryTemplate`. Also invoked by `prisma/seed.ts`. |
-| **Template Gallery UI Page** | [`apps/web/app/storybook/templates/page.tsx`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/app/storybook/templates/page.tsx) | Next.js page that fetches and displays template cards with age filters, category tags, and "Use template" quick links. |
+| **Database Model (Prisma)** | `packages/db/prisma/schema.prisma` | The `StoryTemplate` model: the generation `prompts` document (JSON) plus the storefront copy (`tagline`, `excerpt`, `emoji`, `audience`, `artStyle`, `review`) and `coverImage`. Related to `Story.templateId`. |
+| **Backend API** | `apps/backend/src/routes/storybook.routes.ts` | `GET /storybook/templates` returns every active `PREDEFINED` template. `POST /storybook/templates/custom` returns the same shape for a user's own template. |
+| **Payload Contract** | `apps/backend/src/contracts/storybook.ts` | `StorefrontTemplate` and `toStorefrontTemplate()`, which flattens `prompts.theme` / `prompts.moralLesson` / `prompts.educationalFocus` into the `theme` / `moral` / `learning` the shop pages render. |
+| **Storefront Data Layer** | `apps/web/lib/story-templates.ts` | `getStoreTemplates()` / `getStoreTemplate()` fetch the payload and adapt it to the `StoryTemplate` UI shape. Cached 60s, and resolves to `[]` rather than throwing so a backend outage can't fail a build. |
+| **UI Types & Design System** | `apps/web/data/story-templates.ts` | `StoryTemplate` (UI shape), `StorefrontTemplate` (API shape), `CATEGORY_META` (labels, chip colours, gradients) and the shelf helpers. **No template data lives here.** |
+| **Template Seed** | `packages/db/prisma/seed-templates.ts` | `STOREFRONT_TEMPLATES` — the definitions upserted into `StoryTemplate`. Also invoked by `prisma/seed.ts`. |
+| **Prompt Engineering** | `apps/web/utils/prompts/storyPrompts.ts` | `STORY_STARTERS`, `AGE_GUIDANCE` (3-5, 6-8, 9-12) and prompt builders for LLM script generation. |
+| **Storefront Pages** | `apps/web/app/books/page.tsx`, `books/[slug]/page.tsx`, `stories/templates/[slug]/page.tsx` | Read the catalogue through `getStoreTemplates()`. |
+| **Admin CRUD** | `apps/web/app/admin/page.tsx` (`TemplatesTab`, `TemplateEditor`) | Create / edit / duplicate / publish / delete templates at `/admin` → Templates. |
 
 ---
 
@@ -26,8 +47,8 @@ The Template System links pre-defined story concepts with dynamic AI prompt gene
 
 ```
 ┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
-│   Template Gallery UI     │ ───► │  Story Generator Wizard   │ ───► │   LLM Script Generator    │
-│  /storybook/templates     │      │   /storybook/create       │      │  buildMainStoryPrompt()   │
+│   Storefront Catalogue    │ ───► │  Story Generator Wizard   │ ───► │   LLM Script Generator    │
+│         /books           │      │   /storybook/create       │      │  buildMainStoryPrompt()   │
 └───────────────────────────┘      └───────────────────────────┘      └───────────────────────────┘
                                                  │                                  │
                                                  ▼                                  ▼
@@ -64,9 +85,9 @@ Here is the step-by-step walk-through of the client's experience:
 - Unauthenticated users attempting to access story generation are redirected to `/sign-in`.
 
 ### Step 2: Selecting a Template or Starter
-- The client clicks on **Templates** from the navigation bar ([`StorybookNav.tsx`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/features/storybook/components/StorybookNav.tsx)).
-- The gallery loads templates categorized by age range (3–5, 6–8, 9–12) and category.
-- Clicking **"Use template"** redirects to the creation wizard (`/storybook/create?templateId=<template-id>`).
+- The client browses the catalogue at **`/books`**, which reads the active templates straight from the database.
+- The listing is filterable by age range and category ([`template-book-filters.tsx`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/web/components/template-book-filters.tsx)).
+- Clicking **"Use template"** redirects to the creation wizard (`/storybook/create?templateId=<template-id>`), which resolves that template from the database on the server.
 
 ### Step 3: Generator Wizard — Step 0: "Your Hero" (Kid's Details)
 - **Child's Name & Age**: Client enters the hero's name (e.g. "Emma") and age.
@@ -103,34 +124,11 @@ Here is the step-by-step walk-through of the client's experience:
 
 ## 🛠️ 4. How to Add New Templates
 
-A template is defined in **two** places, and the `slug` / `id` must match in both
-or the storefront will link to a template the database cannot generate from.
+A template is defined in **one** place: `STOREFRONT_TEMPLATES` in
+`packages/db/prisma/seed-templates.ts`. There is no frontend list to keep in
+sync — the storefront renders whatever the database returns.
 
-1. Add the catalogue entry (marketing copy, cover image, theme, art style) to
-   `STORY_TEMPLATES` in `apps/web/data/story-templates.ts`:
-   ```ts
-   {
-     slug: "dinosaur-expedition",
-     title: "Dinosaur Expedition",
-     audience: "any",
-     category: "adventure",
-     categoryLabel: "Adventure",
-     emoji: "🦕",
-     tagline: "Journeying back in time to meet some gentle giants.",
-     description: "...",
-     excerpt: "...",
-     coverImage: "https://...",
-     ageRange: "6-8",
-     theme: "travels back in time and befriends a gentle dinosaur",
-     artStyle: "vibrant prehistoric storybook illustration",
-     moral: "Curiosity about the past makes you a better scientist.",
-     learning: "Dinosaur eras and fossils.",
-   }
-   ```
-
-2. Add the matching row to `STOREFRONT_TEMPLATES` in
-   `packages/db/prisma/seed-templates.ts`, using the same id and theme plus the
-   full `prompts` document. The `beats` array **must be exactly
+1. Add the row, including the catalogue copy. The `beats` array **must be exactly
    `BEAT_COUNT` (14) entries long** — `seedStoryTemplates` throws on any other
    count, and `loadUsableTemplate` in `storybook.routes.ts` rejects templates
    that do not match, so the wizard would fail with a "no usable template" error.
@@ -144,17 +142,91 @@ or the storefront will link to a template the database cannot generate from.
      category: "adventure",
      difficulty: 2,
      tags: ["dinosaurs", "courage", "science"],
+     // storefront copy — all optional, the shop degrades gracefully
+     tagline: "Journeying back in time to meet some gentle giants.",
+     excerpt: "...",
+     emoji: "🦕",
+     audience: "any",
+     artStyle: "vibrant prehistoric storybook illustration",
+      coverImage: "https://...",
+      previews: [
+        { src: "https://...", type: "image", mimeType: "image/jpeg", caption: "Page 3" },
+      ],
+      review: { rating: 5, count: 120, quote: "...", author: "A. Reader" },
      prompts: { theme, moralLesson, educationalFocus, worldContext, beats: [/* 14 */] },
    }
    ```
 
-3. (Optional) Add a starter prompt entry to `STORY_STARTERS` in
+2. (Optional) Add a starter prompt entry to `STORY_STARTERS` in
    `apps/web/utils/prompts/storyPrompts.ts`.
 
-4. Run `npm run seed:templates` to upsert it into the database.
+3. Run `npm run seed:templates` to upsert it, then `npm run migrate` if you
+   changed the schema. The template is live on `/books` within 60 seconds.
+
+### Notes on the shape
+- `id` doubles as the storefront slug: `/books/<id>`. Keep it URL-safe.
+- `theme`, `moral` and `learning` are **not** columns — they are read out of the
+  `prompts` JSON (`theme`, `moralLesson`, `educationalFocus`).
+- `category` is free text. A value with no entry in `CATEGORY_META` renders with
+  the "Adventure" styling rather than breaking.
+- `coverImage` is optional; a template without one shows its category gradient
+  instead of a broken image.
+- `previews` is an ordered array of gallery slides for the book detail page. When
+  it is empty the page falls back to neutral "Preview N" placeholders, so a
+  template is never left with a broken carousel.
+- Image URLs must be `http(s)://` or root-relative `/assets/...`. Anything else
+  (`javascript:`, `data:`) is rejected on write and stripped on read, so a stored
+  value can never execute in the storefront.
+
+### Uploading cover and preview images
+
+`/admin` → **Templates** → edit → **Upload cover** / **Upload previews** stores the
+file and fills in the URL field for you. The URL field stays editable, so pasting
+an existing URL (or a CDN link) still works.
+
+- Endpoint: `POST /admin/templates/images/upload?folder=covers|previews&filename=<name>`
+  (admin auth). The body is the **raw image**, not JSON, so a 4MB photo does not
+  become 5.5MB of base64.
+- Files are re-encoded to progressive JPEG (max 1600px, quality 82, EXIF
+  rotation applied) and renamed to a random token, so a crafted filename cannot
+  pick its own path. Limit is 10MB per file, 12 previews per template.
+- Uploads land in `assets/<folder>/` relative to the backend's working
+  directory (`apps/backend/assets/` when started from there) and are served at
+  `/assets/previews/...` and `/assets/covers/...`. Both folders are gitignored.
+- Uploading is **separate from saving**: the URL only reaches the database when
+  you press Save, so abandoning the editor leaves the storefront unchanged (and
+  leaves an unreferenced file behind — delete the template to sweep its files).
+- `PUBLIC_ASSET_BASE_URL` overrides the `http://localhost:<PORT>` prefix. Set it
+  in production or stored URLs will point at localhost.
+- Deleting a template deletes its own uploaded cover and previews. It will not
+  delete a file it did not create: external URLs and `/assets/pdfs/...` are left
+  alone.
+
+### Adding a template from the admin dashboard
+`/admin` → **Templates** tab does the same thing without a deploy. It lists every
+template (predefined and user-created) with its beat count, story usage and live/
+hidden state, and can create, edit, duplicate, publish and delete.
+
+Backed by `GET/POST /admin/templates`, `PUT /admin/templates/:id`,
+`PATCH /admin/templates/:id/toggle` and `DELETE /admin/templates/:id`, all behind
+`authMiddleware` + `adminAuthMiddleware`.
+
+Two behaviours worth knowing:
+- **The id is immutable once created**, because it is the shop URL (`/books/<id>`).
+  Rename freely; the URL does not move.
+- **Deleting a template that stories still use returns `409`** and reports the
+  count, rather than silently cascading. Either deactivate it to pull it from the
+  shop and the wizard while keeping every story, or delete anyway to detach those
+  stories. Deactivated templates keep their `Story.templateId` links.
+- A duplicated template is created **hidden** so it can be reviewed before going live.
+
+The backend rejects any save whose `prompts.beats` is not exactly 14 entries,
+because `loadUsableTemplate` in `storybook.routes.ts` refuses such templates and
+the customer would see a confusing "no usable template" error. The tab shows a
+`n / 14` badge and warns when any template is short.
 
 ### Removing a template
-Delete it from both registries, then add a migration that detaches any
+Delete it from `STOREFRONT_TEMPLATES`, then add a migration that detaches any
 `Story.templateId` referencing it (`Story.templateId` is a foreign key with no
 `ON DELETE` action, so the rows must be nulled first) and deletes the row from
 `"StoryTemplate"`. See

@@ -26,16 +26,20 @@ export function TemplateBookCover({
         className,
       )}
     >
-      <img
-        src={template.coverImage}
-        alt={`${template.title} book cover`}
-        width={390}
-        height={390}
-        sizes={sizes}
-        loading={priority ? "eager" : "lazy"}
-        decoding="async"
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      {/* A template added in the database may have no cover art yet, so the
+          category gradient stands in rather than rendering a broken image. */}
+      {template.coverImage ? (
+        <img
+          src={template.coverImage}
+          alt={`${template.title} book cover`}
+          width={390}
+          height={390}
+          sizes={sizes}
+          loading={priority ? "eager" : "lazy"}
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : null}
 
       {/* spine */}
       <div className="pointer-events-none absolute inset-y-0 left-0 w-[7%] bg-gradient-to-r from-violet-900/40 via-violet-900/15 to-transparent" />

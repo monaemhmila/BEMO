@@ -13,6 +13,8 @@ export interface StoryMedia {
   src: string;
   mimeType?: string;
   placeholder?: boolean;
+  /** Optional label under the slide, e.g. "Page 3". */
+  caption?: string;
 }
 
 /** Neutral stand-in slides used until a book has its own photos or preview video. */
@@ -35,13 +37,44 @@ export interface StoryTemplate {
   description: string;
   excerpt: string;
   coverImage: string;
-  media?: StoryMedia[];
+  /**
+   * Gallery slides from the catalogue. Empty/absent means the detail page falls
+   * back to `fillerSlides()`.
+   */
+  previews?: StoryMedia[];
   ageRange: string;
   theme: string;
   artStyle: string;
   review?: StoryReview;
   moral?: string;
   learning?: string;
+}
+
+/**
+ * A template exactly as the backend serves it from
+ * `GET /storybook/templates` — one entry per `StoryTemplate` row. The database is
+ * the only catalogue; this type just describes its shape.
+ */
+export interface StorefrontTemplate {
+  /** Primary key. Also the storefront slug: /books/<id>. */
+  id: string;
+  title: string;
+  description: string;
+  tagline: string | null;
+  excerpt: string | null;
+  emoji: string | null;
+  audience: string;
+  ageRange: string;
+  category: string;
+  difficulty: number;
+  tags: string[];
+  coverImage: string | null;
+  previews: StoryMedia[];
+  theme: string;
+  moral: string | null;
+  learning: string | null;
+  artStyle: string | null;
+  review: StoryReview | null;
 }
 
 export const CATEGORY_META: Record<
@@ -68,40 +101,23 @@ export const CATEGORY_META: Record<
   },
 };
 
-export const STORY_TEMPLATES: StoryTemplate[] = [
-  {
-    slug: "birthday-adventure-and-the-greedy-goblin",
-    title: "Birthday Adventure and the Greedy Goblin",
-    audience: "any",
-    category: "sentimental",
-    categoryLabel: "Sentimental",
-    emoji: "🎁",
-    tagline: "Every present is empty — until the biggest box starts moving.",
-    description:
-      "It is the hero's birthday, and the living room is buried under ribbons. But box after box opens to nothing at all — not one toy, not one sweet, just tissue paper and a curled ribbon. Then the neighbours' children burst in, and every single one of their boxes is empty too. Behind the sofa the hero finds green crumbs, a torn corner of wrapping paper, and tiny green footprints leading straight to the biggest box of all. Inside, curled on a mountain of every toy in the world, sleeps a goblin no bigger than a teacup. A tale about the magic of giving, the loneliness of always taking, and the friend who was never invited to anybody's birthday — until now.",
-    excerpt:
-      "The box was far deeper than any box has a right to be. I put in one hand, then one knee, and then I was falling — landing with a squeak. In the dark, two yellow eyes blinked open. On a mountain of every toy in the world, curled up no bigger than a teacup, was a goblin. And in his hand was a wand.",
-    coverImage:
-      "https://images.unsplash.com/photo-1512909006721-3d6018887383?q=80&w=1200&auto=format&fit=crop",
-    ageRange: "4-8",
-    theme:
-      "opens a mountain of birthday presents to find every single box empty, falls into the very last one, discovers a greedy tiny goblin hiding inside who has stolen every gift in the whole world, confronts him and gets them all back magicly, then shares one of their own gifts with the lonely goblin nobody ever invited",
-    artStyle: "cosy magical birthday storybook illustration",
-    moral: "Taking what belongs to others leaves you alone; the best gift is the one you give away.",
-    learning:
-      "Counting and comparing how many gifts there are, and how sharing makes everyone happier.",
-    review: {
-      rating: 5,
-      count: 1467,
-      quote:
-        "My son read the part where the goblin admits nobody ever invited him twice, then asked if we could invite him to his party. I nearly cried.",
-      author: "Dalia H.",
-    },
-  },
-];
+/**
+ * Categories are free text in the database, so an added template may carry one
+ * the design system has no styling for. Fall back rather than rendering
+ * `undefined` into a class name.
+ */
+const FALLBACK_CATEGORY: StoryCategory = "adventure";
 
-export function getStoryTemplate(slug: string): StoryTemplate | undefined {
-  return STORY_TEMPLATES.find((story) => story.slug === slug);
+export function toStoryCategory(raw: string): StoryCategory {
+  return raw in CATEGORY_META ? (raw as StoryCategory) : FALLBACK_CATEGORY;
+}
+
+export function getCategoryMeta(raw: string) {
+  return CATEGORY_META[toStoryCategory(raw)];
+}
+
+function toAudience(raw: string): StoryAudience {
+  return raw === "girl" || raw === "boy" ? raw : "any";
 }
 
 /**
@@ -114,26 +130,27 @@ export function createStoryHref(template: StoryTemplate): string {
 }
 
 /** Most-reviewed stories first - the “bestsellers” shelf. */
-export function bestsellerTemplates(limit = 8): StoryTemplate[] {
-  return [...STORY_TEMPLATES]
+export function bestsellers(templates: StoryTemplate[], limit = 8): StoryTemplate[] {
+  return [...templates]
     .sort((a, b) => (b.review?.count ?? 0) - (a.review?.count ?? 0))
     .slice(0, limit);
 }
 
 /** Newest catalogue entries, newest first - the “new releases” shelf. */
-export function newReleaseTemplates(limit = 8): StoryTemplate[] {
-  return STORY_TEMPLATES.slice(-limit).reverse();
+export function newReleases(templates: StoryTemplate[], limit = 8): StoryTemplate[] {
+  return templates.slice(-limit).reverse();
 }
 
 /**
  * Stories written for girls or boys. Gender-neutral stories ("any") suit both
  * shelves, so they appear on each.
  */
-export function templatesForAudience(
+export function forAudience(
+  templates: StoryTemplate[],
   audience: Exclude<StoryAudience, "any">,
   limit = 8
 ): StoryTemplate[] {
-  return STORY_TEMPLATES.filter(
-    (template) => template.audience === audience || template.audience === "any"
-  ).slice(0, limit);
+  return templates
+    .filter((template) => template.audience === audience || template.audience === "any")
+    .slice(0, limit);
 }

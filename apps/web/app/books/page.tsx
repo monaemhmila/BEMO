@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/sections/site-footer";
 import { TemplateBookFilters } from "@/components/template-book-filters";
 import { Button } from "@/components/ui/button";
-import { STORY_TEMPLATES } from "@/data/story-templates";
+import { getStoreTemplates } from "@/lib/story-templates";
 
 export const metadata: Metadata = {
   title: "Personalised Books",
@@ -12,7 +12,13 @@ export const metadata: Metadata = {
     "Browse personalised storybooks that make your child the hero. Choose from adventures, princess tales, space journeys and more.",
 };
 
+// The catalogue is read from the database through the backend, so a template
+// added there shows up here within a minute.
+export const revalidate = 60;
+
 export default async function BooksPage() {
+  const templates = await getStoreTemplates();
+
   return (
     <div className="min-h-screen bg-paper">
       <main className="pt-[7rem] pb-20">
@@ -33,7 +39,7 @@ export default async function BooksPage() {
           </div>
 
           {/* Search & filters */}
-          <TemplateBookFilters templates={STORY_TEMPLATES} />
+          <TemplateBookFilters templates={templates} />
 
           {/* CTA band */}
           <section className="relative mt-16 overflow-hidden rounded-[2rem] bg-gradient-to-r from-primary to-violet-deep p-10 text-center text-white md:p-14">

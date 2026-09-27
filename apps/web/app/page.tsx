@@ -10,11 +10,15 @@ import { Faq } from "@/components/sections/faq";
 import { FinalCta } from "@/components/sections/final-cta";
 import { SiteFooter } from "@/components/sections/site-footer";
 import {
-  bestsellerTemplates,
-  newReleaseTemplates,
-  templatesForAudience,
+  bestsellers,
+  forAudience,
+  newReleases,
   type StoryTemplate,
 } from "@/data/story-templates";
+import { getStoreTemplates } from "@/lib/story-templates";
+
+// The shelves are read from the database through the backend.
+export const revalidate = 60;
 
 /**
  * Hands each shelf only the books an earlier shelf has not already shown, and
@@ -32,31 +36,33 @@ function createShelfPicker() {
   };
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  const templates = await getStoreTemplates();
+
   const nextShelf = createShelfPicker();
-  const bestsellers = nextShelf(bestsellerTemplates());
-  const newReleases = nextShelf(newReleaseTemplates());
-  const forGirls = nextShelf(templatesForAudience("girl"));
-  const forBoys = nextShelf(templatesForAudience("boy"));
+  const bestsellersShelf = nextShelf(bestsellers(templates));
+  const newReleasesShelf = nextShelf(newReleases(templates));
+  const forGirls = nextShelf(forAudience(templates, "girl"));
+  const forBoys = nextShelf(forAudience(templates, "boy"));
 
   return (
     // The app bar is fixed, so the storefront sits below it.
     <div className="pt-[7rem]">
       <Hero />
 
-      {bestsellers && (
+      {bestsellersShelf && (
         <StoryRail
           eyebrow="Bestsellers"
           title="Personalise a bestseller"
-          templates={bestsellers}
+          templates={bestsellersShelf}
         />
       )}
 
-      {newReleases && (
+      {newReleasesShelf && (
         <StoryRail
           eyebrow="New releases"
           title="Discover what's new"
-          templates={newReleases}
+          templates={newReleasesShelf}
           className="bg-paper"
         />
       )}

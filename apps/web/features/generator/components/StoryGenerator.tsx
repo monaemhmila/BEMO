@@ -43,7 +43,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { trialUpdateEvent } from "@/hooks/use-trials";
 import { BACKEND_URL } from "../../../app/config";
 import { STORY_LANGUAGES } from "../constants";
-import { getStoryTemplate } from "@/data/story-templates";
+import type { StorefrontTemplate, StoryTemplate } from "@/data/story-templates";
 import { CARTOON_ART_STYLES, DEFAULT_ART_STYLE, getArtStyle } from "../../../services/fal/cartoonGeneration";
 
 const STEPS = [
@@ -67,17 +67,24 @@ interface GeneratedStoryResult {
 }
 
 /** A predefined template as returned by GET /storybook/templates. */
-interface TemplateOption {
-  id: string;
-  name: string;
-  description: string;
-  ageRange: string;
-  category: string;
-  difficulty: number;
-  tags: string[];
+type TemplateOption = StorefrontTemplate;
+
+/**
+ * The bits of the shelf-picked template the wizard needs before the server list
+ * loads. Resolved server-side by the create page, which reads the catalogue from
+ * the database.
+ */
+type ShelfTemplate = Pick<
+  StoryTemplate,
+  "title" | "tagline" | "ageRange" | "coverImage"
+>;
+
+export interface StoryGeneratorProps {
+  /** The template named by `?templateId=`, looked up in the database. */
+  shelfTemplate?: ShelfTemplate | null;
 }
 
-export function StoryGenerator() {
+export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { getToken, user } = useAuth();
@@ -123,10 +130,11 @@ export function StoryGenerator() {
 
   const selectedTemplate = templates.find((t) => t.id === selectedTemplateId);
   /**
-   * Catalogue entry for the shelf choice, so the wizard can name the story the
-   * parent picked even before (or without) the server template list.
+   * The shelf choice, resolved from the database by the create page, so the
+   * wizard can name the story the parent picked even before the server list
+   * has loaded.
    */
-  const shelfStory = shelfTemplateId ? getStoryTemplate(shelfTemplateId) : undefined;
+  const shelfStory = shelfTemplateId ? (shelfTemplate ?? undefined) : undefined;
   /**
    * The server list is authoritative for generation. When the shelf story is
    * missing from it we say so and stop, instead of quietly generating a
@@ -139,7 +147,7 @@ export function StoryGenerator() {
 
   const storyName = customMode
     ? customTemplateName || "Your own story"
-    : selectedTemplate?.name || shelfStory?.title || "";
+    : selectedTemplate?.title || shelfStory?.title || "";
   const storyDescription = selectedTemplate?.description || shelfStory?.tagline || "";
   const storyAgeRange = selectedTemplate?.ageRange || shelfStory?.ageRange || "";
 
@@ -218,7 +226,7 @@ export function StoryGenerator() {
       }
 
       setCustomTemplateId(template.id);
-      setCustomTemplateName(template.name);
+      setCustomTemplateName(template.title);
       return template.id;
     } catch (err) {
       console.error("Custom template creation failed", err);

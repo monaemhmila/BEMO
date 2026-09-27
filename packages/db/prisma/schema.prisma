@@ -194,6 +194,17 @@ model StoryTemplate {
   source      StoryTemplateSourceEnum @default(PREDEFINED)
   ownerUserId String?
   owner       User?    @relation(fields: [ownerUserId], references: [id])
+
+  // Storefront catalogue copy. The storefront renders these on /books and the
+  // book detail pages, so they live here rather than in frontend code.
+  tagline    String?  // one-line hook shown under the title on a catalogue card
+  excerpt    String?  // opening lines, shown as a pull quote on the detail page
+  emoji      String?  // small badge on the card
+  audience   String   @default("any") // girl | boy | any
+  artStyle   String?  // art direction handed to the image generator
+  review     Json?    // { rating, count, quote, author }
+  previews   Json?    // [{ src, type: "image"|"video", mimeType?, caption? }] — gallery slides on the detail page
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   stories     Story[]

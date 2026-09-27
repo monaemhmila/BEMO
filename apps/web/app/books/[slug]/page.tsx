@@ -11,17 +11,17 @@ import {
   TemplateBookDetailMetadata,
 } from "@/components/template-book-detail";
 import { Button } from "@/components/ui/button";
-import { getStoryTemplate, STORY_TEMPLATES } from "@/data/story-templates";
-import { allBooks, bestsellers, boysBooks, getBook, girlsBooks, newReleases } from "@/lib/data";
+import { getBook, allBooks, bestsellers, newReleases, girlsBooks, boysBooks } from "@/lib/data";
+import { getStoreTemplates } from "@/lib/story-templates";
 
+/**
+ * The legacy hard-coded books are still pre-rendered. Story templates are read
+ * from the database at request time instead, so `dynamicParams` stays on: a
+ * template added to the database is reachable immediately, without a rebuild.
+ */
 export function generateStaticParams() {
-  return [
-    ...allBooks.map((book) => ({ slug: book.slug })),
-    ...STORY_TEMPLATES.map((template) => ({ slug: template.slug })),
-  ];
+  return allBooks.map((book) => ({ slug: book.slug }));
 }
-
-export const dynamicParams = false;
 
 function relatedBooks(slug: string) {
   const pools = [bestsellers, newReleases, girlsBooks, boysBooks];
@@ -53,9 +53,14 @@ export default async function BookDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const template = getStoryTemplate(slug);
+  const templates = await getStoreTemplates();
+  const template = templates.find((item) => item.slug === slug);
   if (template) {
-    return <TemplateBookDetail template={template} />;
+    const moreStories = templates
+      .filter((item) => item.slug !== template.slug)
+      .slice(0, 3);
+
+    return <TemplateBookDetail template={template} moreStories={moreStories} />;
   }
 
   const book = getBook(slug);
@@ -189,7 +194,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const template = getStoryTemplate(slug);
+  const template = (await getStoreTemplates()).find((item) => item.slug === slug);
   if (template) return TemplateBookDetailMetadata({ template });
 
   const book = getBook(slug);

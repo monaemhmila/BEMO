@@ -7,6 +7,7 @@ import pinoHttp from "pino-http";
 import { env } from "./config/env";
 import { logger } from "./lib/logger";
 import { prismaClient } from "./lib/prisma";
+import { TEMPLATE_IMAGE_FOLDERS } from "./lib/template-images";
 import { initSentry, sentryRequestHandler, sentryErrorHandler } from "./lib/sentry";
 import { apiLimiter } from "./middleware/rateLimiter";
 import { notFoundHandler, errorHandler } from "./middleware/error-handler";
@@ -105,6 +106,19 @@ export function createApp() {
 
   // Serve generated PDFs saved to assets/pdfs (e.g. /assets/pdfs/{storyId}.pdf)
   app.use("/assets/pdfs", express.static(path.join(process.cwd(), "assets", "pdfs")));
+
+  // Catalogue images uploaded from /admin -> Templates: gallery previews and
+  // cover art. Each folder is mounted separately so assets/ as a whole (which
+  // also holds generated PDFs) is never exposed.
+  for (const folder of TEMPLATE_IMAGE_FOLDERS) {
+    app.use(
+      `/assets/${folder}`,
+      express.static(path.join(process.cwd(), "assets", folder), {
+        maxAge: "30d",
+        fallthrough: true,
+      })
+    );
+  }
 
   app.use(notFoundHandler);
   app.use(sentryErrorHandler());

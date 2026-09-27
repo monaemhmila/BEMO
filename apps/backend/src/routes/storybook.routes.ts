@@ -12,7 +12,7 @@ import { storyGenerationLimiter } from "../middleware/rateLimiter";
 import {
   faceCanvasService,
 } from "../services/face-canvas.service";
-import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT } from "../contracts/storybook";
+import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT, toStorefrontTemplate } from "../contracts/storybook";
 import { logger } from "../lib/logger";
 import { z } from "zod";
 
@@ -107,8 +107,10 @@ router.get("/trials", authMiddleware, async (req, res) => {
 
 /**
  * GET /storybook/templates
- * Get available story templates. The database is the source of truth: every
- * row carries the 14-beat prompt document the generator writes from.
+ * The storefront catalogue. The database is the source of truth: every row
+ * carries the 14-beat prompt document the generator writes from plus the
+ * catalogue copy the shop pages render, so a template added here shows up on
+ * /books without a frontend change.
  */
 router.get("/templates", async (_req, res) => {
   const rows = await prismaClient.storyTemplate.findMany({
@@ -117,16 +119,7 @@ router.get("/templates", async (_req, res) => {
   });
 
   res.json({
-    templates: rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      ageRange: row.ageRange,
-      category: row.category,
-      difficulty: row.difficulty,
-      tags: row.tags,
-      coverImage: row.coverImage,
-    })),
+    templates: rows.map(toStorefrontTemplate),
   });
 });
 
@@ -178,16 +171,10 @@ router.post("/templates/custom", authMiddleware, storyGenerationLimiter, async (
     });
 
     res.status(201).json({
-      template: {
-        id: template.id,
-        name: template.name,
-        description: template.description,
-        ageRange: template.ageRange,
-        category: template.category,
-        difficulty: template.difficulty,
-        tags: template.tags,
-        coverImage: template.coverImage,
-      },
+      // Same shape as GET /storybook/templates. A custom template has no
+      // storefront copy (no cover, tagline or review) — those stay null and the
+      // generator only needs the id, title and age range.
+      template: toStorefrontTemplate(template),
     });
   } catch (error) {
     logger.error({ err: error }, "Failed to generate custom story template");

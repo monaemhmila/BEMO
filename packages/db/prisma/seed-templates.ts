@@ -11,7 +11,9 @@ import { Prisma, PrismaClient } from "@prisma/client";
  * growing trouble, page 12 turning point, page 13 resolution, page 14 closing.
  *
  * This module is also imported by `seed.ts` so a plain `db:seed` installs the
- * same templates. It is therefore guarded with `require.main === module`.
+ * same templates, so it must not seed on import. This package compiles as an ES
+ * module ("module": "ESNext"), which means `require` and `module` do not exist
+ * here — the entry point is detected from argv instead.
  *
  * Idempotent: safe to run repeatedly (upsert by id).
  * Run with: npx ts-node prisma/seed-templates.ts
@@ -27,6 +29,13 @@ export interface TemplatePrompts {
   beats: string[];
 }
 
+export interface TemplateReview {
+  rating: number;
+  count: number;
+  quote: string;
+  author: string;
+}
+
 export interface TemplateSeed {
   id: string;
   name: string;
@@ -35,6 +44,14 @@ export interface TemplateSeed {
   category: string;
   difficulty: number;
   tags: string[];
+  /** Storefront copy rendered by /books. Null/omitted fields simply go unused. */
+  tagline?: string;
+  excerpt?: string;
+  emoji?: string;
+  audience?: string;
+  artStyle?: string;
+  review?: TemplateReview;
+  coverImage?: string;
   prompts: TemplatePrompts;
 }
 
@@ -52,6 +69,21 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
     category: "sentimental",
     difficulty: 1,
     tags: ["birthday", "kindness", "sharing", "magic"],
+    tagline: "Every present is empty — until the biggest box starts moving.",
+    excerpt:
+      "The box was far deeper than any box has a right to be. I put in one hand, then one knee, and then I was falling — landing with a squeak. In the dark, two yellow eyes blinked open. On a mountain of every toy in the world, curled up no bigger than a teacup, was a goblin. And in his hand was a wand.",
+    emoji: "🎁",
+    audience: "any",
+    artStyle: "cosy magical birthday storybook illustration",
+    coverImage:
+      "https://images.unsplash.com/photo-1512909006721-3d6018887383?q=80&w=1200&auto=format&fit=crop",
+    review: {
+      rating: 5,
+      count: 1467,
+      quote:
+        "My son read the part where the goblin admits nobody ever invited him twice, then asked if we could invite him to his party. I nearly cried.",
+      author: "Dalia H.",
+    },
     prompts: {
       theme:
         "opens a mountain of birthday presents to find every single box empty, falls into the very last one, discovers a greedy tiny goblin hiding inside who has stolen every gift in the whole world, confronts him and gets them all back magicly, then shares one of their own gifts with the lonely goblin nobody ever invited",
@@ -95,35 +127,37 @@ export async function seedStoryTemplates(client: PrismaClient): Promise<number> 
     }
 
     const prompts = template.prompts as unknown as Prisma.InputJsonValue;
+    const review = (template.review ?? null) as unknown as Prisma.InputJsonValue;
+
+    // Catalogue copy is part of the template's identity: a seed run refreshes it
+    // rather than leaving stale marketing text behind.
+    const catalogue = {
+      name: template.name,
+      description: template.description,
+      ageRange: template.ageRange,
+      category: template.category,
+      difficulty: template.difficulty,
+      tags: template.tags,
+      prompts,
+      isActive: true,
+      source: "PREDEFINED" as const,
+      ownerUserId: null,
+      tagline: template.tagline ?? null,
+      excerpt: template.excerpt ?? null,
+      emoji: template.emoji ?? null,
+      audience: template.audience ?? "any",
+      artStyle: template.artStyle ?? null,
+      coverImage: template.coverImage ?? null,
+      review,
+    };
 
     await client.storyTemplate.upsert({
       where: { id: template.id },
-      update: {
-        name: template.name,
-        description: template.description,
-        ageRange: template.ageRange,
-        category: template.category,
-        difficulty: template.difficulty,
-        tags: template.tags,
-        prompts,
-        isActive: true,
-        source: "PREDEFINED",
-        ownerUserId: null,
-      },
+      update: catalogue,
       create: {
         id: template.id,
-        name: template.name,
-        description: template.description,
-        ageRange: template.ageRange,
-        category: template.category,
-        difficulty: template.difficulty,
-        tags: template.tags,
-        prompts,
         sampleImage: null,
-        coverImage: null,
-        isActive: true,
-        source: "PREDEFINED",
-        ownerUserId: null,
+        ...catalogue,
       },
     });
 
@@ -145,7 +179,11 @@ async function main() {
   }
 }
 
-if (require.main === module) {
+// `seed.ts` imports this module, so only seed when this file is the script being
+// run. argv is the portable signal here because the package is compiled as ESM.
+const invokedDirectly = (process.argv[1] ?? "").includes("seed-templates");
+
+if (invokedDirectly) {
   main().catch((error) => {
     console.error("Error seeding story templates:", error);
     process.exit(1);

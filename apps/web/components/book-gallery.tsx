@@ -222,6 +222,12 @@ export function BookGallery({ slides, alt }: BookGalleryProps) {
               ) : (
                 <VideoFrame slide={slide} alt={`${alt} preview video`} isActive={current === index} />
               )}
+
+              {slide.caption && !slide.placeholder && (
+                <span className="absolute bottom-3 left-3 max-w-[80%] rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white">
+                  {slide.caption}
+                </span>
+              )}
             </div>
           ))}
         </div>

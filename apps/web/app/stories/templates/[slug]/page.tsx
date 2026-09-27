@@ -15,13 +15,17 @@ import {
   BedDouble,
   ArrowRight,
 } from "lucide-react";
-import { getStoryTemplate, STORY_TEMPLATES, CATEGORY_META, createStoryHref, type StoryTemplate } from "../../../../data/story-templates";
+import { getCategoryMeta, createStoryHref, type StoryTemplate } from "../../../../data/story-templates";
+import { getStoreTemplates } from "../../../../lib/story-templates";
 
-export function generateStaticParams() {
-  return STORY_TEMPLATES.map((story) => ({ slug: story.slug }));
+// The catalogue is read from the database, so a template added there is
+// reachable without a rebuild. `dynamicParams` stays on for the same reason.
+export const revalidate = 60;
+
+export async function generateStaticParams() {
+  const templates = await getStoreTemplates();
+  return templates.map((story) => ({ slug: story.slug }));
 }
-
-export const dynamicParams = false;
 
 const HOW_IT_WORKS = [
   {
@@ -41,11 +45,14 @@ const HOW_IT_WORKS = [
   },
 ];
 
-function StoryDetailContent({ story }: { story: StoryTemplate }) {
-  const meta = CATEGORY_META[story.category];
-  const related = STORY_TEMPLATES.filter(
-    (s) => s.category === story.category && s.slug !== story.slug
-  ).slice(0, 2);
+function StoryDetailContent({
+  story,
+  related,
+}: {
+  story: StoryTemplate;
+  related: StoryTemplate[];
+}) {
+  const meta = getCategoryMeta(story.category);
 
   return (
     <div className="min-h-screen bg-paper">
@@ -53,7 +60,7 @@ function StoryDetailContent({ story }: { story: StoryTemplate }) {
       <header className="border-b border-border bg-white/80 backdrop-blur-md sticky top-[108px] z-40">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link
-            href="/storybook/templates"
+            href="/books"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-violet-deep transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -262,10 +269,15 @@ export default async function StoryTemplateDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const story = getStoryTemplate(slug);
+  const templates = await getStoreTemplates();
+  const story = templates.find((item) => item.slug === slug);
   if (!story) notFound();
 
-  return <StoryDetailContent story={story} />;
+  const related = templates
+    .filter((item) => item.category === story.category && item.slug !== story.slug)
+    .slice(0, 2);
+
+  return <StoryDetailContent story={story} related={related} />;
 }
 
 export async function generateMetadata({
@@ -274,7 +286,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const story = getStoryTemplate(slug);
+  const templates = await getStoreTemplates();
+  const story = templates.find((item) => item.slug === slug);
   if (!story) return { title: "Story Not Found" };
 
   return {
