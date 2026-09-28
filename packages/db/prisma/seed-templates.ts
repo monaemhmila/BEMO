@@ -92,150 +92,182 @@ export interface TemplateSeed {
 
 export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
   {
-    id: "the-princess-magical-garden",
-    name: "The Princess's Magical Garden",
+    id: "lets-count-1-10",
+    name: "Let's Count! 1–10",
     description:
-      "A little princess discovers that her flowers need more than magic to grow. With water, sunlight, patience, and love, she helps her sleepy garden bloom.",
-    ageRange: "2-3",
+      "A playful counting adventure where the child counts animals from one to five and then discovers colorful fruits while counting from six to ten.",
+    ageRange: "2-4",
     category: "educative",
     difficulty: 1,
-    tags: ["princess", "garden", "flowers", "nature", "learning", "kindness"],
-    tagline: "With a little water, sunshine, and love, beautiful things can grow.",
+    tags: [
+      "numbers",
+      "counting",
+      "animals",
+      "fruits",
+      "1-10",
+      "math",
+      "learning"
+    ],
+    tagline:
+      "Count the animals, count the fruits, and discover numbers 1 to 10!",
     excerpt:
-      "The little princess had a beautiful garden, but something was wrong. Her flowers were tiny, sleepy, and closed. She tried her biggest magic spell, but nothing happened. Then she discovered that the flowers did not need a magic spell at all — they needed water, sunlight, patience, and lots of love.",
-    emoji: "🌸",
+      "The child begins a counting adventure with friendly animals. First there is one, then two, three, four, and five. After that, a colorful fruit garden appears, bringing six, seven, eight, nine, and ten into the adventure. Every number is shown clearly with exactly the right number of objects.",
+    emoji: "🔢",
     audience: "any",
-    artStyle: "soft colorful 3D animated princess storybook illustration",
+    artStyle:
+      "soft colorful 3D animated educational children's storybook illustration",
     coverImage:
-      "https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?q=80&w=1200&auto=format&fit=crop",
     previews: [
       {
-        src: "/templates/princess-garden/preview-1.jpg",
+        src: "/templates/count-1-10/preview-1.jpg",
         type: "image",
         mimeType: "image/jpeg",
-        caption: "The little princess discovers a garden full of sleepy flowers.",
+        caption:
+          "The child meets friendly animals and begins counting from one.",
       },
       {
-        src: "/templates/princess-garden/preview-2.jpg",
+        src: "/templates/count-1-10/preview-2.jpg",
         type: "image",
         mimeType: "image/jpeg",
-        caption: "The princess carefully gives her flowers water and sunlight.",
+        caption:
+          "The child counts a growing group of animals from one to five.",
       },
       {
-        src: "/templates/princess-garden/preview-3.jpg",
+        src: "/templates/count-1-10/preview-3.jpg",
         type: "image",
         mimeType: "image/jpeg",
-        caption: "The magical garden finally bursts into beautiful colorful flowers.",
+        caption:
+          "The child discovers a colorful fruit garden and counts all the way to ten.",
       },
     ],
     review: {
       rating: 5,
-      count: 864,
+      count: 1047,
       quote:
-        "My little girl loved watering the flowers after reading this story. Now she checks our garden every morning!",
-      author: "Sophie L.",
+        "The pictures make counting so easy for my little one. She loves pointing at every animal and fruit!",
+      author: "Claire M.",
     },
     prompts: {
       theme:
-        "a sweet little princess discovering that her sleepy garden flowers need water, sunlight, time, care, and love to grow, learning to patiently care for them every day until the entire magical garden blooms",
+        "a playful counting adventure where the child learns numbers one through ten by physically counting clearly visible animals and then fruits",
       moralLesson:
-        "Beautiful things take time and care to grow, and patience, kindness, and responsibility help us make things better.",
+        "Learning numbers becomes easier and more fun when we practice by counting things we can see.",
       educationalFocus:
-        "Learning the basic needs of plants: water, sunlight, healthy soil, time, and care.",
+        "Number recognition, one-to-one counting, quantity recognition, and connecting spoken numbers with the correct number of visible objects.",
       worldContext:
-        "A beautiful magical castle garden filled with colorful flowers, butterflies, ladybugs, small birds, green leaves, soft grass, a little stone fountain, flower pots, and warm golden sunlight.",
+        "A bright playful world containing a friendly animal meadow followed by a colorful fruit garden, with large clear spaces where groups of objects can be easily seen and counted.",
       beats: [
-        "One sunny morning, the little princess wakes up and runs to her magical garden to say hello to her flowers.",
-        "But the flowers are tiny and sleepy, with their little petals closed tightly instead of showing their beautiful colors.",
-        "The princess waves her magic wand and says a big magic word, but nothing happens, so she looks at her flowers with a curious little smile.",
-        "A friendly butterfly lands beside her, and the princess notices that the soil is dry and the flowers look very thirsty.",
-        "The princess picks up a little blue watering can and gently gives each flower some fresh water.",
-        "Then she moves the flower pots into the warm sunshine, where the flowers can feel the bright golden light.",
-        "The princess visits the garden again the next morning, but the flowers are still small, so she learns that growing takes time and decides not to give up.",
-        "Every day, the princess gives the flowers water, makes sure they get sunlight, gently removes little weeds, and talks to them with a happy smile.",
-        "Slowly, tiny green leaves appear, and one little pink flower opens its first petal while a butterfly dances beside it.",
-        "More flowers begin to open in red, yellow, pink, purple, and blue, filling the garden with color and sweet little scents.",
-        "The princess dances happily through her blooming garden as butterflies, bees, birds, and ladybugs arrive to enjoy the flowers.",
-        "But one very hot day the sun beats down all afternoon, and when the princess comes back she finds the flowers drooping sadly and wonders if she has done something wrong.",
-        "So the princess moves the pots into the shade of a little tree, keeps a careful note of the days she waters them, and waits as patiently as she can for them to lift their heads again.",
-        "The next morning she sits quietly in the garden and watches a bee visit every single flower, marvelling at how much has changed since the day she first found them asleep.",
-        "The princess learns that her garden did not grow because of a magic spell — it grew because she gave it water, sunlight, patience, and love, and she promises to care for it every day.",
+        "The child enters a cheerful meadow and discovers that the day's adventure is all about counting.",
+        "The child finds exactly one friendly animal and learns that this quantity is called the first number.",
+        "The child discovers exactly two animals together and carefully counts them one by one.",
+        "The child finds exactly three animals and points to each animal while saying the numbers in order.",
+        "The child discovers exactly four animals and practices making sure every animal is counted only once.",
+        "The child reaches a sunny meadow with exactly five animals and proudly counts all five.",
+        "The child leaves the meadow and enters a colorful fruit garden where a new part of the counting adventure begins.",
+        "The child discovers exactly six pieces of fruit and counts each piece carefully from the beginning.",
+        "The child finds exactly seven pieces of fruit and learns that seven means there are seven separate fruits to count.",
+        "The child discovers exactly eight pieces of fruit and checks the group carefully to make sure none are missed.",
+        "The child finds exactly nine pieces of fruit and counts them slowly and clearly.",
+        "The child reaches a beautiful fruit table containing exactly ten pieces of fruit and counts all ten.",
+        "The child mixes the animals and fruits in a playful review but is reminded to count each visible object carefully.",
+        "The child practices recognizing several numbers again by matching each number with the correct quantity shown in the scene.",
+        "The child celebrates reaching ten and learns that counting carefully helps us know exactly how many things we have.",
       ],
     },
-  },
-
-  {
-    id: "the-princess-birthday-surprise",
-    name: "The Princess's Birthday Surprise",
+  }, {
+    id: "my-abc-adventure",
+    name: "My ABC Adventure",
     description:
-      "A little princess thinks everyone has forgotten her birthday, but a trail of ribbons and balloons leads her to a magical secret garden filled with friends and a wonderful surprise.",
-    ageRange: "2-3",
-    category: "birthday",
+      "A playful learning adventure where the child explores the alphabet two letters at a time, discovering a familiar word for each letter in the selected language.",
+    ageRange: "3-5",
+    category: "educative",
     difficulty: 1,
-    tags: ["birthday", "princess", "surprise", "friends", "animals", "kindness"],
-    tagline: "Sometimes the biggest surprises are hiding where we least expect them.",
+    tags: ["alphabet", "ABC", "letters", "words", "learning", "language"],
+    tagline:
+      "Every letter opens the door to a new word!",
     excerpt:
-      "It was the little princess's birthday. She woke up and looked around. No balloons. No cake. No singing. Had everyone forgotten? Then she spotted something strange — one tiny pink ribbon on the floor. She followed it through the castle, past a red balloon and a golden bow, until she discovered a secret garden full of friends waiting just for her.",
-    emoji: "🎂",
+      "The child begins a colorful alphabet adventure, discovering two new letters at a time. Each letter is paired with a simple familiar word in the selected language, helping the child recognize the letter, learn its sound, and connect it with a real word.",
+    emoji: "🔤",
     audience: "any",
-    artStyle: "warm colorful 3D animated princess birthday storybook illustration",
+    artStyle:
+      "soft colorful 3D animated educational children's storybook illustration",
     coverImage:
-      "https://images.unsplash.com/photo-1464349153735-7db50ed83c84?q=80&w=1200&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1200&auto=format&fit=crop",
     previews: [
       {
-        src: "/templates/princess-birthday/preview-1.jpg",
+        src: "/templates/abc-adventure/preview-1.jpg",
         type: "image",
         mimeType: "image/jpeg",
-        caption: "The little princess wakes up on her birthday and finds the castle strangely quiet.",
+        caption:
+          "The child discovers the first two letters of the alphabet and their matching words.",
       },
       {
-        src: "/templates/princess-birthday/preview-2.jpg",
+        src: "/templates/abc-adventure/preview-2.jpg",
         type: "image",
         mimeType: "image/jpeg",
-        caption: "A trail of colorful ribbons and balloons leads the princess through the castle.",
+        caption:
+          "The child continues discovering two new letters and words at a time.",
       },
       {
-        src: "/templates/princess-birthday/preview-3.jpg",
+        src: "/templates/abc-adventure/preview-3.jpg",
         type: "image",
         mimeType: "image/jpeg",
-        caption: "The princess discovers her animal friends waiting in a magical birthday garden.",
+        caption:
+          "The child celebrates after discovering all the letters in the selected language.",
       },
     ],
     review: {
       rating: 5,
-      count: 1107,
+      count: 912,
       quote:
-        "The secret garden reveal made my daughter smile from beginning to end. She now thinks every birthday needs a treasure hunt!",
+        "My child started recognizing letters and asking what words begin with them after just a few readings!",
       author: "Emma R.",
     },
     prompts: {
       theme:
-        "a sweet little princess celebrating her birthday, waking up to a mysteriously quiet castle, following a magical trail of ribbons, bows, balloons, and tiny clues through the castle and garden, finally discovering all her animal friends preparing a beautiful surprise birthday party",
+        "a playful alphabet adventure where the child learns the letters of the selected language's alphabet two letters at a time, with each letter connected to one simple familiar word in that same language",
       moralLesson:
-        "Love and friendship are more important than presents, and a thoughtful surprise can make someone feel very special.",
+        "Learning can be fun, and practicing a little at a time helps us discover new things.",
       educationalFocus:
-        "Learning simple colors, following a sequence of clues, identifying birthday objects, recognizing emotions, and understanding friendship and gratitude.",
+        "Letter recognition, alphabet order, and connecting every letter with one simple age-appropriate word in the selected language.",
       worldContext:
-        "A beautiful fairytale castle with soft pastel rooms, colorful balloons, ribbons, flowers, a sunny garden, friendly rabbits, birds, butterflies, bunnies, a tiny deer, and a magical secret garden decorated for a birthday celebration.",
+        "A colorful magical learning world containing playful paths, gardens, classrooms, toy houses, friendly animals, colorful objects, floating letters, books, and cheerful decorations.",
       beats: [
-        "It is the little princess's birthday, and she wakes up in her cozy castle bedroom expecting balloons, cake, and happy birthday songs.",
-        "But the castle is strangely quiet, with no balloons, no cake, and nobody waiting at her door, so the princess feels a little sad.",
-        "Then she notices a tiny pink ribbon on the floor and wonders where it came from.",
-        "The princess follows the ribbon through the castle and discovers a bright red balloon waiting at the end of the hallway.",
-        "The red balloon leads her to a golden bow beside the castle door, and the princess begins to wonder if she is following a secret birthday trail.",
-        "Outside, she finds another ribbon beside a little blue balloon, and a friendly butterfly flutters ahead as if it wants her to follow.",
-        "The princess walks through the garden and finds tiny paw prints leading toward a little wooden gate covered with flowers.",
-        "Behind the gate is a beautiful secret garden, but it is completely quiet, and the princess wonders if she has reached the end of the trail.",
-        "Suddenly, the flowers begin to wiggle, the bushes move, and a little rabbit pops out wearing a tiny birthday bow.",
-        "One by one, all the princess's animal friends appear — birds, butterflies, bunnies, a little deer, and a friendly puppy — and they all shout a happy birthday.",
-        "The princess discovers a beautiful birthday cake, colorful balloons, flowers, music, and a special table filled with treats, and she smiles because her friends planned everything just for her.",
-        "The princess runs to her nearest friend and hugs them tightly, and soon every animal friend is dancing and playing games all around her birthday cake.",
-        "They play until the sun is low, sharing out the treats, and the princess laughs more than she has all year because sharing a birthday is better than any present.",
-        "As the sky turns pink, the princess looks around at all her friends and realises she had never been forgotten at all — she had a whole surprise waiting for her.",
-        "The princess realizes that everyone had not forgotten her at all — they were secretly preparing a special surprise, and she learns that being loved and surrounded by friends is the most wonderful birthday gift of all.",
+        "The child begins a magical alphabet adventure and learns that the adventure will reveal the letters of the selected language's alphabet two letters at a time.",
+
+        "The child discovers LETTER 1 and LETTER 2 of the selected language's alphabet. The child learns to recognize both letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 3 and LETTER 4 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 5 and LETTER 6 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 7 and LETTER 8 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 9 and LETTER 10 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 11 and LETTER 12 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 13 and LETTER 14 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 15 and LETTER 16 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 17 and LETTER 18 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 19 and LETTER 20 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 21 and LETTER 22 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 23 and LETTER 24 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child discovers LETTER 25 and LETTER 26 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+
+        "The child reaches the end of the alphabet adventure and discovers any remaining letters of the selected language's alphabet. If only one letter remains, the child learns that letter and its matching word. The child proudly reviews the letters and words discovered throughout the adventure.",
       ],
     },
-  },
+  }
+
+
 ];
 
 /**

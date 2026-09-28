@@ -131,6 +131,11 @@ export class StoryService {
   ): Promise<StoryScript> {
     const prompt = `
 Write a ${STORYBOOK_PAGE_COUNT}-page children's story about a hero named "${characterName}".
+HERO NAMING RULE:
+- The hero's exact name is "${characterName}".
+- The exact name "${characterName}" MUST appear in the story text on EVERY page.
+- Always use "${characterName}" when referring to the hero by name.
+- If the story has a role such as princess, prince, explorer, wizard, or hero, the role can be used together with the name, but never replace the name completely.
 
 Theme: "${theme}".
 ${language ? `Language: ${language}` : ""}
@@ -286,7 +291,6 @@ For each page:
 - The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
 - The imageDescription must NEVER mention or imply any art style, illustration style, medium, or drawing technique - never use words like illustration, storybook, cartoon, anime, painting, watercolor, 3D, drawing, sketch, render, or any similar artistic term. Descriptions are purely about the scene CONTENT: the setting, time of day, weather, lighting, colors, characters, objects, and atmosphere. The artwork's visual style is applied separately and is not part of the description.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
-- Do not use the child's name in imageDescription.
 - Do not render any story text inside the image.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never wearing shorts or short clothing).
 - Ensure there is no white space , no blank margins.

@@ -485,7 +485,7 @@ export class PDFService {
     this.font(doc, baseFont, "Helvetica").fontSize(layout.fontSize);
 
     const options: PDFKit.Mixins.TextOptions = {
-      width: layout.width,
+      width: 500,
       height: Math.round(layout.maxLines * layout.lineHeight),
       align: layout.align,
       lineGap: layout.lineHeight - layout.fontSize,
@@ -494,7 +494,7 @@ export class PDFService {
       lineBreak: true,
     };
 
-    this.drawTextWithShadow(doc, cleanText, layout.x, layout.y, options, layout);
+    this.drawTextWithShadow(doc, cleanText, 50, layout.y, options, layout);
   }
 
   /**
@@ -555,7 +555,6 @@ export class PDFService {
     width: number,
     height: number
   ) {
-    this.drawCoverScrim(doc, width, height);
 
     const contentWidth = width - COVER_TITLE.sidePad * 2;
     let y = COVER_TITLE.top;
@@ -658,23 +657,7 @@ export class PDFService {
   }
 
   /** The cover scrim: black 45% at the top fading through clear to 55% black. */
-  private drawCoverScrim(doc: PDFKit.PDFDocument, width: number, height: number) {
-    const steps = 40;
-    const stripHeight = height / steps;
-    for (let i = 0; i < steps; i += 1) {
-      const t = (i + 0.5) / steps;
-      // 0 at t=0, ramping to full by t=0.5, then out to 1 at t=1, mirroring
-      // from-black/45 via-transparent to-black/55.
-      const opacity =
-        t < 0.5
-          ? (COVER_TITLE.scrim.topOpacity * (t / 0.5))
-          : (COVER_TITLE.scrim.bottomOpacity * ((t - 0.5) / 0.5));
-      if (opacity <= 0.001) continue;
-      doc.rect(0, i * stripHeight, width, stripHeight + 0.5);
-      doc.fillColor("#000000").fillOpacity(opacity).fill();
-    }
-    doc.fillOpacity(1);
-  }
+
 
   /**
    * Draw one centred line of cover type with the reader's soft text-shadow
