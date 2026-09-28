@@ -118,29 +118,6 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
       "soft colorful 3D animated educational children's storybook illustration",
     coverImage:
       "https://images.unsplash.com/photo-1551963831-b3b1ca40c98e?q=80&w=1200&auto=format&fit=crop",
-    previews: [
-      {
-        src: "/templates/count-1-10/preview-1.jpg",
-        type: "image",
-        mimeType: "image/jpeg",
-        caption:
-          "The child meets friendly animals and begins counting from one.",
-      },
-      {
-        src: "/templates/count-1-10/preview-2.jpg",
-        type: "image",
-        mimeType: "image/jpeg",
-        caption:
-          "The child counts a growing group of animals from one to five.",
-      },
-      {
-        src: "/templates/count-1-10/preview-3.jpg",
-        type: "image",
-        mimeType: "image/jpeg",
-        caption:
-          "The child discovers a colorful fruit garden and counts all the way to ten.",
-      },
-    ],
     review: {
       rating: 5,
       count: 1047,
@@ -194,29 +171,6 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
       "soft colorful 3D animated educational children's storybook illustration",
     coverImage:
       "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1200&auto=format&fit=crop",
-    previews: [
-      {
-        src: "/templates/abc-adventure/preview-1.jpg",
-        type: "image",
-        mimeType: "image/jpeg",
-        caption:
-          "The child discovers the first two letters of the alphabet and their matching words.",
-      },
-      {
-        src: "/templates/abc-adventure/preview-2.jpg",
-        type: "image",
-        mimeType: "image/jpeg",
-        caption:
-          "The child continues discovering two new letters and words at a time.",
-      },
-      {
-        src: "/templates/abc-adventure/preview-3.jpg",
-        type: "image",
-        mimeType: "image/jpeg",
-        caption:
-          "The child celebrates after discovering all the letters in the selected language.",
-      },
-    ],
     review: {
       rating: 5,
       count: 912,

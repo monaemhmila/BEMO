@@ -71,7 +71,7 @@ interface CharacterProfile {
 }
 
 const AGE_GUIDANCE = {
-  "3-5": {
+  "2-8": {
     language:
       "very simple words, short sentences, basic concepts",
     themes: "friendship, sharing, bedtime, animals, fun",
@@ -79,14 +79,14 @@ const AGE_GUIDANCE = {
     minPageWords: 15,
     targetPageWords: "15-20",
   },
-  "6-8": {
+  "8-12": {
     language: "simple and clear vocabulary, short complete sentences",
     themes: "adventure, problem-solving, friendship, family, nature",
     textLength: "2 short sentences per page",
     minPageWords: 20,
     targetPageWords: "20-25",
   },
-  "9-12": {
+  "12-15": {
     language: "clear and engaging vocabulary, short sentence structures",
     themes: "bravery, teamwork, moral lessons, discovery, mystery",
     textLength: "3 sentences per page",
