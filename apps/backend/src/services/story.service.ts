@@ -1031,10 +1031,10 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
   private getAgeRange(
     age: number
   ): keyof typeof AGE_GUIDANCE {
-    if (age <= 5) return "3-5";
-    if (age <= 8) return "6-8";
+    if (age <= 8) return "2-8";
+    if (age <= 12) return "8-12";
 
-    return "9-12";
+    return "12-15";
   }
 
   /**
