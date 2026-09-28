@@ -414,8 +414,8 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
 
   const cards = result
     ? [
-        { label: "Face crop", hint: "tightly cropped to the child's face — this is what gets fed to the AI edit", dataUrl: result.references.face, filename: "face-crop.jpg", accent: "bg-purple-500/20 text-purple-400" },
-      ]
+      { label: "Face crop", hint: "tightly cropped to the child's face — this is what gets fed to the AI edit", dataUrl: result.references.face, filename: "face-crop.jpg", accent: "bg-purple-500/20 text-purple-400" },
+    ]
     : [];
 
   return (
@@ -583,9 +583,8 @@ function AnalyticsTab({ authHeaders }: { authHeaders: () => Promise<Record<strin
           <button
             key={r}
             onClick={() => setDays(r)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-              days === r ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
-            }`}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${days === r ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+              }`}
           >
             Last {r} days
           </button>
@@ -1091,9 +1090,8 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-              statusFilter === s ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
-            }`}
+            className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${statusFilter === s ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+              }`}
           >
             {s === "ALL" ? "All" : s}
           </button>
@@ -1457,7 +1455,7 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
     const headers = await authHeaders();
     const response = await fetch(
       `${BACKEND_URL}/admin/templates/images/upload?folder=${folder}` +
-        `&filename=${encodeURIComponent(file.name)}`,
+      `&filename=${encodeURIComponent(file.name)}`,
       {
         method: "POST",
         headers: { ...headers, "Content-Type": file.type },
@@ -1563,7 +1561,7 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
     if (filledBeats !== TEMPLATE_BEAT_COUNT) {
       setError(
         `All ${TEMPLATE_BEAT_COUNT} beats must be filled in — the generator rejects any other count. ` +
-          `${TEMPLATE_BEAT_COUNT - filledBeats} still empty.`
+        `${TEMPLATE_BEAT_COUNT - filledBeats} still empty.`
       );
       return;
     }
@@ -1594,11 +1592,11 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
       artStyle: orNull(draft.artStyle),
       review: hasReview
         ? {
-            rating: Math.min(5, Math.max(0, Number(draft.reviewRating) || 0)),
-            count: Math.max(0, parseInt(draft.reviewCount, 10) || 0),
-            quote: draft.reviewQuote.trim(),
-            author: draft.reviewAuthor.trim(),
-          }
+          rating: Math.min(5, Math.max(0, Number(draft.reviewRating) || 0)),
+          count: Math.max(0, parseInt(draft.reviewCount, 10) || 0),
+          quote: draft.reviewQuote.trim(),
+          author: draft.reviewAuthor.trim(),
+        }
         : null,
       previews: draft.previews,
       prompts: {
@@ -1968,11 +1966,10 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">Story beats</h4>
               <span
-                className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                  filledBeats === TEMPLATE_BEAT_COUNT
+                className={`text-xs font-bold px-2 py-0.5 rounded-full ${filledBeats === TEMPLATE_BEAT_COUNT
                     ? "bg-emerald-500/20 text-emerald-400"
                     : "bg-amber-500/20 text-amber-400"
-                }`}
+                  }`}
               >
                 {filledBeats} / {TEMPLATE_BEAT_COUNT}
               </span>
@@ -2191,9 +2188,8 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${
-                activeFilter === f ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
-              }`}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold capitalize transition-all ${activeFilter === f ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+                }`}
             >
               {f}
             </button>
@@ -2204,9 +2200,8 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
             <button
               key={f}
               onClick={() => setSourceFilter(f)}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
-                sourceFilter === f ? "bg-blue-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
-              }`}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${sourceFilter === f ? "bg-blue-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"
+                }`}
             >
               {f === "all" ? "All sources" : f === "PREDEFINED" ? "Predefined" : "User created"}
             </button>
@@ -2291,11 +2286,10 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
                   <td className="py-3.5 px-4">
                     <div className="flex flex-col gap-1 items-start">
                       <span
-                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          t.isActive
+                        className={`px-2 py-0.5 rounded-full text-xs font-semibold ${t.isActive
                             ? "bg-emerald-500/20 text-emerald-400"
                             : "bg-white/10 text-white/40"
-                        }`}
+                          }`}
                       >
                         {t.isActive ? "Live" : "Hidden"}
                       </span>
@@ -2328,11 +2322,10 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
                       <button
                         onClick={() => toggle(t)}
                         disabled={busyId === t.id}
-                        className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
-                          t.isActive
+                        className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${t.isActive
                             ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                             : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30"
-                        }`}
+                          }`}
                         title={t.isActive ? "Hide from shop" : "Publish to shop"}
                       >
                         <Power className="w-3.5 h-3.5" />
@@ -2697,28 +2690,27 @@ export default function AdminPage() {
           />
         )}
         <aside
-          className={`fixed inset-y-0 left-0 z-40 w-60 bg-[#17171a] border-r border-white/5 flex flex-col shrink-0 transition-transform duration-300 lg:static lg:translate-x-0 ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`fixed inset-y-0 left-0 z-40 w-60 bg-[#17171a] border-r border-white/5 flex flex-col shrink-0 transition-transform duration-300 lg:static lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="p-5 border-b border-white/5">
             <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-white" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                  <ShieldCheck className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-white text-sm">Admin Console</p>
+                  <p className="text-white/40 text-xs">Mon Petit Hero</p>
+                </div>
               </div>
-              <div>
-                <p className="font-bold text-white text-sm">Admin Console</p>
-                <p className="text-white/40 text-xs">StoryBook AI</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="text-white/50 hover:text-white lg:hidden"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="text-white/50 hover:text-white lg:hidden"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
@@ -2727,11 +2719,10 @@ export default function AdminPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  activeTab === tab.id
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${activeTab === tab.id
                     ? "bg-purple-600/20 text-purple-300 border border-purple-500/20"
                     : "text-white/50 hover:text-white/80 hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {tab.icon}
                 <span className="flex-1 text-left">{tab.label}</span>
@@ -2797,7 +2788,7 @@ export default function AdminPage() {
                             ? "Analytics & Traffic"
                             : activeTab}
                 </h1>
-                <p className="text-white/40 text-xs mt-0.5">StoryBook AI · Super Admin</p>
+                <p className="text-white/40 text-xs mt-0.5">Mon Petit Hero · Super Admin</p>
               </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
@@ -2823,12 +2814,11 @@ export default function AdminPage() {
                     { label: "Free Stories Left", value: (stats?.totalTrialsRemaining ?? 0).toLocaleString(), icon: <Gift className="w-5 h-5" />, sub: "across all users", color: "amber" },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 transition-all">
-                      <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center ${
-                        stat.color === "blue" ? "bg-blue-500/20 text-blue-400" :
-                        stat.color === "purple" ? "bg-purple-500/20 text-purple-400" :
-                        stat.color === "indigo" ? "bg-indigo-500/20 text-indigo-400" :
-                        "bg-[#7a5bff]/20 text-[#c4b2ff]"
-                      }`}>
+                      <div className={`w-10 h-10 rounded-xl mb-3 flex items-center justify-center ${stat.color === "blue" ? "bg-blue-500/20 text-blue-400" :
+                          stat.color === "purple" ? "bg-purple-500/20 text-purple-400" :
+                            stat.color === "indigo" ? "bg-indigo-500/20 text-indigo-400" :
+                              "bg-[#7a5bff]/20 text-[#c4b2ff]"
+                        }`}>
                         {stat.icon}
                       </div>
                       <p className="text-3xl font-bold text-white mb-1">{stat.value}</p>
@@ -2955,8 +2945,8 @@ export default function AdminPage() {
                           <th className="text-left py-3.5 px-4">User</th>
                           <th className="text-left py-3.5 px-4">Free Stories</th>
                           <th className="text-left py-3.5 px-4">Models</th>
-                <th className="text-left py-3.5 px-4">Stories</th>
-                <th className="text-left py-3.5 px-4">Previews</th>
+                          <th className="text-left py-3.5 px-4">Stories</th>
+                          <th className="text-left py-3.5 px-4">Previews</th>
                           <th className="text-left py-3.5 px-4">Joined</th>
                           <th className="text-left py-3.5 px-4">Quick Add</th>
                           <th className="text-right py-3.5 px-4">Actions</th>
@@ -3213,14 +3203,13 @@ export default function AdminPage() {
                 {activity.length === 0 && <p className="text-white/30 text-sm">No recent activity</p>}
                 {activity.map((item, i) => (
                   <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-start gap-4 hover:bg-white/8 transition-all">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      item.type === "user_joined" ? "bg-blue-500/20 text-blue-400" :
-                      item.type === "story_created" ? "bg-purple-500/20 text-purple-400" :
-                      "bg-[#7a5bff]/20 text-[#c4b2ff]"
-                    }`}>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${item.type === "user_joined" ? "bg-blue-500/20 text-blue-400" :
+                        item.type === "story_created" ? "bg-purple-500/20 text-purple-400" :
+                          "bg-[#7a5bff]/20 text-[#c4b2ff]"
+                      }`}>
                       {item.type === "user_joined" ? <UserCheck className="w-4 h-4" /> :
-                       item.type === "story_created" ? <BookOpen className="w-4 h-4" /> :
-                       <Sparkles className="w-4 h-4" />}
+                        item.type === "story_created" ? <BookOpen className="w-4 h-4" /> :
+                          <Sparkles className="w-4 h-4" />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-medium text-sm">

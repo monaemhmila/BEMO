@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     description:
       "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.",
     type: "website",
-    siteName: "Wonderwraps",
+    siteName: "Mon Petit Hero",
   },
 };
 

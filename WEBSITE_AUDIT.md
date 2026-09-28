@@ -93,7 +93,7 @@ Covered in 2.1 — direct consequence: story statuses can be trivially forged.
 - `features/storybook/components/Imagecard.tsx:31` passes `priority` to every `next/image`, defeating lazy loading and hurting LCP budgets.
 
 ### 3.12 Branding mismatch: "mon petit hero" vs "Mon Petit Hero"
-- Root layout metadata title/description/siteName in `apps/web/app/layout.tsx` say "mon petit hero"; the product is "Mon Petit Hero". README.md describes "Storybook AI" (a previous project). Inconsistent titles across pages.
+- Root layout metadata title/description/siteName in `apps/web/app/layout.tsx` say "mon petit hero"; the product is "Mon Petit Hero". README.md describes "Mon Petit Hero" (a previous project). Inconsistent titles across pages.
 
 ### 3.13 Frontend polish
 - No `loading.tsx` suspense files for most routes (home, blog, books, dashboard, create-custom, etc.) → blank flash during client-side route transitions.
@@ -172,7 +172,7 @@ Assets are served from Cloudflare R2 (`CLOUDFLARE_URL`, `pub-b2acac8ef6a84c39b35
 
 - **Tracked generated blobs** in git: `apps/backend/assets/pdfs/*.pdf` (up to ~11.7 MB each) and `apps/backend/assets/models/*.zip` (~146 KB each), plus `apps/backend/models/tiny_face_detector_model.bin`. Add to `.gitignore` and purge history with `git filter-repo` if history size matters.
 - **No formatting/linting guardrails** (no `.prettierrc`, no husky lint-staged).
-- **README stale** — describes "Storybook AI"; refresh to reflect Mon Petit Hero + monorepo structure.
+- **README stale** — describes "Mon Petit Hero"; refresh to reflect Mon Petit Hero + monorepo structure.
 - Duplicate header/navigation components exist (`Appbar` + `SiteHeader`); consolidate.
 
 ---

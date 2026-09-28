@@ -38,7 +38,7 @@ export function StoryBookCover({ title, childName, dedication }: StoryBookCoverP
         ) : (
           <span className="inline-flex items-center gap-2 rounded-full bg-black/35 px-[2%] py-[0.8cqw] text-white/90 tracking-[0.3em] uppercase text-[clamp(0.4rem,1.2cqw,0.75rem)]">
             <BookOpen className="inline-block size-[1.2em]" aria-hidden="true" />
-            StoryBook AI
+            Mon Petit Hero
           </span>
         )}
       </div>

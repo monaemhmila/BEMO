@@ -4,7 +4,7 @@ export const frStorefront: Record<string, string> = {
     "Livres personnalisés pour enfants | Histoires sur mesure - mon petit hero",
   "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.":
     "Créez des livres d'histoires uniques avec Mon Petit Hero. Téléchargez des photos et regardez-les devenir des histoires personnalisées que votre enfant chérira pour toujours.",
-  Wonderwraps: "Wonderwraps",
+  "Mon Petit Hero": "Mon Petit Hero",
   "Sign in to Mon Petit Hero to manage your storybooks.":
     "Connectez-vous à Mon Petit Hero pour gérer vos livres d'histoires.",
   "Create your free Mon Petit Hero account.":

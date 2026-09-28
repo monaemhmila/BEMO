@@ -1,4 +1,4 @@
-# StoryBook AI — Template System & Client Experience Guide
+# Mon Petit Hero — Template System & Client Experience Guide
 
 This document provides a comprehensive overview of where story templates are stored in the codebase, how the template system is architected, and the step-by-step end-to-end client journey from login to PDF storybook generation.
 

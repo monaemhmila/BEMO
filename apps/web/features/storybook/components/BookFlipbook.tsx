@@ -95,9 +95,8 @@ function PageSheet({
 
   return (
     <div
-      className={`relative flex-1 bg-paper overflow-hidden ${
-        side === "left" ? "rounded-l-lg" : "rounded-r-lg"
-      }`}
+      className={`relative flex-1 bg-paper overflow-hidden ${side === "left" ? "rounded-l-lg" : "rounded-r-lg"
+        }`}
     >
       {page && hasImage ? (
         <img
@@ -129,7 +128,7 @@ function PageSheet({
           </div>
           <div className="absolute bottom-5 inset-x-0 text-center">
             <span className="inline-block px-4 py-1.5 rounded-full bg-black/35 text-white/90 text-[10px] md:text-xs tracking-[0.3em] uppercase">
-              StoryBook AI
+              Mon Petit Hero
             </span>
           </div>
         </>
@@ -158,9 +157,8 @@ function PageSheet({
         <>
           <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
           <p
-            className={`absolute bottom-9 text-white text-xs md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${
-              side === "left" ? "left-5 right-10" : "right-5 left-10"
-            }`}
+            className={`absolute bottom-9 text-white text-xs md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${side === "left" ? "left-5 right-10" : "right-5 left-10"
+              }`}
           >
             {page.content}
           </p>
@@ -171,9 +169,8 @@ function PageSheet({
       {page && (
         <div className="absolute bottom-2.5 inset-x-0 text-center">
           <span
-            className={`text-[10px] md:text-xs ${
-              hasImage ? "text-white/80 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]" : "text-muted-foreground"
-            }`}
+            className={`text-[10px] md:text-xs ${hasImage ? "text-white/80 [text-shadow:0_1px_3px_rgba(0,0,0,0.8)]" : "text-muted-foreground"
+              }`}
           >
             {page.pageNumber}
           </span>
@@ -182,15 +179,14 @@ function PageSheet({
 
       {/* Curvature shading toward the spine / outer edge */}
       <div
-        className={`pointer-events-none absolute inset-y-0 w-10 ${
-          showSpineEdge
+        className={`pointer-events-none absolute inset-y-0 w-10 ${showSpineEdge
             ? side === "left"
               ? "right-0 bg-gradient-to-l from-black/25 to-transparent"
               : "left-0 bg-gradient-to-r from-black/25 to-transparent"
             : side === "left"
               ? "left-0 bg-gradient-to-r from-black/10 to-transparent"
               : "right-0 bg-gradient-to-l from-black/10 to-transparent"
-        }`}
+          }`}
       />
     </div>
   );
@@ -415,11 +411,10 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
           onClick={goPrev}
           disabled={spreadIndex === 0}
           aria-label="Previous page"
-          className={`z-20 p-1.5 sm:p-3 rounded-full transition-all shrink-0 ${
-            spreadIndex === 0
+          className={`z-20 p-1.5 sm:p-3 rounded-full transition-all shrink-0 ${spreadIndex === 0
               ? "opacity-25 cursor-default text-white/40"
               : "bg-black/30 hover:bg-black/50 text-white"
-          }`}
+            }`}
         >
           <ChevronLeft className="w-5 h-5 sm:w-7 sm:h-7" />
         </button>
@@ -468,11 +463,10 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
           onClick={goNext}
           disabled={spreadIndex >= spreads.length - 1}
           aria-label="Next page"
-          className={`z-20 p-1.5 sm:p-3 rounded-full transition-all shrink-0 ${
-            spreadIndex >= spreads.length - 1
+          className={`z-20 p-1.5 sm:p-3 rounded-full transition-all shrink-0 ${spreadIndex >= spreads.length - 1
               ? "opacity-25 cursor-default text-white/40"
               : "bg-black/30 hover:bg-black/50 text-white"
-          }`}
+            }`}
         >
           <ChevronRight className="w-5 h-5 sm:w-7 sm:h-7" />
         </button>
@@ -515,9 +509,8 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
                     stopAudio();
                   }}
                   aria-label={`Go to spread ${i + 1}`}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === spreadIndex ? "bg-buttercup w-5" : "bg-white/25 hover:bg-white/50 w-1.5"
-                  }`}
+                  className={`h-1.5 rounded-full transition-all ${i === spreadIndex ? "bg-buttercup w-5" : "bg-white/25 hover:bg-white/50 w-1.5"
+                    }`}
                 />
               ))}
             </div>

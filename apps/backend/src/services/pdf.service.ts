@@ -1,4 +1,4 @@
-import PDFDocument from "pdfkit";
+﻿import PDFDocument from "pdfkit";
 import path from "path";
 import { existsSync } from "fs";
 import {
@@ -33,84 +33,77 @@ interface StoryPayload {
   childName?: string | null;
 }
 
-interface PlayfulTitleOptions {
-  x: number;
-  y: number;
-  width: number;
-  maxHeight: number;
-}
-
 // --- Kid-friendly palette -------------------------------------------------
 const PAGE_BACKGROUND = "#FFF9F0";
-const MARGIN = 38;
 const STORY_TEXT_COLOR = "#FFFFFF";
 const STORY_TEXT_SHADOW = "#000000";
 const STORY_TEXT_OUTLINE = "#1A2235";
-const COVER_TITLE_COLORS = ["#EF6351", "#52B788", "#F6C453", "#8E6AD8", "#4D96D7", "#F59E4C"];
-const COVER_TITLE_ROTATIONS = [-3.5, 2.5, -1.5, 3.2, -2.4, 1.4, 0.5, -0.8];
-const COVER_TITLE_Y_OFFSETS = [0, -3, 2, -1, 3, -2, 1, 0];
-const COVER_TITLE_OUTLINE = "#33251F";
-const COVER_TITLE_DEPTH = "#8B5A3C";
+
 
 // Exact A4 landscape page size in points (297 x 210 mm), shared with the
 // contracts so the image pipeline and PDF layout stay in lockstep. Every
-// story ships as exactly 16 pages - page 1 is the full-bleed cover with a
-// PDF-rendered title, pages 2-14 carry the story, page 15 the emotional
-// ending and page 16 the closing.
+// story ships as exactly 15 pages - page 1 is the full-bleed cover with a
+// PDF-rendered title, pages 2-13 carry the story, page 14 the emotional
+// ending and page 15 the closing.
 const PAGE_WIDTH = 595.28; // 210mm square
 const PAGE_HEIGHT = 595.28; // 210mm square
 
 // --- Web reader parity ------------------------------------------------------
-// `reader.css` expresses the page furniture in container query units (`cqw`),
-// which resolve against each leaf's own width, plus a few `rem`/`px` values.
-// A PDF page is a fixed box, so 1cqw is 1% of the page width and every CSS
-// length is converted to points at 96dpi (1px = 0.75pt). Each constant below
-// quotes the CSS it mirrors. PDFKit has no gradients or blurs, so the soft
-// edges are fanned out as thin low-opacity passes.
+// `reader.css` and StoryBookCover.tsx express the cover in container query
+// units (`cqw`), which resolve against the leaf's own width, plus a few
+// `rem`/`px` values. A PDF page is a fixed box, so 1cqw is 1% of the page
+// width and every CSS length is converted to points at 96dpi (1px = 0.75pt).
+// Each constant below quotes the CSS it mirrors. PDFKit has no gradients or
+// blurs, so the soft edges are fanned out as thin low-opacity passes.
 const WEB_CQW = PAGE_WIDTH / 100; // 5.9528pt
 const WEB_PX = 0.75; // 1 CSS px, in points
 
-/** `.story-book-page-number` - outer corner, like a finished printed book. */
-const FOLIO = {
-  fontSize: 1.2 * WEB_CQW, // clamp(0.45rem, 1.2cqw, 0.8rem) -> 7.14pt
-  tracking: 0.08, // letter-spacing: 0.08em, resolved against fontSize
-  opacity: 0.9, // rgba(255, 255, 255, 0.9)
-  shadowOpacity: 0.55, // 0 0 4px rgba(0, 0, 0, 0.55)
-  shadowBlur: 4 * WEB_PX, // 4px -> 3pt
-  bottom: 1.4 * WEB_CQW, // bottom: 1.4cqw -> 8.33pt
-  side: 2.4 * WEB_CQW, // left/right: 2.4cqw -> 14.29pt
-};
-
-/** `.is-left::after` / `.is-right::after` - spine shading on facing pages. */
-const GUTTER = {
-  band: 0.11 * PAGE_WIDTH, // width: 11% of the leaf
-  color: "#140A05", // rgba(20, 10, 5, ...)
-  opacity: 0.22,
-};
-
-/** `.is-cover::after` - the hardcover frame inset on the cover leaf. */
+/** `.is-cover::after` - the white hairline border inset on the cover leaf. */
 const COVER_FRAME = {
   inset: 0.02 * PAGE_WIDTH, // inset: 2% -> 11.9pt
   lineWidth: Math.max(2 * WEB_PX, 0.4 * WEB_CQW), // max(2px, 0.4cqw) -> 2.38pt
   opacity: 0.6, // rgba(255, 255, 255, 0.6)
   radius: 3 * WEB_PX, // border-radius: 3px
-  innerBlur: 0.8 * WEB_CQW, // inset 0 0 0.8cqw rgba(0, 0, 0, 0.22)
-  innerOpacity: 0.22,
-  outerBlur: 0.9 * WEB_CQW, // 0 0.15cqw 0.9cqw rgba(0, 0, 0, 0.28)
-  outerOffsetY: 0.15 * WEB_CQW,
-  outerOpacity: 0.28,
 };
 
-type LeafSide = "single" | "left" | "right";
-
 /**
- * Which side of the spread a leaf sits on. Mirrors `leafSide` in
- * StoryBookReader.tsx: the cover stands alone, then leaves pair up
- * [left, right] across the book.
+ * `StoryBookCover.tsx` - the outside-cover overlay. The generated artwork
+ * stays the hero and this is drawn on top of it, exactly as the reader does,
+ * so the printed book and the screen show the same title block.
  */
-function leafSide(leafIndex: number): LeafSide {
-  return leafIndex === 0 ? "single" : leafIndex % 2 === 1 ? "left" : "right";
-}
+const COVER_TITLE = {
+  top: 0.07 * PAGE_HEIGHT, // top-[7%]
+  sidePad: 0.08 * PAGE_WIDTH, // px-[8%]
+  fontSize: 4.2 * WEB_CQW, // clamp(1rem, 4.2cqw, 2.2rem) -> 25.0pt
+  leading: 1.25, // leading-tight
+  shadowOpacity: 0.7, // 0 2px 12px rgba(0, 0, 0, 0.7)
+  shadowOffsetY: 2 * WEB_PX, // 2px
+  shadowBlur: 12 * WEB_PX, // 12px
+  starring: {
+    size: 1.5 * WEB_CQW, // clamp(0.45rem, 1.5cqw, 0.85rem) -> 8.93pt
+    marginTop: 1.4 * WEB_CQW, // mt-[1.4cqw]
+    leading: 1.3,
+    tracking: 0.28, // tracking-[0.28em]
+    color: "#FFC83D", // text-buttercup
+    shadowOpacity: 0.6, // 0 1px 6px rgba(0, 0, 0, 0.6)
+  },
+  footer: {
+    bottom: 0.04 * PAGE_HEIGHT, // bottom-[4%]
+    dedicationSize: 1.8 * WEB_CQW, // clamp(0.55rem, 1.8cqw, 1rem) -> 10.7pt
+    dedicationLeading: 1.375, // leading-snug
+    pillSize: 1.2 * WEB_CQW, // clamp(0.4rem, 1.2cqw, 0.75rem) -> 7.14pt
+    pillTracking: 0.3, // tracking-[0.3em]
+    pillPadX: 0.02 * PAGE_WIDTH, // px-[2%]
+    pillPadY: 0.8 * WEB_CQW, // py-[0.8cqw]
+    pillColor: "#000000", // bg-black/35
+    pillOpacity: 0.35,
+  },
+  scrim: {
+    // bg-gradient-to-b from-black/45 via-transparent to-black/55
+    topOpacity: 0.45,
+    bottomOpacity: 0.55,
+  },
+};
 
 // --- Fonts -----------------------------------------------------------------
 // Fredoka One = big, bubbly display font. It is used for the cover title *and*
@@ -291,9 +284,9 @@ export class PDFService {
         bufferPages: true,
         info: {
           Title: story.title,
-          Author: "StoryBook AI",
+          Author: "Mon Petit Hero",
           Subject: "A personalized children's storybook",
-          Creator: "StoryBook AI",
+          Creator: "Mon Petit Hero",
         },
       });
       const buffers: Buffer[] = [];
@@ -302,8 +295,8 @@ export class PDFService {
       doc.on("error", reject);
 
       this.registerFonts(doc);
-      // Page 1 is the full-bleed cover; page 15 the emotional ending and
-      // page 16 the closing have their own centered layouts. Everything in
+      // Page 1 is the full-bleed cover; page 14 the emotional ending and
+      // page 15 the closing have their own centered layouts. Everything in
       // between is a regular story page. Each leaf uses a square crop of the
       // generated 16:9 image drawn full-bleed into the square page.
       leaves.forEach((leaf, index) => {
@@ -311,26 +304,24 @@ export class PDFService {
           doc.addPage();
         }
         const pageType = getPageType(leaf.pageNumber);
-        const side = leafSide(index);
         switch (pageType) {
           case "cover":
-            this.renderCoverPage(doc, leaf, story.title);
+            this.renderCoverPage(doc, leaf, story);
             break;
           case "ending":
-            this.renderEndingPage(doc, leaf, side);
+            this.renderEndingPage(doc, leaf);
             break;
           case "closing":
-            this.renderClosingPage(doc, leaf, side);
+            this.renderClosingPage(doc, leaf);
             break;
           default:
-            this.renderStoryPage(doc, leaf, side);
+            this.renderStoryPage(doc, leaf);
         }
-        // Page furniture sits above the artwork and the story text, the same
-        // stacking order the reader's z-indexes give it.
+        // The cover's hairline frame sits above the artwork, matching the
+        // reader's z-index. Nothing else is drawn over the interior pages.
         if (pageType === "cover") {
           this.drawCoverFrame(doc, PAGE_WIDTH, PAGE_HEIGHT);
         }
-        this.drawPageNumber(doc, PAGE_WIDTH, PAGE_HEIGHT, index, side);
       });
       doc.end();
     });
@@ -379,19 +370,20 @@ export class PDFService {
   }
 
   /**
-   * Full-bleed cover: the illustration fills the entire A4 landscape page and
-   * the title is drawn on top, centered toward the top. No body text.
+   * Full-bleed cover: the illustration fills the entire page and the reader's
+   * outside-cover overlay (scrim, title, "Starring", dedication) is drawn on
+   * top of it. No body text.
    */
   private renderCoverPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    title: string
+    story: StoryPayload
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "cover");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
-      this.drawCoverTitle(doc, title, width);
+      this.drawCoverTitle(doc, story, width, height);
     }
   }
 
@@ -401,13 +393,11 @@ export class PDFService {
    */
   private renderStoryPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf,
-    side: LeafSide
+    leaf: PdfLeaf
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawGutter(doc, width, height, side);
     if (leaf.renderText) {
       this.drawStoryText(doc, leaf.pageNumber, leaf.content);
     }
@@ -419,177 +409,41 @@ export class PDFService {
    */
   private renderEndingPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf,
-    side: LeafSide
+    leaf: PdfLeaf
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawGutter(doc, width, height, side);
     this.drawStoryText(doc, leaf.pageNumber, leaf.content);
   }
 
   /**
-   * Closing page (page 16): full-bleed square illustration with a short, warm
+   * Closing page (page 15): full-bleed square illustration with a short, warm
    * goodbye centered in the lower middle of the page.
    */
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf,
-    side: LeafSide
+    leaf: PdfLeaf
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawGutter(doc, width, height, side);
     this.drawStoryText(doc, leaf.pageNumber, leaf.content);
   }
 
   /**
-   * Spine shading on a facing page, mirroring `.is-left::after` /
-   * `.is-right::after`: an 11%-wide band on the spine edge fading to
-   * transparent toward the outer edge. The cover is a lone leaf and has none.
-   *
-   * CSS reaches this with a linear gradient; PDFKit has no gradient fill, so
-   * the band is drawn as a stack of equal strips whose alpha ramps linearly
-   * from opaque at the spine to clear at the outer edge.
-   */
-  private drawGutter(
-    doc: PDFKit.PDFDocument,
-    width: number,
-    height: number,
-    side: LeafSide
-  ) {
-    if (side === "single") return;
-
-    // On a left-hand page the spine is on the right, and vice versa.
-    const anchoredRight = side === "left";
-    const steps = 24;
-    const stripWidth = GUTTER.band / steps;
-
-    for (let i = 0; i < steps; i += 1) {
-      // i = 0 is always the strip touching the spine, i.e. the darkest.
-      const darkness = 1 - i / (steps - 1);
-      const x = anchoredRight ? width - (i + 1) * stripWidth : i * stripWidth;
-      doc
-        .rect(x, 0, stripWidth + 0.5, height)
-        .fillOpacity(GUTTER.opacity * darkness)
-        .fill(GUTTER.color);
-    }
-    doc.fillOpacity(1);
-  }
-
-  /**
-   * The cover's hardcover frame, mirroring `.is-cover::after`: a hairline
-   * white border inset 2% of the page, with a soft inner shade and a drop
-   * shadow. The reader composites it as a box-shadow, so the two blurs are
-   * fanned out as expanding low-opacity rounded rects.
+   * The cover's hairline frame, mirroring the `border` half of
+   * `.is-cover::after`: a white border inset 2% of the page.
    */
   private drawCoverFrame(doc: PDFKit.PDFDocument, width: number, height: number) {
     const { inset, radius } = COVER_FRAME;
-    const x = inset;
-    const y = inset;
-    const w = width - inset * 2;
-    const h = height - inset * 2;
-
-    // Drop shadow: a few expanding rounded rects fading outward.
-    const outerSteps = 4;
-    for (let i = outerSteps; i >= 1; i -= 1) {
-      const grow = (COVER_FRAME.outerBlur / outerSteps) * i;
-      doc
-        .roundedRect(
-          x - grow,
-          y - grow + COVER_FRAME.outerOffsetY,
-          w + grow * 2,
-          h + grow * 2,
-          radius + grow
-        )
-        .fillOpacity(COVER_FRAME.outerOpacity * (1 - i / (outerSteps + 1)))
-        .fill("#000000");
-    }
-    doc.fillOpacity(1);
-
-    // Inner shade hugging the inside of the border.
-    const innerSteps = 4;
-    for (let i = innerSteps; i >= 1; i -= 1) {
-      const grow = (COVER_FRAME.innerBlur / innerSteps) * i;
-      doc
-        .roundedRect(
-          x + grow,
-          y + grow,
-          w - grow * 2,
-          h - grow * 2,
-          Math.max(0, radius - grow)
-        )
-        .lineWidth(COVER_FRAME.lineWidth)
-        .strokeOpacity(COVER_FRAME.innerOpacity * (1 - i / (innerSteps + 1)))
-        .stroke("#000000");
-    }
-    doc.strokeOpacity(0);
-
-    // The frame itself.
     doc
-      .roundedRect(x, y, w, h, radius)
+      .roundedRect(inset, inset, width - inset * 2, height - inset * 2, radius)
       .lineWidth(COVER_FRAME.lineWidth)
       .strokeColor("#FFFFFF")
       .strokeOpacity(COVER_FRAME.opacity)
       .stroke("#FFFFFF");
     doc.strokeOpacity(0);
-  }
-
-  /**
-   * Folio in the outer corner, mirroring `.story-book-page-number`. The
-   * reader numbers leaves 1..N and never numbers the cover, so leaf 0 is
-   * skipped here too.
-   */
-  private drawPageNumber(
-    doc: PDFKit.PDFDocument,
-    width: number,
-    height: number,
-    leafIndex: number,
-    side: LeafSide
-  ) {
-    if (leafIndex === 0) return;
-
-    const fontSize = FOLIO.fontSize;
-    const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
-    this.font(doc, baseFont, "Helvetica").fontSize(fontSize);
-    const label = String(leafIndex + 1);
-    const textWidth = doc.widthOfString(label) + FOLIO.tracking * fontSize * label.length;
-
-    // `bottom` in CSS pins the element's bottom edge, so back the baseline
-    // up off the foot of the page by the line box height.
-    const y = height - FOLIO.bottom - fontSize * 1.15;
-    const x =
-      side === "single"
-        ? (width - textWidth) / 2
-        : side === "left"
-          ? FOLIO.side
-          : width - FOLIO.side - textWidth;
-
-    // 0 0 4px rgba(0, 0, 0, 0.55) - a soft halo, so the folio stays legible
-    // over pale artwork.
-    const haloSteps = 3;
-    for (let i = 1; i <= haloSteps; i += 1) {
-      const t = i / haloSteps;
-      doc
-        .fillColor("#000000")
-        .fillOpacity(FOLIO.shadowOpacity * Math.pow(1 - t, 1.4))
-        .text(label, x, y + FOLIO.shadowBlur * t, {
-          lineBreak: false,
-          characterSpacing: FOLIO.tracking * fontSize,
-        });
-    }
-    doc.fillOpacity(1);
-
-    doc
-      .fillColor(STORY_TEXT_COLOR)
-      .fillOpacity(FOLIO.opacity)
-      .text(label, x, y, {
-        lineBreak: false,
-        characterSpacing: FOLIO.tracking * fontSize,
-      });
-    doc.fillOpacity(1);
   }
 
   /**
@@ -687,19 +541,193 @@ export class PDFService {
   }
 
   /**
-   * Full-bleed cover page dispatcher - draws the kid-friendly title centered
-   * at the top of the page.
+   * The outside-cover overlay, mirroring `StoryBookCover.tsx`: a top-to-bottom
+   * scrim so the type stays readable over any artwork, then the title, the
+   * "Starring ..." credit, and either the dedication or the Mon Petit Hero pill.
+   *
+   * CSS reaches the scrim with `bg-gradient-to-b from-black/45 via-transparent
+   * to-black/55`. PDFKit has no gradient fill, so it is approximated with
+   * horizontal strips whose alpha interpolates 0.45 -> 0 -> 0.55 top to bottom.
    */
-  private drawCoverTitle(doc: PDFKit.PDFDocument, title: string, width: number) {
-    const cleanTitle = title.trim();
-    if (!cleanTitle) return;
+  private drawCoverTitle(
+    doc: PDFKit.PDFDocument,
+    story: StoryPayload,
+    width: number,
+    height: number
+  ) {
+    this.drawCoverScrim(doc, width, height);
 
-    this.drawPlayfulCoverTitle(doc, cleanTitle, {
-      x: MARGIN,
-      y: MARGIN * 0.8,
-      width: width - MARGIN * 2,
-      maxHeight: 120,
+    const contentWidth = width - COVER_TITLE.sidePad * 2;
+    let y = COVER_TITLE.top;
+
+    const title = (story.title ?? "").trim();
+    if (title) {
+      this.font(doc, "Title", "Helvetica-Bold").fontSize(COVER_TITLE.fontSize);
+      y = this.drawCoverLine(doc, title, {
+        x: COVER_TITLE.sidePad,
+        y,
+        width: contentWidth,
+        align: "center",
+        fontSize: COVER_TITLE.fontSize,
+        color: STORY_TEXT_COLOR,
+        lineHeight: COVER_TITLE.fontSize * COVER_TITLE.leading, // leading-tight
+        shadowOpacity: COVER_TITLE.shadowOpacity,
+        shadowOffsetY: COVER_TITLE.shadowOffsetY,
+        shadowBlur: COVER_TITLE.shadowBlur,
+      });
+    }
+
+    const childName = (story.childName ?? "").trim();
+    if (childName) {
+      const star = COVER_TITLE.starring;
+      this.font(doc, "BodySemiBold", "Helvetica-Bold").fontSize(star.size);
+      y += star.marginTop;
+      y = this.drawCoverLine(doc, `STARRING ${childName.toUpperCase()}`, {
+        x: COVER_TITLE.sidePad,
+        y,
+        width: contentWidth,
+        align: "center",
+        fontSize: star.size,
+        color: star.color,
+        tracking: star.tracking,
+        lineHeight: star.size * star.leading,
+        shadowOpacity: star.shadowOpacity,
+        shadowOffsetY: 1 * WEB_PX,
+        shadowBlur: 6 * WEB_PX,
+      });
+    }
+
+    const dedication = (story.dedication ?? "").trim();
+    const footer = COVER_TITLE.footer;
+    if (dedication) {
+      const quote = `\u201C${dedication}\u201D`;
+      this.font(doc, "Title", "Helvetica-Oblique").fontSize(footer.dedicationSize);
+      const lineHeight = footer.dedicationSize * footer.dedicationLeading; // leading-snug
+      // The reader pins this block with `bottom-[4%]`, so a dedication that
+      // wraps grows *upward*. PDFKit text grows downward, so measure first and
+      // lift the start point by the block's real height.
+      const blockHeight = doc.heightOfString(quote, {
+        width: contentWidth,
+        align: "center",
+        lineGap: lineHeight - footer.dedicationSize,
+        lineBreak: true,
+      });
+      this.drawCoverLine(doc, quote, {
+        x: COVER_TITLE.sidePad,
+        y: height - footer.bottom - blockHeight,
+        width: contentWidth,
+        align: "center",
+        fontSize: footer.dedicationSize,
+        color: STORY_TEXT_COLOR,
+        opacity: 0.9,
+        lineHeight,
+        shadowOpacity: 0.7,
+        shadowOffsetY: 1 * WEB_PX,
+        shadowBlur: 8 * WEB_PX,
+      });
+      return;
+    }
+
+    // No dedication: the reader shows a rounded "Mon Petit Hero" pill instead.
+    // The pill's `BookOpen` lucide glyph is not reproduced - PDFKit has no
+    // equivalent path - so the label is centred in the pill on its own.
+    const label = "Mon Petit Hero";
+    this.font(doc, "BodyRegular", "Helvetica").fontSize(footer.pillSize);
+    const tracking = footer.pillTracking * footer.pillSize;
+    const textWidth = doc.widthOfString(label) + tracking * label.length;
+    const boxWidth = textWidth + footer.pillPadX * 2;
+    const boxHeight = footer.pillSize + footer.pillPadY * 2;
+    const boxX = (width - boxWidth) / 2;
+    const boxY = height - footer.bottom - boxHeight;
+
+    doc.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight / 2);
+    doc.fillColor(footer.pillColor).fillOpacity(footer.pillOpacity).fill();
+    doc.fillOpacity(1);
+
+    this.drawCoverLine(doc, label, {
+      x: boxX + footer.pillPadX,
+      y: boxY + footer.pillPadY,
+      width: textWidth,
+      align: "center",
+      fontSize: footer.pillSize,
+      color: STORY_TEXT_COLOR,
+      opacity: 0.9,
+      tracking: footer.pillTracking,
+      lineHeight: footer.pillSize,
     });
+  }
+
+  /** The cover scrim: black 45% at the top fading through clear to 55% black. */
+  private drawCoverScrim(doc: PDFKit.PDFDocument, width: number, height: number) {
+    const steps = 40;
+    const stripHeight = height / steps;
+    for (let i = 0; i < steps; i += 1) {
+      const t = (i + 0.5) / steps;
+      // 0 at t=0, ramping to full by t=0.5, then out to 1 at t=1, mirroring
+      // from-black/45 via-transparent to-black/55.
+      const opacity =
+        t < 0.5
+          ? (COVER_TITLE.scrim.topOpacity * (t / 0.5))
+          : (COVER_TITLE.scrim.bottomOpacity * ((t - 0.5) / 0.5));
+      if (opacity <= 0.001) continue;
+      doc.rect(0, i * stripHeight, width, stripHeight + 0.5);
+      doc.fillColor("#000000").fillOpacity(opacity).fill();
+    }
+    doc.fillOpacity(1);
+  }
+
+  /**
+   * Draw one centred line of cover type with the reader's soft text-shadow
+   * behind it, and return the y just below the last line drawn.
+   *
+   * The shadow is fanned out like `drawTextWithShadow`, because PDFKit cannot
+   * blur: 6 low-opacity passes at increasing offsets sum into a soft halo.
+   */
+  private drawCoverLine(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    options: {
+      x: number;
+      y: number;
+      width: number;
+      align: "left" | "center" | "right";
+      fontSize: number;
+      color: string;
+      lineHeight: number;
+      opacity?: number;
+      tracking?: number;
+      shadowOpacity?: number;
+      shadowOffsetY?: number;
+      shadowBlur?: number;
+    }
+  ): number {
+    const { x, y, width, align, fontSize, color, lineHeight } = options;
+    const textOptions: PDFKit.Mixins.TextOptions = {
+      width,
+      align,
+      lineGap: lineHeight - fontSize,
+      characterSpacing: options.tracking ? options.tracking * fontSize : 0,
+      lineBreak: true,
+    };
+
+    const height = doc.heightOfString(text, textOptions);
+    const steps = 6;
+    for (let i = 1; i <= steps; i += 1) {
+      const t = i / steps;
+      doc
+        .fillColor("#000000")
+        .fillOpacity((options.shadowOpacity ?? 0) * Math.pow(1 - t, 1.6))
+        .text(text, x, y + (options.shadowOffsetY ?? 0) * 0.4 * t + (options.shadowBlur ?? 0) * t, textOptions);
+    }
+    doc.fillOpacity(1);
+
+    doc
+      .fillColor(color)
+      .fillOpacity(options.opacity ?? 1)
+      .text(text, x, y, textOptions);
+    doc.fillOpacity(1);
+
+    return y + Math.max(height, lineHeight);
   }
 
   private paintBackground(doc: PDFKit.PDFDocument, width: number, height: number, variant: "cover" | "page") {
@@ -759,175 +787,6 @@ export class PDFService {
     return doc.font(this.customFontsAvailable ? customFont : fallback);
   }
 
-  private drawPlayfulCoverTitle(doc: PDFKit.PDFDocument, title: string, options: PlayfulTitleOptions) {
-    const cleanTitle = title.trim();
-    if (!cleanTitle) return;
-
-    const layout = this.layoutCoverTitle(doc, cleanTitle, options.width, options.maxHeight);
-    const startY = options.y;
-    let visibleIndex = 0;
-
-    layout.lines.forEach((line, lineIndex) => {
-      const lineWidth = this.measureTitleLine(doc, line, layout.fontSize, layout.tracking);
-      let cursorX = options.x + (options.width - lineWidth) / 2;
-      const baselineY = startY + lineIndex * layout.lineHeight;
-      const characters = Array.from(line);
-
-      characters.forEach((character, characterIndex) => {
-        const characterWidth = doc.widthOfString(character);
-        if (character === " ") {
-          cursorX += characterWidth * 0.72;
-          return;
-        }
-
-        const color = COVER_TITLE_COLORS[visibleIndex % COVER_TITLE_COLORS.length];
-        const rotation = COVER_TITLE_ROTATIONS[visibleIndex % COVER_TITLE_ROTATIONS.length];
-        const yOffset = COVER_TITLE_Y_OFFSETS[visibleIndex % COVER_TITLE_Y_OFFSETS.length];
-        const textX = cursorX;
-        const textY = baselineY + yOffset;
-        const origin: [number, number] = [textX + characterWidth / 2, textY + layout.fontSize / 2];
-
-        doc.save();
-        doc.rotate(rotation, { origin });
-        this.drawCoverTitleCharacter(doc, character, textX, textY, color, layout.fontSize);
-        doc.restore();
-
-        cursorX += characterWidth + (characterIndex === characters.length - 1 ? 0 : layout.tracking);
-        visibleIndex += 1;
-      });
-    });
-  }
-
-  private layoutCoverTitle(doc: PDFKit.PDFDocument, title: string, maxWidth: number, maxHeight: number) {
-    const maxFontSize = 72;
-    const minFontSize = 26;
-
-    for (let fontSize = maxFontSize; fontSize >= minFontSize; fontSize -= 2) {
-      this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
-      const tracking = fontSize * 0.035;
-      const lineHeight = fontSize * 1.08;
-      const lines = this.wrapTitleLines(doc, title, maxWidth, fontSize, tracking);
-      const widestLine = Math.max(...lines.map((line) => this.measureTitleLine(doc, line, fontSize, tracking)));
-
-      if (widestLine <= maxWidth && lines.length * lineHeight <= maxHeight) {
-        return { lines, fontSize, tracking, lineHeight };
-      }
-    }
-
-    const fontSize = minFontSize;
-    const tracking = fontSize * 0.03;
-    const lineHeight = fontSize * 1.05;
-    this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
-    return { lines: this.wrapTitleLines(doc, title, maxWidth, fontSize, tracking), fontSize, tracking, lineHeight };
-  }
-
-  private wrapTitleLines(
-    doc: PDFKit.PDFDocument,
-    title: string,
-    maxWidth: number,
-    fontSize: number,
-    tracking: number
-  ) {
-    this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
-    const tokens = title.match(/\S+\s*/g) || [title];
-    const lines: string[] = [];
-    let currentLine = "";
-
-    tokens.forEach((token) => {
-      if (!currentLine) {
-        currentLine = token.trimStart();
-        while (this.measureTitleLine(doc, currentLine.trimEnd(), fontSize, tracking) > maxWidth && currentLine.length > 1) {
-          const splitIndex = this.findTitleSplitIndex(doc, currentLine, maxWidth, fontSize, tracking);
-          const currentCharacters = Array.from(currentLine);
-          lines.push(currentCharacters.slice(0, splitIndex).join("").trimEnd());
-          currentLine = currentCharacters.slice(splitIndex).join("").trimStart();
-        }
-        return;
-      }
-
-      const candidate = currentLine + token;
-      if (this.measureTitleLine(doc, candidate.trimEnd(), fontSize, tracking) <= maxWidth) {
-        currentLine = candidate;
-        return;
-      }
-
-      lines.push(currentLine.trimEnd());
-      currentLine = token.trimStart();
-
-      while (this.measureTitleLine(doc, currentLine.trimEnd(), fontSize, tracking) > maxWidth && currentLine.length > 1) {
-        const splitIndex = this.findTitleSplitIndex(doc, currentLine, maxWidth, fontSize, tracking);
-        const currentCharacters = Array.from(currentLine);
-        lines.push(currentCharacters.slice(0, splitIndex).join("").trimEnd());
-        currentLine = currentCharacters.slice(splitIndex).join("").trimStart();
-      }
-    });
-
-    if (currentLine.trim().length > 0) {
-      lines.push(currentLine.trimEnd());
-    }
-
-    return lines.length > 0 ? lines : [title];
-  }
-
-  private findTitleSplitIndex(
-    doc: PDFKit.PDFDocument,
-    text: string,
-    maxWidth: number,
-    fontSize: number,
-    tracking: number
-  ) {
-    const characters = Array.from(text);
-    let splitIndex = 1;
-
-    for (let index = 1; index <= characters.length; index += 1) {
-      const candidate = characters.slice(0, index).join("");
-      if (this.measureTitleLine(doc, candidate, fontSize, tracking) > maxWidth) break;
-      splitIndex = index;
-    }
-
-    return splitIndex;
-  }
-
-  private measureTitleLine(doc: PDFKit.PDFDocument, line: string, fontSize: number, tracking: number) {
-    this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
-    const characters = Array.from(line);
-    return characters.reduce((width, character, index) => {
-      const characterWidth = character === " " ? doc.widthOfString(character) * 0.72 : doc.widthOfString(character);
-      const extraTracking = character !== " " && index < characters.length - 1 ? tracking : 0;
-      return width + characterWidth + extraTracking;
-    }, 0);
-  }
-
-  private drawCoverTitleCharacter(
-    doc: PDFKit.PDFDocument,
-    character: string,
-    x: number,
-    y: number,
-    fillColor: string,
-    fontSize: number
-  ) {
-    this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
-
-    const depthSteps: Array<[number, number]> = [
-      [5, 6],
-      [3, 4],
-      [1.5, 2],
-    ];
-
-    depthSteps.forEach(([dx, dy]) => {
-      doc.fillColor(COVER_TITLE_DEPTH).text(character, x + dx, y + dy, { lineBreak: false });
-    });
-
-    doc
-      .lineWidth(Math.max(3, fontSize * 0.085))
-      .strokeColor(COVER_TITLE_OUTLINE)
-      .fillColor(COVER_TITLE_OUTLINE)
-      .text(character, x, y, { lineBreak: false, stroke: true });
-
-    doc.fillColor(fillColor).text(character, x, y, { lineBreak: false });
-  }
-
-  /** Small four-point sparkle/star, used to add kid-friendly sparkle accents. */
   private drawSparkle(doc: PDFKit.PDFDocument, cx: number, cy: number, size: number, color: string) {
     doc.save();
     doc.fillColor(color);

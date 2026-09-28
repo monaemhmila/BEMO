@@ -1,6 +1,6 @@
-# 🚀 How to Run StoryBook AI — Complete Guide
+# 🚀 How to Run Mon Petit Hero — Complete Guide
 
-This guide walks you through **every step** required to run the StoryBook AI project locally on your machine.
+This guide walks you through **every step** required to run the Mon Petit Hero project locally on your machine.
 
 ---
 

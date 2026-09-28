@@ -1,7 +1,7 @@
-# 🌙 Storybook AI  
+# 🌙 Mon Petit Hero  
 AI-powered personalized bedtime stories for kids
 
-Storybook AI is a production-grade SaaS platform that generates personalized bedtime stories for children using AI.  
+Mon Petit Hero is a production-grade SaaS platform that generates personalized bedtime stories for children using AI.  
 Each child becomes the hero of their own story through custom **FLUX LoRA training**, with consistent characters, illustrations, and narrated audio.
 
 The platform is built as a **TurboRepo monorepo**, with a modern SaaS dashboard, scalable backend, and AI services designed for real-world production use.

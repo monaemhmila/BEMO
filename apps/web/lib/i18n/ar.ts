@@ -4,7 +4,7 @@ export const arStorefront: Record<string, string> = {
     "كتب مخصصة للأطفال | قصص مخصصة - mon petit hero",
   "Create unique kids' storybooks with Mon Petit Hero. Upload photos and watch them become part of personalized stories your child will treasure forever.":
     "أنشئ كتب قصص فريدة لأطفالك مع Mon Petit Hero. ارفع الصور وشاهدها تتحول إلى حكايات مخصصة سيحتفظ بها طفلك إلى الأبد.",
-  Wonderwraps: "Wonderwraps",
+  "Mon Petit Hero": "Mon Petit Hero",
   "Sign in to Mon Petit Hero to manage your storybooks.":
     "سجّل الدخول إلى Mon Petit Hero لإدارة كتب القصص الخاصة بك.",
   "Create your free Mon Petit Hero account.":
