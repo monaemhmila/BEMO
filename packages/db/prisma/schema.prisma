@@ -379,3 +379,16 @@ enum PageEventType {
   visit
   click
 }
+
+// Tracks fal.ai webhook deliveries for deduplication & replay rejection.
+// The unique constraint on falRequestId ensures each delivery is processed
+// at most once.
+model WebhookDelivery {
+  id             String   @id @default(uuid())
+  falRequestId   String   @unique          // X-Fal-Webhook-Request-Id
+  operationType  String                     // e.g. "story_page", "image", "audio"
+  ownerId        String?                    // optional: userId / storyId for audit
+  receivedAt     DateTime @default(now())
+
+  @@index([operationType, receivedAt])
+}

@@ -58,6 +58,10 @@ export function createApp() {
       "Authorization",
       "Cache-Control",
       "Pragma",
+      "X-Fal-Webhook-Request-Id",
+      "X-Fal-Webhook-User-Id",
+      "X-Fal-Webhook-Timestamp",
+      "X-Fal-Webhook-Signature",
     ],
     optionsSuccessStatus: 200,
   };
@@ -70,6 +74,24 @@ export function createApp() {
     })
   );
   app.use(compression());
+
+  // ── Fal.ai webhook routes (MUST be mounted BEFORE express.json()) ────────
+  // These routes need the raw request body as a Buffer for Ed25519 signature
+  // verification. Mounting them here with express.raw() ensures the global
+  // express.json() parser below does not consume the body first.
+  // The Clerk webhook handler (/api/webhook/clerk) uses svix and handles its
+  // own body parsing internally, so it coexists safely in the same router.
+  app.use(
+    "/api/webhook",
+    express.raw({ type: "application/json", limit: "5mb" }),
+    webhookRouter
+  );
+  app.use(
+    "/fal-ai/webhook",
+    express.raw({ type: "application/json", limit: "5mb" }),
+    falAiWebhookRouter
+  );
+
   app.use(express.json({ limit: "5mb" }));
   app.use(express.urlencoded({ extended: true }));
   app.use(apiLimiter);
@@ -94,8 +116,6 @@ export function createApp() {
     }
   });
 
-  app.use("/api/webhook", webhookRouter);
-  app.use("/fal-ai/webhook", falAiWebhookRouter);
   app.use(aiRouter);
   app.use("/story", storyRouter);
   app.use("/storybook", storybookRouter);

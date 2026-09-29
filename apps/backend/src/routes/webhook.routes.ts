@@ -5,6 +5,7 @@ import { webhookLimiter } from "../middleware/rateLimiter";
 import { StoryCompletionService } from "../services/story-completion.service";
 import { logger } from "../lib/logger";
 import { saveRemoteImageLocally } from "../lib/storage";
+import { falWebhookAuth } from "../middleware/falWebhookAuth";
 
 const router = Router();
 const storyCompletion = StoryCompletionService.getInstance();
@@ -18,25 +19,28 @@ router.post("/clerk", webhookLimiter, async (req, res) => {
 
   if (!SIGNING_SECRET) {
     logger.error("SIGNING_SECRET not configured");
-    res.status(500).json({ success: false, message: "SIGNING_SECRET not configured" });
+    res.status(500).json({ success: false, message: "Server configuration error" });
     return;
   }
 
   const wh = new Webhook(SIGNING_SECRET);
-  const payload = req.body;
+
+  // The router is mounted with express.raw(), so req.body is a Buffer.
+  // Convert to string for svix verification, then parse JSON for event data.
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf-8") : JSON.stringify(req.body);
 
   const svixId = req.headers["svix-id"] as string | undefined;
   const svixTimestamp = req.headers["svix-timestamp"] as string | undefined;
   const svixSignature = req.headers["svix-signature"] as string | undefined;
 
   if (!svixId || !svixTimestamp || !svixSignature) {
-    res.status(400).json({ success: false, message: "Missing svix headers" });
+    res.status(400).json({ success: false, message: "Missing required headers" });
     return;
   }
 
   let evt: any;
   try {
-    evt = wh.verify(JSON.stringify(payload), {
+    evt = wh.verify(rawBody, {
       "svix-id": svixId,
       "svix-timestamp": svixTimestamp,
       "svix-signature": svixSignature,
@@ -45,7 +49,7 @@ router.post("/clerk", webhookLimiter, async (req, res) => {
     logger.error({ error }, "Invalid webhook signature");
     res.status(400).json({
       success: false,
-      message: error instanceof Error ? error.message : "Invalid signature",
+      message: "Signature verification failed",
     });
     return;
   }
@@ -101,14 +105,15 @@ router.post("/clerk", webhookLimiter, async (req, res) => {
 
 /**
  * POST /api/webhook/story/page
- * Handle fal.ai webhook for story page image generation
+ * Handle fal.ai webhook for story page image generation.
+ * Protected by Ed25519 signature verification via falWebhookAuth middleware.
  */
-router.post("/story/page", webhookLimiter, async (req, res) => {
+router.post("/story/page", webhookLimiter, falWebhookAuth("story_page"), async (req, res) => {
   const requestId = req.body.request_id as string | undefined;
   const status = req.body.status;
 
   if (!requestId) {
-    res.status(400).json({ message: "Missing request_id" });
+    res.status(400).json({ message: "Invalid request" });
     return;
   }
 
@@ -117,8 +122,6 @@ router.post("/story/page", webhookLimiter, async (req, res) => {
   try {
     // Handle error status
     if (status === "ERROR") {
-      const errorMessage = req.body.error || "Unknown generation error";
-      
       await prismaClient.storyPage.updateMany({
         where: { falAiRequestId: requestId },
         data: { status: "Failed" },
@@ -148,8 +151,8 @@ router.post("/story/page", webhookLimiter, async (req, res) => {
         }
       }
 
-      logger.error({ requestId, errorMessage }, "Page generation failed");
-      res.json({ message: "Error recorded" });
+      logger.error({ requestId }, "Page generation failed");
+      res.json({ message: "Acknowledged" });
       return;
     }
 
@@ -163,7 +166,7 @@ router.post("/story/page", webhookLimiter, async (req, res) => {
           where: { falAiRequestId: requestId },
           data: { status: "Failed" },
         });
-        res.json({ message: "Missing image URL" });
+        res.json({ message: "Acknowledged" });
         return;
       }
 
@@ -196,13 +199,13 @@ router.post("/story/page", webhookLimiter, async (req, res) => {
         );
       }
 
-      res.json({ message: "Webhook processed" });
+      res.json({ message: "Acknowledged" });
       return;
     }
 
     // Handle pending/processing status
     logger.info({ requestId, status }, "Page still processing");
-    res.json({ message: "Status acknowledged" });
+    res.json({ message: "Acknowledged" });
   } catch (error) {
     logger.error({ error, requestId }, "Failed to process story page webhook");
     res.status(500).json({ message: "Internal error" });
@@ -211,21 +214,22 @@ router.post("/story/page", webhookLimiter, async (req, res) => {
 
 /**
  * POST /api/webhook/story/audio
- * Handle audio generation webhook (future use)
+ * Handle audio generation webhook (future use).
+ * Protected by Ed25519 signature verification via falWebhookAuth middleware.
  */
-router.post("/story/audio", webhookLimiter, async (req, res) => {
+router.post("/story/audio", webhookLimiter, falWebhookAuth("audio"), async (req, res) => {
   const requestId = req.body.request_id as string | undefined;
   const status = req.body.status;
 
   if (!requestId) {
-    res.status(400).json({ message: "Missing request_id" });
+    res.status(400).json({ message: "Invalid request" });
     return;
   }
 
   logger.info({ requestId, status }, "Audio webhook received");
 
   // Audio handling will be implemented when we add audio URL tracking to pages
-  res.json({ message: "Audio webhook acknowledged" });
+  res.json({ message: "Acknowledged" });
 });
 
 export const webhookRouter = router;

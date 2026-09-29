@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prismaClient } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { webhookLimiter } from "../middleware/rateLimiter";
+import { falWebhookAuth } from "../middleware/falWebhookAuth";
 
 const router = Router();
 
@@ -9,13 +10,14 @@ router.use(webhookLimiter);
 
 /**
  * POST /fal-ai/webhook/image
- * Handle image generation webhook for OutputImages
- * Note: This is for standalone image generation, not storybook pages
+ * Handle image generation webhook for OutputImages.
+ * Note: This is for standalone image generation, not storybook pages.
+ * Protected by Ed25519 signature verification via falWebhookAuth middleware.
  */
-router.post("/image", async (req, res) => {
+router.post("/image", falWebhookAuth("image"), async (req, res) => {
   const requestId = req.body.request_id as string | undefined;
   if (!requestId) {
-    res.status(400).json({ message: "Missing request_id" });
+    res.status(400).json({ message: "Invalid request" });
     return;
   }
 
@@ -26,7 +28,7 @@ router.post("/image", async (req, res) => {
       where: { falAiRequestId: requestId },
       data: { status: "Failed" },
     });
-    res.json({ message: "Error recorded" });
+    res.json({ message: "Acknowledged" });
     return;
   }
 
@@ -40,7 +42,7 @@ router.post("/image", async (req, res) => {
     },
   });
 
-  res.json({ message: "Webhook received" });
+  res.json({ message: "Acknowledged" });
 });
 
 export const falAiWebhookRouter = router;
