@@ -4,6 +4,7 @@ import sharp from "sharp";
 import path from "path";
 import fs from "fs";
 import { logger } from "../lib/logger";
+import { safeFetchAndValidateImage, validateImageBuffer } from "../lib/safe-image-fetcher";
 
 // Monkeypatch face-api env for Node canvas environment
 faceapi.env.monkeyPatch({ Canvas: Canvas as any, Image: Image as any, ImageData: ImageData as any });
@@ -135,23 +136,23 @@ export class FaceCanvasService {
   }
 
   /**
-   * Helper to fetch or convert image source into a Buffer
+   * Helper to fetch or convert image source into a Buffer with SSRF and decompression validation
    */
   async getImageBuffer(input: Buffer | string): Promise<Buffer> {
     if (Buffer.isBuffer(input)) {
-      return input;
+      const validated = await validateImageBuffer(input);
+      return validated.buffer;
     }
     if (input.startsWith("data:")) {
       const base64Data = input.split(",")[1];
       if (!base64Data) throw new Error("Invalid base64 image data");
-      return Buffer.from(base64Data, "base64");
+      const buffer = Buffer.from(base64Data, "base64");
+      const validated = await validateImageBuffer(buffer);
+      return validated.buffer;
     }
 
-    const response = await fetch(input);
-    if (!response.ok) {
-      throw new Error(`Failed to download image from ${input} (${response.status})`);
-    }
-    return Buffer.from(await response.arrayBuffer());
+    const validated = await safeFetchAndValidateImage(input);
+    return validated.buffer;
   }
 
   /**

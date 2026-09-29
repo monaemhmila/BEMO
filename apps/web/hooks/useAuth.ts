@@ -13,7 +13,16 @@ import { useAuth as useClerkAuth, useUser } from "@clerk/nextjs";
  */
 const JWT_TEMPLATE = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE || undefined;
 
-export function useAuth() {
+export interface UseAuthResult {
+  isAuthenticated: boolean;
+  user: ReturnType<typeof useUser>["user"];
+  isLoaded: boolean;
+  isSignedIn: boolean | undefined;
+  userId: string | null;
+  getToken: (options?: Parameters<ReturnType<typeof useClerkAuth>["getToken"]>[0]) => Promise<string | null>;
+}
+
+export function useAuth(): UseAuthResult {
   const { getToken: clerkGetToken, isSignedIn } = useClerkAuth();
   const { isLoaded, user } = useUser();
 

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { clerkClient } from "@clerk/clerk-sdk-node";
+import { clerkClient } from "@clerk/express";
 import { prismaClient } from "../lib/prisma";
 import { env } from "../config/env";
 import { logger } from "../lib/logger";

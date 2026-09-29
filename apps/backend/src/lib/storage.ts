@@ -1,5 +1,7 @@
 import fs from "fs";
 import path from "path";
+import { safeFetchAndValidateImage } from "./safe-image-fetcher";
+import { logger } from "./logger";
 
 /**
  * Ensure directory exists inside backend assets folder
@@ -14,6 +16,7 @@ export function getAssetsPath(subfolder = "generated"): string {
 
 /**
  * Download a remote image (e.g., from fal.media) and save it locally in assets/<subfolder>
+ * Uses safeFetchAndValidateImage to protect against SSRF, decompression bombs, and malformed files.
  * Returns the local URL: http://localhost:8080/assets/<subfolder>/<filename>
  */
 export async function saveRemoteImageLocally(
@@ -26,24 +29,17 @@ export async function saveRemoteImageLocally(
   if (remoteUrl.includes("/assets/")) return remoteUrl;
 
   try {
+    const validated = await safeFetchAndValidateImage(remoteUrl);
     const dir = getAssetsPath(subfolder);
-    const ext = remoteUrl.toLowerCase().includes(".png") ? "png" : "jpg";
-    const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
+    const filename = `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${validated.extension}`;
     const filePath = path.join(dir, filename);
 
-    const response = await fetch(remoteUrl);
-    if (!response.ok) {
-      console.warn(`⚠️ [Storage] Could not download image from ${remoteUrl} (${response.status})`);
-      return remoteUrl;
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    fs.writeFileSync(filePath, buffer);
+    fs.writeFileSync(filePath, validated.buffer);
     const localUrl = `http://localhost:8080/assets/${subfolder}/${filename}`;
-    console.log(`💾 [Storage] Saved generated image locally: assets/${subfolder}/${filename}`);
+    logger.info({ localUrl, bytes: validated.sizeBytes, format: validated.format }, "Saved generated image locally");
     return localUrl;
   } catch (error) {
-    console.error("⚠️ [Storage] Error saving image locally:", error);
+    logger.warn({ error: (error as Error).message, remoteUrl }, "Failed to securely download and save remote image");
     return remoteUrl;
   }
 }

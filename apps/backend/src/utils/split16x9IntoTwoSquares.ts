@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 
 export interface SplitSquareImage {
   left: Buffer;
@@ -54,7 +54,7 @@ export async function split16x9IntoTwoSquares(
     oriented.clone().extract({ left: squareSize, top: cropY, width: squareSize, height: squareSize }),
   ]);
 
-  const encode = async (square: sharp.Sharp): Promise<Buffer> => {
+  const encode = async (square: Sharp): Promise<Buffer> => {
     let pipeline = square;
     if (options.size && options.size > 0) {
       pipeline = pipeline.resize(options.size, options.size);

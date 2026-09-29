@@ -3,6 +3,7 @@ import { prismaClient } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { webhookLimiter } from "../middleware/rateLimiter";
 import { falWebhookAuth } from "../middleware/falWebhookAuth";
+import { saveRemoteImageLocally } from "../lib/storage";
 
 const router = Router();
 
@@ -32,13 +33,22 @@ router.post("/image", falWebhookAuth("image"), async (req, res) => {
     return;
   }
 
-  const imageUrl = req.body.payload?.images?.[0]?.url;
+  const rawImageUrl = req.body.payload?.images?.[0]?.url;
+  let finalImageUrl = "";
+
+  if (rawImageUrl) {
+    finalImageUrl = await saveRemoteImageLocally(
+      rawImageUrl,
+      "generated",
+      `out_${requestId.substring(0, 8)}`
+    );
+  }
 
   await prismaClient.outputImages.updateMany({
     where: { falAiRequestId: requestId },
     data: {
-      status: imageUrl ? "Generated" : "Failed",
-      imageUrl: imageUrl ?? "",
+      status: finalImageUrl ? "Generated" : "Failed",
+      imageUrl: finalImageUrl,
     },
   });
 

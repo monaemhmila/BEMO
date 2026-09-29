@@ -1,6 +1,6 @@
-﻿import PDFDocument from "pdfkit";
+import PDFDocument from "pdfkit";
 import path from "path";
-import { existsSync } from "fs";
+import fs, { existsSync } from "fs";
 import {
   getPageType,
   getPageTextLayout,
@@ -9,6 +9,8 @@ import {
   splitForBookPage,
   BookPageImage,
 } from "../utils/split16x9IntoTwoSquares";
+import { safeFetchAndValidateImage, validateImageBuffer } from "../lib/safe-image-fetcher";
+import { logger } from "../lib/logger";
 
 interface StoryPagePayload {
   pageNumber: number;
@@ -165,15 +167,32 @@ async function mapWithConcurrency<T, R>(
 
 /**
  * Download one page image, retrying once so a dropped connection or a brief
- * CDN hiccup does not cost the page its artwork.
+ * CDN hiccup does not cost the page its artwork. Protected against SSRF and
+ * decompression bombs via safeFetchAndValidateImage.
  */
 async function downloadImage(url: string): Promise<Buffer> {
+  // If local asset URL, load securely from assets directory without network requests
+  if (url.includes("/assets/")) {
+    try {
+      const marker = "/assets/";
+      const assetRelative = url.slice(url.indexOf(marker) + marker.length);
+      const safeRelative = path.normalize(assetRelative).replace(/^(\.\.[\/\\])+/, "");
+      const fullPath = path.join(process.cwd(), "assets", safeRelative);
+      if (existsSync(fullPath)) {
+        const fileBuf = fs.readFileSync(fullPath);
+        const validated = await validateImageBuffer(fileBuf);
+        return validated.buffer;
+      }
+    } catch (err) {
+      logger.warn({ error: (err as Error).message, url }, "Could not read local asset for PDF");
+    }
+  }
+
   let lastError: unknown;
   for (let attempt = 1; attempt <= IMAGE_FETCH_ATTEMPTS; attempt += 1) {
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(IMAGE_FETCH_TIMEOUT_MS) });
-      if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`);
-      return Buffer.from(await response.arrayBuffer());
+      const validated = await safeFetchAndValidateImage(url);
+      return validated.buffer;
     } catch (error) {
       lastError = error;
       if (attempt < IMAGE_FETCH_ATTEMPTS) {
