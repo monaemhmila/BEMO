@@ -1,4 +1,3 @@
-import { prismaClient } from "../lib/prisma";
 import {
   imageGenerationService,
   STORYBOOK_IMAGE_CONFIG,
@@ -101,15 +100,6 @@ export class FaceConsistencyService {
       artStyle: request.artStyle,
       edgePlacementSide: request.edgePlacementSide,
     });
-  }
-
-  async storeReferenceImage(modelId: string, imageUrl: string): Promise<void> {
-    await prismaClient.model.update({ where: { id: modelId }, data: { thumbnail: imageUrl } });
-  }
-
-  async getReferenceImage(modelId: string): Promise<string | null> {
-    const model = await prismaClient.model.findUnique({ where: { id: modelId }, select: { thumbnail: true } });
-    return model?.thumbnail ?? null;
   }
 }
 

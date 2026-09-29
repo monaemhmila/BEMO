@@ -41,10 +41,6 @@ interface FlipbookStory {
   childName?: string;
   dedication?: string;
   pages: FlipbookPage[];
-  model: {
-    name: string;
-    thumbnail?: string;
-  };
 }
 
 /** An open-book spread: a left sheet, a right sheet, and its label. */

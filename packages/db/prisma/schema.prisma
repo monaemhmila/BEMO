@@ -21,8 +21,6 @@ model User {
   // book order grants 1 more. Set to 0 when no generations are left.
   trialGenerations  Int      @default(3)
   
-  // Existing relations...
-  models            Model[]
   outputImages      OutputImages[]
   stories           Story[]
   orders            Order[]
@@ -30,39 +28,6 @@ model User {
   
   @@index([clerkId])
   @@index([email])
-}
-
-enum ModelTrainingStatusEnum {
-  Pending
-  Generated
-  Failed
-}
-
-model Model {
-  id              String      @id @default(uuid())
-  name            String
-  type            ModelTypeEnum
-  age             Int
-  ethinicity      EthenecityEnum  
-  eyeColor        EyeColorEnum
-  bald            Boolean
-  userId          String
-  user            User        @relation(fields: [userId], references: [id])
-  triggerWord     String?
-  tensorPath      String?
-  thumbnail       String?
-  trainingStatus  ModelTrainingStatusEnum @default(Pending)
-  outputImages    OutputImages[]
-  stories         Story[]
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  falAiRequestId  String?
-  zipUrl          String
-  open            Boolean    @default(false)
-  
-  @@index([falAiRequestId])
-  @@index([userId, trainingStatus])
-  @@index([open, trainingStatus])
 }
 
 enum OutputImageStatusEnum {
@@ -74,60 +39,16 @@ enum OutputImageStatusEnum {
 model OutputImages {
   id        String  @id @default(uuid())
   imageUrl  String  @default("")
-  modelId   String
   userId    String
   user      User    @relation(fields: [userId], references: [id])
   prompt    String
   falAiRequestId    String?
   status    OutputImageStatusEnum   @default(Pending)
-  model     Model   @relation(fields: [modelId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   @@index([falAiRequestId])
   @@index([userId, status])
-  @@index([modelId, status])
-}
-
-model Packs {
-  id        String   @id @default(uuid())
-  name      String
-  description String @default("")
-  imageUrl1    String @default("")
-  imageUrl2    String @default("")
-  prompts   PackPrompts[]
-}
-
-model PackPrompts {
-  id        String    @id @default(uuid())
-  prompt    String
-  packId    String
-  pack      Packs    @relation(fields: [packId], references: [id])
-}
-
-enum ModelTypeEnum {
-  Man
-  Woman
-  Others
-}
-
-enum EthenecityEnum {
-  White
-  Black
-  Asian_American    @map("Asian American")
-  East_Asian        @map("East Asian")
-  South_East_Asian  @map("South East Asian")
-  South_Asian       @map("South Asian")
-  Middle_Eastern    @map("Middle Eastern")
-  Pacific
-  Hispanic
-}
-
-enum EyeColorEnum {
-  Brown
-  Blue
-  Hazel
-  Gray
 }
 
 // Enhanced Story Features
@@ -136,8 +57,6 @@ model Story {
   title       String
   userId      String
   user        User     @relation(fields: [userId], references: [id])
-  modelId     String
-  model       Model    @relation(fields: [modelId], references: [id])
   status      StoryStatusEnum @default(Pending)
   pages       StoryPage[]
   analytics   StoryAnalytics?
@@ -147,6 +66,10 @@ model Story {
   // Enhanced personalization fields
   childName   String?
   childAge    Int?
+  // The photo the customer uploaded, kept so a retried page can be re-rendered
+  // through the fal image-edit endpoint with the same face reference instead of
+  // falling back to an unpersonalised image.
+  referenceImageUrl String?
   storyLength StoryLengthEnum @default(medium)
   category    String @default("adventure")
   dedication  String?

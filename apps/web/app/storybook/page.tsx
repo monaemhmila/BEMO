@@ -41,8 +41,8 @@ const FEATURES = [
 const PROCESS_STEPS = [
   {
     step: 1,
-    title: "Train Your Hero",
-    description: "Upload 5-10 photos of your child to train the AI model.",
+    title: "Introduce Your Hero",
+    description: "Upload 1-3 photos of your child to keep them consistent.",
   },
   {
     step: 2,

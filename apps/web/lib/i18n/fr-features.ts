@@ -34,9 +34,9 @@ export const frFeatures: Record<string, string> = {
   "How It Works": "Comment ça marche",
   "Four simple steps to your personalized storybook":
     "Quatre étapes simples vers votre livre d'histoires personnalisé",
-  "Train Your Hero": "Entraînez votre héros",
-  "Upload 5-10 photos of your child to train the AI model.":
-    "Téléchargez 5 à 10 photos de votre enfant pour entraîner le modèle d'IA.",
+  "Introduce Your Hero": "Présentez votre héros",
+  "Upload 1-3 photos of your child to keep them consistent.":
+    "Téléchargez 1 à 3 photos de votre enfant pour qu'il reste identique.",
   "Choose the Adventure": "Choisissez l'aventure",
   "Pick a theme, story length, and art style.":
     "Choisissez un thème, une longueur d'histoire et un style artistique.",

@@ -23,10 +23,10 @@ async function main() {
     // Check current state
     console.log("2. Checking current database state...");
     const userCount = await prisma.user.count();
-    const modelCount = await prisma.model.count();
+    const storyCount = await prisma.story.count();
 
     console.log(`   Users: ${userCount}`);
-    console.log(`   Models: ${modelCount}\n`);
+    console.log(`   Stories: ${storyCount}\n`);
 
     // Check if there are Clerk users that need to be synced
     console.log("3. Checking for missing data...");
@@ -69,32 +69,8 @@ async function main() {
       });
     }
 
-    // Check models
-    console.log("\n5. Checking models...");
-    const models = await prisma.model.findMany({
-      select: {
-        id: true,
-        name: true,
-        trainingStatus: true,
-        open: true,
-      },
-    });
-
-    if (models.length === 0) {
-      console.log("⚠️  No models found in database!");
-      console.log("   You need to add your 'Hero Lily' model.");
-      console.log("   See seed script or manual SQL in TROUBLESHOOTING.md\n");
-    } else {
-      console.log(`   Found ${models.length} model(s):`);
-      models.forEach((model) => {
-        console.log(
-          `   - ${model.name} (${model.trainingStatus}, public: ${model.open})`
-        );
-      });
-    }
-
     // Check database schema
-    console.log("\n6. Verifying database schema...");
+    console.log("\n5. Verifying database schema...");
     const tableQuery = await prisma.$queryRaw<any[]>`
       SELECT table_name 
       FROM information_schema.tables 
@@ -107,7 +83,7 @@ async function main() {
       `   ${tableQuery.map((t) => t.table_name).join(", ")}\n`
     );
 
-    const requiredTables = ["User", "Model", "Order"];
+    const requiredTables = ["User", "Story", "Order"];
     const existingTables = tableQuery.map((t) => t.table_name);
     const missingTables = requiredTables.filter(
       (t) => !existingTables.includes(t)
@@ -120,7 +96,7 @@ async function main() {
       console.log("✅ All required tables exist\n");
     }
 
-    console.log("7. Summary:");
+    console.log("6. Summary:");
     console.log("   " + "=".repeat(50));
     
     if (userCount === 0) {
@@ -131,18 +107,12 @@ async function main() {
       console.log("   ✅ Users exist");
     }
 
-    if (modelCount === 0) {
-      console.log("   ⚠️  ACTION REQUIRED: No models in database");
-      console.log("   👉 Add your Lily model via Prisma Studio");
-      console.log("   👉 Or run: cd packages/db && npm run db:seed");
+    const templateCount = await prisma.storyTemplate.count();
+    if (templateCount === 0) {
+      console.log("   ⚠️  ACTION REQUIRED: No story templates in database");
+      console.log("   👉 Run: cd packages/db && npm run db:seed:templates");
     } else {
-      const publicModels = models.filter((m) => m.open);
-      if (publicModels.length === 0) {
-        console.log("   ⚠️  No public models found");
-        console.log('   👉 Run: UPDATE "Model" SET open = true WHERE name ILIKE \'%lily%\';');
-      } else {
-        console.log(`   ✅ ${publicModels.length} public model(s) available`);
-      }
+      console.log(`   ✅ ${templateCount} story template(s) available`);
     }
 
     console.log("\n✅ Database check complete!\n");

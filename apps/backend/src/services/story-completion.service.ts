@@ -224,16 +224,11 @@ export class StoryCompletionService {
       where: { id: storyId, userId },
       include: {
         pages: { where: { status: "Failed" } },
-        model: true,
       },
     });
 
     if (!story) {
       throw new Error("Story not found");
-    }
-
-    if (!story.model.tensorPath) {
-      throw new Error("Model not trained");
     }
 
     const pageIds: string[] = [];

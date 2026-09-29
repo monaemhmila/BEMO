@@ -5,14 +5,8 @@ CREATE INDEX IF NOT EXISTS idx_user_clerk_id ON  User(clerk_id);
 CREATE INDEX IF NOT EXISTS idx_user_email ON User(email);
 CREATE INDEX IF NOT EXISTS idx_user_created_at ON User(created_at);
 
--- Model indexes
-CREATE INDEX IF NOT EXISTS idx_model_user_training ON Model(user_id, training_status);
-CREATE INDEX IF NOT EXISTS idx_model_fal_request ON Model(fal_ai_request_id);
-CREATE INDEX IF NOT EXISTS idx_model_created_at ON Model(created_at);
-
 -- OutputImages indexes
 CREATE INDEX IF NOT EXISTS idx_images_user_status ON OutputImages(user_id, status);
-CREATE INDEX IF NOT EXISTS idx_images_model_status ON OutputImages(model_id, status);
 CREATE INDEX IF NOT EXISTS idx_images_created_at ON OutputImages(created_at);
 
 -- Story indexes

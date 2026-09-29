@@ -24,7 +24,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       welcome: "Welcome back",
       createStory: "Create New Story",
       yourStories: "Your Stories",
-      models: "Your Characters",
       noStories: "You haven't created any stories yet.",
     },
     storyWizard: {
@@ -40,7 +39,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       generating: "Generating...",
       category: "Choose a Category",
       customPrompt: "Custom Prompt",
-      baseModel: "Base AI Model",
       tone: "Story Tone",
       language: "Story Language",
     },
@@ -64,7 +62,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       welcome: "Bon retour",
       createStory: "Créer une nouvelle histoire",
       yourStories: "Vos Histoires",
-      models: "Vos Personnages",
       noStories: "Vous n'avez pas encore créé d'histoire.",
     },
     storyWizard: {
@@ -80,7 +77,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       generating: "Création en cours...",
       category: "Choisissez une Catégorie",
       customPrompt: "Prompt Personnalisé",
-      baseModel: "Modèle d'IA de base",
       tone: "Ton de l'histoire",
       language: "Langue de l'histoire",
     },
@@ -104,7 +100,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       welcome: "مرحباً بعودتك",
       createStory: "إنشاء قصة جديدة",
       yourStories: "قصصك",
-      models: "شخصياتك",
       noStories: "لم تقم بإنشاء أي قصص بعد.",
     },
     storyWizard: {
@@ -120,7 +115,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
       generating: "جاري الإنشاء...",
       category: "اختر فئة",
       customPrompt: "وصف مخصص",
-      baseModel: "نموذج الذكاء الاصطناعي الأساسي",
       tone: "نبرة القصة",
       language: "لغة القصة",
     },

@@ -14,24 +14,10 @@ export async function validateStartup(): Promise<boolean> {
 
     // Check critical tables exist
     const userCount = await prismaClient.user.count();
-    const modelCount = await prismaClient.model.count();
+    const storyCount = await prismaClient.story.count();
+    const templateCount = await prismaClient.storyTemplate.count();
     
-    logger.info({ userCount, modelCount }, "📊 Database stats");
-
-    if (modelCount === 0) {
-      logger.warn("⚠️  No models found in database. Users won't be able to generate images until models are added.");
-    }
-
-    // Check for public models
-    const publicModels = await prismaClient.model.count({
-      where: { open: true, trainingStatus: "Generated" },
-    });
-
-    if (publicModels === 0) {
-      logger.warn("⚠️  No public models available. Consider running: cd packages/db && npm run db:seed");
-    } else {
-      logger.info({ publicModels }, "✅ Public models available");
-    }
+    logger.info({ userCount, storyCount, templateCount }, "📊 Database stats");
 
     return true;
   } catch (error) {

@@ -616,22 +616,23 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
    */
   async createStory(
     userId: string,
-    modelId: string,
     script: StoryScript,
     artStyle: string,
     personalization?: Partial<PersonalizedStoryInput> & {
       includeAudio?: boolean;
       voiceId?: string;
+      /** The child's uploaded photo, kept for retries of failed pages. */
+      childImage?: string;
     }
   ) {
     const story = await prismaClient.story.create({
       data: {
         title: script.title,
         userId,
-        modelId,
         status: "Generating",
         childName: personalization?.childName,
         childAge: personalization?.childAge,
+        referenceImageUrl: personalization?.childImage || null,
         // Every book has the same 14-page shape, so the legacy storyLength
         // column is no longer written; the template row is the source of truth.
         category: normalizeStoryCategory(
@@ -771,16 +772,17 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
 
   /**
    * Retry failed page generation.
+   *
+   * The story's stored reference photo is replayed so the retry still goes
+   * through the fal image-edit endpoint and shows the same child.
    */
   async retryPageGeneration(pageId: string) {
     const page = await prismaClient.storyPage.findUnique({
       where: { id: pageId },
-      include: {
-        story: {
-          include: {
-            model: true,
-          },
-        },
+      select: {
+        id: true,
+        imagePrompt: true,
+        story: { select: { referenceImageUrl: true, childName: true } },
       },
     });
 
@@ -788,14 +790,11 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
       throw new Error("Page not found");
     }
 
-    if (!page.story.model.tensorPath) {
-      throw new Error("Model not trained");
-    }
-
     return this.triggerPageGeneration(
       pageId,
       page.imagePrompt,
-      page.story.model.thumbnail
+      page.story.referenceImageUrl,
+      { childName: page.story.childName || undefined }
     );
   }
 
@@ -817,7 +816,6 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
             pageNumber: "asc",
           },
         },
-        model: true,
       },
     });
 
@@ -1111,9 +1109,6 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
       updatedAt: Date;
       pageNumber: number;
     }[];
-    model: {
-      thumbnail: string | null;
-    };
   }) {
     const pendingPages = story.pages.filter(
       (p) =>
@@ -1139,16 +1134,29 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
     await Promise.allSettled(
       pendingPages.map(async (page) => {
         try {
-          const endpoint = story.model.thumbnail
-            ? GROK_IMAGINE_EDIT_MODEL
-            : GROK_IMAGINE_MODEL;
+          // The queued request is only reachable through the endpoint it was
+          // submitted to, and whether a page used a reference photo is not
+          // persisted, so probe the edit endpoint first and fall back to the
+          // plain one. A wrong endpoint raises rather than resolving empty.
+          let result: Awaited<ReturnType<typeof fal.queue.result>> | undefined;
 
-          const result = await fal.queue.result(
-            endpoint,
-            {
-              requestId: page.falAiRequestId!,
+          for (const endpoint of [GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
+            try {
+              result = await fal.queue.result(endpoint, {
+                requestId: page.falAiRequestId!,
+              });
+              break;
+            } catch (error) {
+              logger.debug(
+                { error, endpoint, requestId: page.falAiRequestId },
+                "fal.ai queue lookup failed for endpoint"
+              );
             }
-          );
+          }
+
+          if (!result) {
+            return;
+          }
 
           const imageUrl = (
             result.data as any

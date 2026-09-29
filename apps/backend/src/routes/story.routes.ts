@@ -14,13 +14,13 @@ const audioService = AudioService.getInstance();
 
 // Validation schemas
 const GenerateStorySchema = z.object({
-  modelId: z.string().min(1),
   templateId: z.string().min(1, "Template is required"),
   artStyle: z.string().optional(),
   childName: z.string().optional(),
-  childAge: z.number().min(3).max(12).optional(),
+  childAge: z.number().min(1).max(20).optional(),
   gender: z.enum(["boy", "girl"]).optional(),
   dedication: z.string().optional(),
+  childImage: z.string().optional(),
   includeAudio: z.boolean().optional(),
   voiceId: z.string().optional(),
   language: z.string().optional(),
@@ -34,7 +34,7 @@ const GeneratePageImageSchema = z.object({
 
 /**
  * POST /story/generate
- * Generate a new story with face-consistent illustrations
+ * Generate a new story with face-consistent illustrations using live Fal AI image edit
  */
 router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res) => {
   try {
@@ -47,18 +47,8 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
-    const { modelId, templateId, artStyle, childName, childAge, gender, dedication, includeAudio, voiceId, language } = validation.data;
+    const { templateId, artStyle, childName, childAge, gender, dedication, childImage, includeAudio, voiceId, language } = validation.data;
     const userId = req.userId!;
-
-    // Verify model exists and is trained
-    const model = await prismaClient.model.findUnique({
-      where: { id: modelId },
-    });
-
-    if (!model?.tensorPath) {
-      res.status(404).json({ message: "Model not found or not trained" });
-      return;
-    }
 
     // Check the account still has a free story generation left
     const trialsLeft = await trialService.getRemaining(userId);
@@ -86,6 +76,8 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
+    const heroName = childName || "Hero";
+
     const template = {
       id: templateRow.id,
       name: templateRow.name,
@@ -104,7 +96,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
 
     // Generate story script
     const script = childName && childAge
-      ? await storyService.generatePersonalizedStoryScript(model.name, {
+      ? await storyService.generatePersonalizedStoryScript(heroName, {
         childName,
         childAge,
         template,
@@ -112,23 +104,22 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
         language,
         gender,
       })
-      : await storyService.generateStoryScript(model.name, template.prompts.theme, language);
+      : await storyService.generateStoryScript(heroName, template.prompts.theme, language);
 
     // Create story and pages in database
     const { story, pages } = await storyService.createStory(
       userId,
-      modelId,
       script,
       artStyle || "",
-      { childName, childAge, template, dedication, includeAudio, voiceId, gender }
+      { childName, childAge, template, dedication, includeAudio, voiceId, gender, childImage }
     );
 
-    // Trigger image generation for each page
+    // Trigger image generation for each page using Fal image edit API with childImage reference
     const generationPromises = pages.map((page) =>
       storyService.triggerPageGeneration(
         page.id,
         page.imagePrompt,
-        model.thumbnail,
+        childImage,
         { childName, artStyle }
       ).catch((error) => {
         logger.error({ error, pageId: page.id }, "Failed to start page generation");
@@ -180,7 +171,6 @@ router.get("/mine", authMiddleware, async (req, res) => {
             audioUrl: true,
           },
         },
-        model: { select: { id: true, name: true, thumbnail: true } },
       },
     });
 

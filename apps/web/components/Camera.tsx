@@ -15,7 +15,6 @@ import { handleImageError } from "./ui/image-fallback";
 export interface TImage {
   id: string;
   imageUrl: string;
-  modelId: string;
   userId: string;
   falAiRequestId: string;
   status: string;
@@ -130,7 +129,6 @@ export function Camera() {
                   status={image.status}
                   imageUrl={image.imageUrl}
                   onClick={() => handleImageClick(image, index)}
-                  modelId={image.modelId}
                   userId={image.userId}
                   falAiRequestId={image.falAiRequestId}
                   createdAt={image.createdAt}

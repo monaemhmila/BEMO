@@ -35,7 +35,7 @@ export interface TPack {
   createdAt?: string;
 }
 
-export function PackCard(props: TPack & { selectedModelId: string }) {
+export function PackCard(props: TPack) {
   const { getToken } = useAuth();
   const { trials } = useTrials();
   const router = useRouter();
@@ -73,7 +73,6 @@ export function PackCard(props: TPack & { selectedModelId: string }) {
       `${baseurl}/pack/generate`,
       {
         packId: props.id,
-        modelId: props.selectedModelId,
       },
       {
         headers: {

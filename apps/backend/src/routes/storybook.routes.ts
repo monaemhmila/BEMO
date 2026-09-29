@@ -23,13 +23,13 @@ const imageService = ImageGenerationService.getInstance();
 
 // Validation schemas
 const GenerateStorybookSchema = z.object({
-  modelId: z.string().min(1),
   childName: z.string().min(1),
-  childAge: z.number().min(3).max(12),
+  childAge: z.number().min(1).max(20),
   gender: z.enum(["boy", "girl"]).optional(),
   templateId: z.string().min(1, "Template is required"),
   dedication: z.string().optional(),
   artStyle: z.string().optional(),
+  childImage: z.string().optional(),
   includeAudio: z.boolean().optional().default(false),
   voiceId: z.string().optional().default("sarah"),
 });
@@ -291,13 +291,13 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     }
 
     const {
-      modelId,
       childName,
       childAge,
       gender,
       templateId,
       dedication,
       artStyle,
+      childImage,
       includeAudio,
       voiceId,
     } = validation.data;
@@ -314,17 +314,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       return;
     }
 
-    // Step 2: Verify model exists and is trained
-    const model = await prismaClient.model.findUnique({
-      where: { id: modelId },
-    });
-
-    if (!model?.tensorPath) {
-      res.status(404).json({ message: "Model not found or not trained yet" });
-      return;
-    }
-
-    // Step 3: Resolve the template (predefined, or one this user owns)
+    // Step 2: Resolve the template (predefined, or one this user owns)
     const template = await loadUsableTemplate(templateId, userId);
     if (!template) {
       res.status(404).json({ message: "Story template not found" });
@@ -332,13 +322,13 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     }
 
     logger.info(
-      { userId, modelId, templateId, includeAudio },
+      { userId, templateId, includeAudio },
       "Starting storybook generation"
     );
 
-    // Step 4: Generate story script
+    // Step 3: Generate story script
     const script = await storyService.generatePersonalizedStoryScript(
-      model.name,
+      childName,
       {
         childName,
         childAge,
@@ -349,14 +339,12 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       {
         name: childName,
         age: childAge,
-        appearance: `Use the trained portrait of ${childName} as the identity reference. Model profile: ${childAge}-year-old child, ${model.eyeColor.toLowerCase()} eyes, ${model.bald ? "no visible hair" : "hair as shown in the reference portrait"}, ${model.ethinicity.replace(/_/g, " ")} heritage. Do not change these reference-led details.`,
       }
     );
 
-    // Step 5: Create story in database (status: Generating)
+    // Step 4: Create story in database (status: Generating)
     const { story, pages } = await storyService.createStory(
       userId,
-      modelId,
       script,
       artStyle || "",
       {
@@ -367,14 +355,15 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
         includeAudio,
         voiceId,
         gender,
+        childImage,
       }
     );
     storyId = story.id;
 
-    // Step 6: Trigger every page with the model's reference portrait through Grok Imagine.
+    // Step 5: Trigger every page with the child reference portrait through Fal Grok Imagine edit model
     const generationResults = await Promise.allSettled(
       pages.map((page) =>
-        storyService.triggerPageGeneration(page.id, page.imagePrompt, model.thumbnail, { childName, artStyle })
+        storyService.triggerPageGeneration(page.id, page.imagePrompt, childImage, { childName, artStyle })
       )
     );
 
@@ -507,7 +496,6 @@ router.get("/stories", authMiddleware, async (req, res) => {
       orderBy: { createdAt: "desc" },
       include: {
         pages: { orderBy: { pageNumber: "asc" } },
-        model: { select: { id: true, name: true, thumbnail: true } },
       },
     });
 
@@ -553,7 +541,6 @@ router.get("/dashboard/stats", authMiddleware, async (req, res) => {
         take: 5,
         include: {
           pages: { orderBy: { pageNumber: "asc" } },
-          model: { select: { name: true } },
         },
       }),
     ]);
@@ -575,7 +562,7 @@ router.get("/dashboard/stats", authMiddleware, async (req, res) => {
       createdAt: story.createdAt.toISOString(),
       childName: story.childName,
       pageCount: story.pages.length,
-      heroName: story.model?.name || "Hero",
+      heroName: story.childName || "Hero",
       coverImage:
         story.pages.find((p) => p.status === "Generated" && p.imageUrl)?.imageUrl ?? null,
     }));
@@ -716,7 +703,6 @@ router.post("/:id/retry-failed", authMiddleware, async (req, res) => {
       where: { id: storyId, userId },
       include: {
         pages: { where: { status: "Failed" } },
-        model: true,
       },
     });
 
@@ -730,18 +716,13 @@ router.post("/:id/retry-failed", authMiddleware, async (req, res) => {
       return;
     }
 
-    if (!story.model?.tensorPath) {
-      res.status(400).json({ message: "Model not trained" });
-      return;
-    }
-
     // Retry failed pages (retries never consume extra trial generations)
     const results = await Promise.allSettled(
       story.pages.map((page) =>
         storyService.triggerPageGeneration(
           page.id,
           page.imagePrompt,
-          story.model!.thumbnail,
+          undefined,
           { childName: story.childName || undefined }
         )
       )
@@ -914,30 +895,11 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       })
     );
 
-    // Fetch or create hero model record for this user
-    let userModel = await prismaClient.model.findFirst({ where: { userId: req.userId! } });
-    if (!userModel) {
-      userModel = await prismaClient.model.create({
-        data: {
-          name: childName || "Hero",
-          type: "Others",
-          age: childAge || 5,
-          ethinicity: "White",
-          eyeColor: "Brown",
-          bald: false,
-          zipUrl: "nobackground.zip",
-          userId: req.userId!,
-          trainingStatus: "Generated",
-        },
-      });
-    }
-
     // Step 3: Save story in database (initially with pages 1 & 2 ready)
     const story = await prismaClient.story.create({
       data: {
         title: script.title,
         userId: req.userId!,
-        modelId: userModel.id,
         status: remainingPages.length === 0 ? "Completed" : "Generating",
         childName,
         childAge,

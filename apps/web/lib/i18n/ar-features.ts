@@ -33,9 +33,9 @@ export const arFeatures: Record<string, string> = {
   "How It Works": "كيف يعمل",
   "Four simple steps to your personalized storybook":
     "أربع خطوات بسيطة نحو كتاب قصتك المخصص",
-  "Train Your Hero": "درّب بطل قصتك",
-  "Upload 5-10 photos of your child to train the AI model.":
-    "ارفع من 5 إلى 10 صور لطفلك لتدريب نموذج الذكاء الاصطناعي.",
+  "Introduce Your Hero": "قدّم بطل قصتك",
+  "Upload 1-3 photos of your child to keep them consistent.":
+    "ارفع من صورة إلى 3 صور لطفلك ليظهر بنفس الشكل في كل الصفحات.",
   "Choose the Adventure": "اختر المغامرة",
   "Pick a theme, story length, and art style.":
     "اختر الثيمة وطول القصة والأسلوب الفني.",

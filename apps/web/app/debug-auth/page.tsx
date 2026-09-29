@@ -204,20 +204,13 @@ export default function DebugAuthPage() {
               </code>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div>
               <Button
                 onClick={() => testEndpoint("balance", "/balance")}
                 disabled={!auth.isSignedIn}
                 variant="outline"
               >
                 Test /balance
-              </Button>
-              <Button
-                onClick={() => testEndpoint("models", "/models")}
-                disabled={!auth.isSignedIn}
-                variant="outline"
-              >
-                Test /models
               </Button>
             </div>
 

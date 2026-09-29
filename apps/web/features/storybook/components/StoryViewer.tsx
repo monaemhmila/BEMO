@@ -42,10 +42,6 @@ interface Story {
   childName?: string;
   dedication?: string;
   pages: StoryPage[];
-  model: {
-    name: string;
-    thumbnail?: string;
-  };
   progress?: number;
   generatedPages?: number;
   failedPages?: number;

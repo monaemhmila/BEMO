@@ -13,7 +13,7 @@ export function Hero() {
       />
 
       <div className="shell relative grid items-center gap-10 py-14 lg:grid-cols-[1.05fr_1fr] lg:py-20">
-        <div className="text-center lg:text-left">
+        <div className="order-2 text-center lg:order-1 lg:text-left">
           <p className="text-sm font-bold uppercase tracking-[0.18em] text-primary">
             Create unique storybook
           </p>
@@ -45,9 +45,12 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative order-1 lg:order-2">
           <div className="aspect-[4/3] w-full overflow-hidden rounded-[2rem] border-4 border-white shadow-[0_28px_60px_-28px_rgba(31,22,54,.5)]">
-            <FillerVideo label="Storybook preview" />
+            <FillerVideo
+              src="/monpetitherovideo.mp4"
+              label="Storybook preview"
+            />
           </div>
           <span
             aria-hidden

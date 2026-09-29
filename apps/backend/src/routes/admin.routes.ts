@@ -105,11 +105,7 @@ router.get("/users", async (req, res) => {
       orderBy: { [sortBy]: order as "asc" | "desc" },
       take: parseInt(limit),
       skip: parseInt(offset),
-            include: {
-        models: {
-          select: { id: true, name: true, thumbnail: true, createdAt: true },
-          orderBy: { createdAt: "desc" },
-        },
+      include: {
         stories: {
           select: { id: true, title: true, status: true, createdAt: true, category: true },
           orderBy: { createdAt: "desc" },
@@ -123,9 +119,7 @@ router.get("/users", async (req, res) => {
       email: u.email,
       name: u.name || "Anonymous",
       trials: u.trialGenerations,
-      modelCount: u.models.length,
       storyCount: u.stories.length,
-      models: u.models,
       stories: u.stories,
       createdAt: u.createdAt,
     }));
@@ -149,7 +143,6 @@ router.get("/users/:id", async (req, res) => {
     const user = await prismaClient.user.findUnique({
       where: { id },
       include: {
-        models: { orderBy: { createdAt: "desc" } },
         stories: {
           orderBy: { createdAt: "desc" },
           include: { pages: { select: { id: true, pageNumber: true, status: true, imageUrl: true } } },
@@ -188,7 +181,6 @@ router.delete("/users/:id", async (req, res) => {
     }
     await prismaClient.order.deleteMany({ where: { userId: id } });
     await prismaClient.story.deleteMany({ where: { userId: id } });
-    await prismaClient.model.deleteMany({ where: { userId: id } });
     await prismaClient.user.delete({ where: { id } });
 
     logger.info({ userId: id }, "Admin deleted user and all their data");
@@ -326,7 +318,6 @@ router.get("/stories", async (req, res) => {
       include: {
         user: { select: { email: true, name: true, id: true } },
         pages: { select: { id: true, pageNumber: true, status: true, imageUrl: true } },
-        model: { select: { name: true, thumbnail: true } },
       },
     });
 
@@ -408,61 +399,6 @@ router.get("/story/:id/pdf", async (req, res) => {
 });
 
 // ─────────────────────────────────────────
-// MODELS
-// ─────────────────────────────────────────
-
-/**
- * GET /admin/models
- * All AI models with user info
- */
-router.get("/models", async (req, res) => {
-  try {
-    const { status, limit = "100", offset = "0", search } = req.query as Record<string, string>;
-
-    const where: any = {};
-    if (status && status !== "all") where.trainingStatus = status;
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { user: { email: { contains: search, mode: "insensitive" } } },
-      ];
-    }
-
-    const models = await prismaClient.model.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      take: parseInt(limit),
-      skip: parseInt(offset),
-      include: {
-        user: { select: { email: true, name: true, id: true } },
-        stories: { select: { id: true } },
-      },
-    });
-
-    const total = await prismaClient.model.count({ where });
-    res.json({ models, total });
-  } catch (error) {
-    logger.error({ error }, "Failed to fetch admin models");
-    res.status(500).json({ message: "Failed to fetch models" });
-  }
-});
-
-/**
- * DELETE /admin/model/:id
- */
-router.delete("/model/:id", async (req, res) => {
-  const modelId = req.params.id;
-  try {
-    await prismaClient.model.delete({ where: { id: modelId } });
-    logger.info({ modelId }, "Admin deleted model");
-    res.json({ success: true });
-  } catch (error) {
-    logger.error({ error, modelId }, "Failed to delete model");
-    res.status(500).json({ message: "Failed to delete model" });
-  }
-});
-
-// ─────────────────────────────────────────
 // QUICK ACTIONS
 // ─────────────────────────────────────────
 
@@ -473,29 +409,10 @@ router.delete("/model/:id", async (req, res) => {
 router.post("/quick-story", async (req, res) => {
   const userId = req.userId!;
   try {
-    let model = await prismaClient.model.findFirst({ where: { userId } });
-    if (!model) {
-      model = await prismaClient.model.create({
-        data: {
-          name: "Sample Hero",
-          type: "Others" as const,
-          age: 6,
-          ethinicity: "White",
-          eyeColor: "Brown",
-          bald: false,
-          zipUrl: "sample.zip",
-          userId,
-          trainingStatus: "Generated",
-          tensorPath: "sample/path.safetensors",
-        },
-      });
-    }
-
     const story = await prismaClient.story.create({
       data: {
         title: "The Magic Forest Adventure",
         userId,
-        modelId: model.id,
         status: "Completed",
         childName: "Alex",
         childAge: 6,
@@ -546,7 +463,7 @@ router.get("/preview-pdf", async (req, res) => {
  */
 router.get("/activity", async (_req, res) => {
   try {
-    const [recentUsers, recentStories, recentModels] = await Promise.all([
+    const [recentUsers, recentStories] = await Promise.all([
       prismaClient.user.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
@@ -557,17 +474,11 @@ router.get("/activity", async (_req, res) => {
         take: 5,
         select: { id: true, title: true, status: true, createdAt: true, user: { select: { email: true } } },
       }),
-      prismaClient.model.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 5,
-        select: { id: true, name: true, trainingStatus: true, createdAt: true, user: { select: { email: true } } },
-      }),
     ]);
 
     const activity = [
       ...recentUsers.map((u) => ({ type: "user_joined", id: u.id, label: u.email, time: u.createdAt })),
       ...recentStories.map((s) => ({ type: "story_created", id: s.id, label: s.title, userEmail: s.user?.email, status: s.status, time: s.createdAt })),
-      ...recentModels.map((m) => ({ type: "model_trained", id: m.id, label: m.name, userEmail: m.user?.email, status: m.trainingStatus, time: m.createdAt })),
     ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
 
     res.json({ activity: activity.slice(0, 15) });
@@ -619,7 +530,6 @@ router.get("/story/:id", async (req, res) => {
       where: { id: req.params.id },
       include: {
         user: { select: { id: true, email: true, name: true } },
-        model: { select: { id: true, name: true, thumbnail: true } },
         pages: { orderBy: { pageNumber: "asc" } },
       },
     });
@@ -694,8 +604,8 @@ const FaceLabSchema = z.object({
 /**
  * POST /admin/face-lab
  * Run local face detection on an uploaded photo (base64 data URL) and return
- * the tightly-cropped face reference fed to the image-edit model (no white
- * canvas). Fully local: no image API is called.
+ * the tightly-cropped face reference fed to the fal image-edit endpoint (no
+ * white canvas). Fully local: no image API is called.
  */
 router.post("/face-lab", async (req, res) => {
   const parsed = FaceLabSchema.safeParse(req.body);

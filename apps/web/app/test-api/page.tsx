@@ -42,36 +42,6 @@ export default function TestApiPage() {
     }
   };
 
-  const testModels = async () => {
-    setResult("Testing /models endpoint...\n");
-    
-    try {
-      const token = await getToken();
-      setResult((prev) => prev + `Token: ${token ? "✅ Received" : "❌ NULL"}\n`);
-
-      if (!token) {
-        setResult((prev) => prev + "❌ Cannot proceed without token\n");
-        return;
-      }
-
-      setResult((prev) => prev + "Calling /models...\n");
-      
-      const response = await fetch(`${BACKEND_URL}/models`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      setResult((prev) => prev + `Response status: ${response.status}\n`);
-      setResult((prev) => prev + `Response ok: ${response.ok}\n\n`);
-
-      const data = await response.json();
-      setResult((prev) => prev + "Response data:\n" + JSON.stringify(data, null, 2));
-    } catch (error) {
-      setResult((prev) => prev + `\n❌ ERROR: ${error instanceof Error ? error.message : String(error)}\n`);
-    }
-  };
-
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
@@ -90,9 +60,6 @@ export default function TestApiPage() {
           <Button onClick={testBalance} disabled={!isSignedIn}>
             Test /balance
           </Button>
-          <Button onClick={testModels} disabled={!isSignedIn} variant="outline">
-            Test /models
-          </Button>
         </div>
 
         <div className="bg-black text-green-400 p-4 rounded font-mono text-sm whitespace-pre-wrap min-h-[400px]">
@@ -104,7 +71,7 @@ export default function TestApiPage() {
           <ol className="list-decimal list-inside space-y-1 text-sm">
             <li>Make sure you&apos;re signed in</li>
             <li>Open browser DevTools (F12) → Console tab</li>
-            <li>Click &quot;Test /balance&quot; or &quot;Test /models&quot;</li>
+            <li>Click &quot;Test /balance&quot;</li>
             <li>Check both this window and the console for errors</li>
           </ol>
         </div>

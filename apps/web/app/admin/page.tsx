@@ -26,14 +26,11 @@ import { handleImageError } from "../../components/ui/image-fallback";
 interface AdminStats {
   totalUsers: number;
   totalStories: number;
-  totalModels: number;
   totalTrialsRemaining: number;
   newUsersToday: number;
   newUsersThisWeek: number;
   newUsersThisMonth: number;
   storiesThisWeek: number;
-  modelsThisWeek: number;
-  pendingModels: number;
   completedStories: number;
   generatingStories: number;
 }
@@ -44,9 +41,7 @@ interface AdminUser {
   email: string;
   name: string;
   trials: number;
-  modelCount: number;
   storyCount: number;
-  models: { id: string; name: string; trainingStatus: string; createdAt: string; thumbnail?: string }[];
   stories: { id: string; title: string; status: string; pdfUrl?: string | null; createdAt: string; category?: string }[];
   createdAt: string;
 }
@@ -61,24 +56,10 @@ interface AdminStory {
   createdAt: string;
   user?: { id: string; email: string; name: string };
   pages: { id: string; pageNumber: number; status: string; imageUrl?: string }[];
-  model?: { name: string; thumbnail?: string };
-}
-
-interface AdminModel {
-  id: string;
-  name: string;
-  trainingStatus: string;
-  tensorPath?: string;
-  thumbnail?: string;
-  age?: number;
-  type?: string;
-  createdAt: string;
-  user?: { id: string; email: string; name: string };
-  stories: { id: string }[];
 }
 
 interface ActivityItem {
-  type: "user_joined" | "story_created" | "model_trained";
+  type: "user_joined" | "story_created";
   id: string;
   label: string;
   userEmail?: string;
@@ -125,7 +106,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "templates" | "facelab" | "orders" | "models" | "activity" | "analytics";
+type TabType = "overview" | "users" | "stories" | "templates" | "facelab" | "orders" | "activity" | "analytics";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -261,14 +242,10 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials, onDownloadPdf }
 
         <div className="p-5 space-y-6">
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="bg-buttercup/15 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-violet-deep">{user.trials.toLocaleString()}</p>
               <p className="text-xs text-primary font-medium">Free Stories</p>
-            </div>
-            <div className="bg-purple-50 rounded-xl p-3 text-center">
-              <p className="text-2xl font-bold text-purple-700">{user.modelCount}</p>
-              <p className="text-xs text-purple-600 font-medium">Models</p>
             </div>
             <div className="bg-blue-50 rounded-xl p-3 text-center">
               <p className="text-2xl font-bold text-blue-700">{user.storyCount}</p>
@@ -279,26 +256,6 @@ function UserDrawer({ user, onClose, onDeleteUser, onEditTrials, onDownloadPdf }
           <div className="text-xs text-stone-400">
             Joined {new Date(user.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })} · ID: <code className="bg-stone-100 px-1 rounded">{user.id}</code>
           </div>
-
-          {/* Models */}
-          {user.models.length > 0 && (
-            <div>
-              <h4 className="font-semibold text-violet-deep mb-3 flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-500" /> AI Models ({user.models.length})
-              </h4>
-              <div className="space-y-2">
-                {user.models.map((m) => (
-                  <div key={m.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-xl border border-stone-100">
-                    <div>
-                      <p className="font-medium text-violet-deep text-sm">{m.name}</p>
-                      <p className="text-xs text-stone-400">{timeAgo(m.createdAt)}</p>
-                    </div>
-                    <StatusBadge status={m.trainingStatus} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Stories */}
           {user.stories.length > 0 && (
@@ -426,7 +383,7 @@ function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string,
         <p className="text-white/40 text-xs mb-4">
           Upload a child photo — detection runs locally (tiny face detector), then the
           image is cropped as tightly as possible to the child&rsquo;s face. That crop is the
-          reference fed to the AI edit model (no white canvas). No image API is called.
+          reference fed to the fal image-edit endpoint (no white canvas). No image API is called.
         </p>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/15 text-white rounded-xl text-sm font-semibold transition-colors">
@@ -2374,12 +2331,10 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stories, setStories] = useState<AdminStory[]>([]);
-  const [models, setModels] = useState<AdminModel[]>([]);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [storyStatusFilter, setStoryStatusFilter] = useState("all");
-  const [modelStatusFilter, setModelStatusFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [trialEditorUser, setTrialEditorUser] = useState<AdminUser | null>(null);
   const [grantAmount, setGrantAmount] = useState(3);
@@ -2444,12 +2399,11 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const headers = await authHeaders();
-      const [statsRes, usersRes, storiesRes, modelsRes, activityRes, ordersRes, templatesRes] =
+      const [statsRes, usersRes, storiesRes, activityRes, ordersRes, templatesRes] =
         await Promise.allSettled([
           axios.get(`${BACKEND_URL}/admin/stats`, { headers }),
           axios.get(`${BACKEND_URL}/admin/users`, { headers }),
           axios.get(`${BACKEND_URL}/admin/stories`, { headers }),
-          axios.get(`${BACKEND_URL}/admin/models`, { headers }),
           axios.get(`${BACKEND_URL}/admin/activity`, { headers }),
           axios.get(`${BACKEND_URL}/admin/orders`, { headers }),
           axios.get(`${BACKEND_URL}/admin/templates`, { headers }),
@@ -2460,7 +2414,6 @@ export default function AdminPage() {
       if (statsRes.status === "fulfilled") setStats(statsRes.value.data);
       if (usersRes.status === "fulfilled") setUsers(usersRes.value.data.users || []);
       if (storiesRes.status === "fulfilled") setStories(storiesRes.value.data.stories || []);
-      if (modelsRes.status === "fulfilled") setModels(modelsRes.value.data.models || []);
       if (activityRes.status === "fulfilled") setActivity(activityRes.value.data.activity || []);
       if (ordersRes.status === "fulfilled") {
         setOrders(ordersRes.value.data.orders || []);
@@ -2531,18 +2484,6 @@ export default function AdminPage() {
     }
   };
 
-  const handleDeleteModel = async (id: string) => {
-    if (!confirm("Delete this AI model permanently?")) return;
-    try {
-      const headers = await authHeaders();
-      await axios.delete(`${BACKEND_URL}/admin/model/${id}`, { headers });
-      toast.success("Model deleted");
-      fetchAll();
-    } catch {
-      toast.error("Failed to delete model");
-    }
-  };
-
   const handleQuickStory = async () => {
     try {
       const headers = await authHeaders();
@@ -2564,12 +2505,6 @@ export default function AdminPage() {
   const filteredStories = stories.filter((s) => {
     if (storyStatusFilter !== "all" && s.status !== storyStatusFilter) return false;
     if (search && !s.title.toLowerCase().includes(search.toLowerCase()) && !s.user?.email.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
-
-  const filteredModels = models.filter((m) => {
-    if (modelStatusFilter !== "all" && m.trainingStatus !== modelStatusFilter) return false;
-    if (search && !m.name.toLowerCase().includes(search.toLowerCase()) && !m.user?.email.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 
@@ -2597,7 +2532,6 @@ export default function AdminPage() {
     { id: "templates", label: "Templates", icon: <BookCopy className="w-4 h-4" />, count: templates.length },
     { id: "facelab", label: "Face Lab", icon: <ScanFace className="w-4 h-4" /> },
     { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" />, count: orders.length },
-    { id: "models", label: "AI Models", icon: <Sparkles className="w-4 h-4" />, count: models.length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
     { id: "analytics", label: "Analytics", icon: <MousePointerClick className="w-4 h-4" /> },
   ];
@@ -2810,7 +2744,7 @@ export default function AdminPage() {
                   {[
                     { label: "Total Users", value: stats?.totalUsers ?? 0, icon: <Users className="w-5 h-5" />, sub: `+${stats?.newUsersToday ?? 0} today`, color: "blue" },
                     { label: "Stories Created", value: stats?.totalStories ?? 0, icon: <BookOpen className="w-5 h-5" />, sub: `+${stats?.storiesThisWeek ?? 0} this week`, color: "purple" },
-                    { label: "AI Models", value: stats?.totalModels ?? 0, icon: <Sparkles className="w-5 h-5" />, sub: `${stats?.pendingModels ?? 0} training now`, color: "indigo" },
+                    { label: "New Users", value: stats?.newUsersThisWeek ?? 0, icon: <Sparkles className="w-5 h-5" />, sub: `+${stats?.newUsersToday ?? 0} today`, color: "indigo" },
                     { label: "Free Stories Left", value: (stats?.totalTrialsRemaining ?? 0).toLocaleString(), icon: <Gift className="w-5 h-5" />, sub: "across all users", color: "amber" },
                   ].map((stat) => (
                     <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/8 transition-all">
@@ -2834,7 +2768,7 @@ export default function AdminPage() {
                     { label: "New Users This Month", value: stats?.newUsersThisMonth ?? 0, icon: <TrendingUp className="w-4 h-4" />, color: "text-emerald-400" },
                     { label: "Stories Generating", value: stats?.generatingStories ?? 0, icon: <Zap className="w-4 h-4" />, color: "text-[#c4b2ff]" },
                     { label: "Completed Stories", value: stats?.completedStories ?? 0, icon: <CheckCircle2 className="w-4 h-4" />, color: "text-emerald-400" },
-                    { label: "Models in Training", value: stats?.pendingModels ?? 0, icon: <Clock className="w-4 h-4" />, color: "text-purple-400" },
+                    { label: "Free Trials Left", value: (stats?.totalTrialsRemaining ?? 0).toLocaleString(), icon: <Clock className="w-4 h-4" />, color: "text-purple-400" },
                   ].map((s) => (
                     <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3">
                       <span className={s.color}>{s.icon}</span>
@@ -2944,7 +2878,6 @@ export default function AdminPage() {
                         <tr className="border-b border-white/10 text-white/40 text-xs uppercase font-semibold tracking-wider">
                           <th className="text-left py-3.5 px-4">User</th>
                           <th className="text-left py-3.5 px-4">Free Stories</th>
-                          <th className="text-left py-3.5 px-4">Models</th>
                           <th className="text-left py-3.5 px-4">Stories</th>
                           <th className="text-left py-3.5 px-4">Previews</th>
                           <th className="text-left py-3.5 px-4">Joined</th>
@@ -2966,7 +2899,6 @@ export default function AdminPage() {
                             <td className="py-3.5 px-4">
                               <span className="font-bold text-[#c4b2ff]">{u.trials.toLocaleString()}</span>
                             </td>
-                            <td className="py-3.5 px-4 text-white/60">{u.modelCount}</td>
                             <td className="py-3.5 px-4 text-white/60">{u.storyCount}</td>
                             <td className="py-3.5 px-4 text-white/40 text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
                             <td className="py-3.5 px-4">
@@ -3117,85 +3049,6 @@ export default function AdminPage() {
               />
             )}
 
-            {/* ── MODELS TAB ───────────────────────────────────────────────── */}
-            {activeTab === "models" && (
-              <div className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                    <input
-                      type="text"
-                      placeholder="Search models..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    {["all", "Generated", "Pending", "Failed"].map((s) => (
-                      <button key={s} onClick={() => setModelStatusFilter(s)} className={`px-3 py-2 rounded-xl text-xs font-semibold transition-all ${modelStatusFilter === s ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"}`}>
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-white/10 text-white/40 text-xs uppercase font-semibold tracking-wider">
-                          <th className="text-left py-3.5 px-4">Model</th>
-                          <th className="text-left py-3.5 px-4">User</th>
-                          <th className="text-left py-3.5 px-4">Status</th>
-                          <th className="text-left py-3.5 px-4">Stories Used</th>
-                          <th className="text-left py-3.5 px-4">Type / Age</th>
-                          <th className="text-left py-3.5 px-4">Created</th>
-                          <th className="text-right py-3.5 px-4">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/5">
-                        {filteredModels.map((m) => (
-                          <tr key={m.id} className="hover:bg-white/5 transition-colors">
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center gap-3">
-                                {m.thumbnail ? (
-                                  <img src={m.thumbnail} alt={m.name} className="w-9 h-9 rounded-xl object-cover border border-white/10" onError={handleImageError} />
-                                ) : (
-                                  <div className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center">
-                                    <Sparkles className="w-4 h-4 text-white/30" />
-                                  </div>
-                                )}
-                                <div>
-                                  <p className="font-semibold text-white">{m.name}</p>
-                                  <p className="text-white/30 text-xs font-mono truncate max-w-[120px]">{m.tensorPath || "No tensor"}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3.5 px-4 text-white/60 text-xs">{m.user?.email || "Unknown"}</td>
-                            <td className="py-3.5 px-4"><StatusBadge status={m.trainingStatus} /></td>
-                            <td className="py-3.5 px-4 text-white/60">{m.stories?.length ?? 0} stories</td>
-                            <td className="py-3.5 px-4 text-white/40 text-xs">{m.type} · {m.age}y</td>
-                            <td className="py-3.5 px-4 text-white/40 text-xs">{timeAgo(m.createdAt)}</td>
-                            <td className="py-3.5 px-4">
-                              <div className="flex items-center justify-end gap-2">
-                                <button onClick={() => handleDeleteModel(m.id)} className="p-1.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition-colors" title="Delete Model">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredModels.length === 0 && (
-                          <tr><td colSpan={7} className="py-12 text-center text-white/30">No models found</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* ── ACTIVITY TAB ─────────────────────────────────────────────── */}
             {activeTab === "activity" && (
               <div className="space-y-3">
@@ -3215,7 +3068,6 @@ export default function AdminPage() {
                       <p className="text-white font-medium text-sm">
                         {item.type === "user_joined" && "New user joined"}
                         {item.type === "story_created" && "Story created"}
-                        {item.type === "model_trained" && "Model training"}
                       </p>
                       <p className="text-white/50 text-xs truncate">{item.label} {item.userEmail ? `· ${item.userEmail}` : ""}</p>
                     </div>

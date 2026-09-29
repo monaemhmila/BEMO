@@ -365,7 +365,6 @@ StoryBook-AI/
 ├── scripts/                    # Utility scripts
 │   ├── create-test-user.ts     # Create a test user
 │   ├── fix-database.ts         # Fix database issues
-│   ├── fix-null-userid.ts      # Fix null user IDs
 │   └── updateCredits.ts        # Update user credits
 │
 ├── .env                        # Root environment variables
@@ -387,9 +386,6 @@ npx ts-node scripts/create-test-user.ts
 
 # Fix database issues
 npx ts-node scripts/fix-database.ts
-
-# Fix null userId references
-npx ts-node scripts/fix-null-userid.ts
 
 # Update user credits
 npx ts-node scripts/updateCredits.ts
