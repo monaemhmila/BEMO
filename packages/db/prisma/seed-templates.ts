@@ -97,7 +97,7 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
     description:
       "A playful counting adventure where the child counts animals from one to five and then discovers colorful fruits while counting from six to ten.",
     ageRange: "2-4",
-    category: "educative",
+    category: "adventure",
     difficulty: 1,
     tags: [
       "numbers",
@@ -158,7 +158,7 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
     description:
       "A playful learning adventure where the child explores the alphabet two letters at a time, discovering a familiar word for each letter in the selected language.",
     ageRange: "3-5",
-    category: "educative",
+    category: "adventure",
     difficulty: 1,
     tags: ["alphabet", "ABC", "letters", "words", "learning", "language"],
     tagline:

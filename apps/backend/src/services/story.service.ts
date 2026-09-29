@@ -496,7 +496,7 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
 {
   "name": "Template name",
   "description": "One sentence for a parent",
-  "category": "adventure | friendship | bedtime | fantasy | learning | animals | family | nature",
+  "category": "adventure | educative | sentimental",
   "difficulty": 1,
   "tags": ["tag", "tag"],
   "prompts": {

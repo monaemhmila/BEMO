@@ -494,10 +494,7 @@ router.get("/activity", async (_req, res) => {
 
 const STORY_STATUS_VALUES = ["Pending", "Generating", "Completed", "Failed", "Processing"] as const;
 const PAGE_STATUS_VALUES = ["Pending", "Generated", "Failed"] as const;
-const CATEGORY_VALUES = [
-  "bedtime", "adventure", "friendship", "learning", "animals", "fantasy",
-  "moral", "seasonal", "science", "history", "emotions", "family",
-] as const;
+const CATEGORY_VALUES = ["adventure", "educative", "sentimental"] as const;
 const LENGTH_VALUES = ["short", "medium", "long", "extended"] as const;
 
 const UpdateStorySchema = z.object({
@@ -627,11 +624,7 @@ router.post("/face-lab", async (req, res) => {
 // STORY TEMPLATES
 // ─────────────────────────────────────────
 
-const TEMPLATE_CATEGORY_VALUES = [
-  "adventure", "bedtime", "birthday", "dinosaurs", "fantasy", "friendship",
-  "learning", "animals", "moral", "seasonal", "science", "history", "emotions",
-  "family", "sentimental", "pirate", "space", "underwater", "sports", "cooking",
-] as const;
+const TEMPLATE_CATEGORY_VALUES = ["adventure", "educative", "sentimental"] as const;
 const TEMPLATE_AUDIENCE_VALUES = ["any", "girl", "boy"] as const;
 
 /**

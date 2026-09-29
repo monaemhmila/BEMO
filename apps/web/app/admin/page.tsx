@@ -672,7 +672,7 @@ function AnalyticsTab({ authHeaders }: { authHeaders: () => Promise<Record<strin
 
 const STORY_STATUSES = ["Pending", "Generating", "Completed", "Failed", "Processing"];
 const PAGE_STATUSES = ["Pending", "Generated", "Failed"];
-const STORY_CATEGORIES = ["bedtime", "adventure", "friendship", "learning", "animals", "fantasy", "moral", "seasonal", "science", "history", "emotions", "family"];
+const STORY_CATEGORIES = ["adventure", "educative", "sentimental"];
 const STORY_LENGTHS = ["short", "medium", "long", "extended"];
 
 const adminInputCls = "w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500";
@@ -1191,11 +1191,7 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
 /** The generator only accepts a template whose beat count matches exactly. */
 const TEMPLATE_BEAT_COUNT = 15;
 
-const TEMPLATE_CATEGORIES = [
-  "adventure", "bedtime", "birthday", "dinosaurs", "fantasy", "friendship",
-  "learning", "animals", "moral", "seasonal", "science", "history", "emotions",
-  "family", "sentimental", "pirate", "space", "underwater", "sports", "cooking",
-];
+const TEMPLATE_CATEGORIES = ["adventure", "educative", "sentimental"];
 const TEMPLATE_AUDIENCES = ["any", "girl", "boy"];
 
 interface AdminTemplateReview {

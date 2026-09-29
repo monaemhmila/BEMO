@@ -105,7 +105,7 @@ Preserve the child's recognizable facial identity accurately, including facial f
 
 The supplied image is a FACE REFERENCE ONLY. Do not preserve or reproduce its background, framing, crop, white areas, lighting setup, camera composition, or any other visual elements from the reference image. Do not place the face inside the original reference frame.
 
-Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Maintain age-appropriate anatomy and natural body proportions.
+Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet.  Choose a distinctive, age-appropriate costume or outfit for the child that clearly fits their role in the story. The costume should change according to the story and make the child visually feel like the protagonist of that particular adventure.
 
 Create the following scene:
 

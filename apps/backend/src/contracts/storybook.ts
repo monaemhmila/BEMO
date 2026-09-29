@@ -266,19 +266,7 @@ export const STORYBOOK_NEGATIVE_PROMPT =
  * The categories a story template may belong to. Anything else (including a
  * model echoing the list of options back at us) falls back to "adventure".
  */
-export const STORY_CATEGORIES = [
-  "adventure",
-  "friendship",
-  "bedtime",
-  "fantasy",
-  "learning",
-  "animals",
-  "family",
-  "nature",
-  "sentimental",
-  "educative",
-  "moral",
-] as const;
+export const STORY_CATEGORIES = ["adventure", "educative", "sentimental"] as const;
 
 export function normalizeStoryCategory(rawCategory?: string | null): string {
   if (!rawCategory || !rawCategory.trim()) return "adventure";

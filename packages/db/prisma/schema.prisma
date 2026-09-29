@@ -190,21 +190,6 @@ enum StoryLengthEnum {
   extended // 16 pages
 }
 
-enum StoryCategoryEnum {
-  bedtime
-  adventure
-  friendship
-  learning
-  animals
-  fantasy
-  moral
-  seasonal
-  science
-  history
-  emotions
-  family
-}
-
 model StoryPage {
   id             String   @id @default(uuid())
   storyId        String
