@@ -40,6 +40,11 @@ interface StoryBookControlsProps {
   onClose: () => void;
   onExportPdf: () => void;
   onOrderBook: () => void;
+  /**
+   * Drops the "back to library" and fullscreen affordances, which have no
+   * meaning when the book is shown inline rather than as a full-page reader.
+   */
+  embedded?: boolean;
 }
 
 /** Chrome around the flipbook - logical controls, never visual clutter. */
@@ -57,6 +62,7 @@ export function StoryBookControls({
   onClose,
   onExportPdf,
   onOrderBook,
+  embedded = false,
 }: StoryBookControlsProps) {
   return (
     <div
@@ -89,15 +95,17 @@ export function StoryBookControls({
       {/* Top bar */}
       <div className="absolute inset-x-0 top-0 flex justify-center px-3 pt-3">
         <div className="pointer-events-auto flex max-w-full items-center gap-1 rounded-full border border-white/40 bg-violet-deep/85 px-2 py-1.5 text-white shadow-xl backdrop-blur-md sm:gap-2 sm:px-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 rounded-full text-white hover:bg-white/20"
-            onClick={onClose}
-            aria-label="Back to library"
-          >
-            <X className="size-4" />
-          </Button>
+          {!embedded && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-full text-white hover:bg-white/20"
+              onClick={onClose}
+              aria-label="Back to library"
+            >
+              <X className="size-4" />
+            </Button>
+          )}
 
           <div className="max-w-[40vw] truncate px-1 font-display text-sm font-semibold sm:max-w-xs sm:text-base">
             {title}
@@ -157,16 +165,18 @@ export function StoryBookControls({
               <ShoppingBag className="size-4" />
             </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-full text-white hover:bg-white/20"
-              onClick={onToggleFullscreen}
-              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-            </Button>
+            {!embedded && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-full text-white hover:bg-white/20"
+                onClick={onToggleFullscreen}
+                aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+              </Button>
+            )}
           </div>
         </div>
       </div>

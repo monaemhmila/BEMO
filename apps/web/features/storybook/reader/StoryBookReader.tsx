@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import axios from "axios";
 import HTMLFlipBook from "react-pageflip";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, Lock, RefreshCw, ShoppingBag } from "lucide-react";
 
 import { BACKEND_URL } from "../../../app/config";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,17 @@ import "./reader.css";
 
 interface StoryBookReaderProps {
   storyId: string;
+  /**
+   * Teaser mode. The book is truncated to the first `previewLimit` pages, so the
+   * reader physically cannot flip past the free ones, and reaching the last
+   * page surfaces the "Order now" call to action. Omit to show the whole book.
+   */
+  previewLimit?: number;
+  /**
+   * Renders the book as an inline panel of bounded height instead of a
+   * full-viewport reader. Used by the post-generation teaser.
+   */
+  embedded?: boolean;
 }
 
 /** One story page is printed as TWO square leaves (left + right halves of the
@@ -29,7 +40,7 @@ interface StoryBookReaderProps {
 const BOOK_WIDTH = 900;
 const BOOK_HEIGHT = 900;
 
-export function StoryBookReader({ storyId }: StoryBookReaderProps) {
+export function StoryBookReader({ storyId, previewLimit, embedded = false }: StoryBookReaderProps) {
   const router = useRouter();
   const { getToken } = useAuth();
 
@@ -124,13 +135,29 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
     };
   }, [storyId, getToken]);
 
-  const pages = useMemo(
+  const sortedPages = useMemo(
     () =>
       story
         ? [...story.pages].sort((a, b) => a.pageNumber - b.pageNumber)
         : [],
     [story]
   );
+
+  /**
+   * In teaser mode the flipbook is built from the free pages only, so the
+   * locked pages are not merely hidden behind an overlay - they are never
+   * mounted as leaves and cannot be reached by dragging or by `bookPage`.
+   */
+  const pages = useMemo(
+    () =>
+      previewLimit && previewLimit > 0
+        ? sortedPages.slice(0, previewLimit)
+        : sortedPages,
+    [sortedPages, previewLimit]
+  );
+
+  /** How many pages sit behind the paywall, for the call-to-action copy. */
+  const hiddenPageCount = sortedPages.length - pages.length;
 
   /** Each source page produces two square leaves (left + right halves). The
  *  cover (first) and closing (last) pages are generated 1:1 and stay ONE
@@ -140,6 +167,13 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
     if (pages.length <= 1) return pages.length;
     return (pages.length - 2) * 2 + 2;
   }, [story, pages]);
+
+  /**
+   * True once the reader has flipped onto the last free page in teaser mode.
+   * This is where the paywall call to action takes over from the book.
+   */
+  const atPreviewEnd =
+    !!previewLimit && pages.length > 0 && currentLeaf >= leafCount - 1;
 
   /** Map a flipbook leaf index back to its source page index. */
   const sourceIndexForLeaf = useCallback(
@@ -395,7 +429,11 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
       ref={rootRef}
       className={cn(
         "relative flex w-full flex-col overflow-hidden bg-paper",
-        isFullscreen ? "h-[100dvh]" : "min-h-[100dvh]"
+        embedded
+          ? "h-[70vh] min-h-[420px]"
+          : isFullscreen
+            ? "h-[100dvh]"
+            : "min-h-[100dvh]"
       )}
       onPointerDown={showControls}
       onPointerMove={showControls}
@@ -462,6 +500,34 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
             >
               {pageLeafs}
             </HTMLFlipBook>
+
+            {atPreviewEnd && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm sm:p-6">
+                <div className="w-full max-w-md rounded-3xl bg-white p-7 text-center shadow-2xl">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-deep/10">
+                    <Lock className="h-7 w-7 text-violet-deep" />
+                  </div>
+                  <h3 className="font-display text-2xl font-bold text-violet-deep">
+                    {hiddenPageCount > 0
+                      ? `${hiddenPageCount} more ${
+                          hiddenPageCount === 1 ? "page" : "pages"
+                        } inside`
+                      : "The story continues"}
+                  </h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    You&apos;ve reached the end of the free preview. Order the
+                    printed book to read the whole adventure.
+                  </p>
+                  <Button
+                    onClick={() => setOrderOpen(true)}
+                    className="mt-5 w-full rounded-full bg-primary py-6 font-bold text-white transition-colors hover:bg-violet-deep"
+                  >
+                    <ShoppingBag className="mr-2 h-5 w-5" />
+                    Order now
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </main>
       )}
@@ -486,6 +552,7 @@ export function StoryBookReader({ storyId }: StoryBookReaderProps) {
         onClose={() => router.back()}
         onExportPdf={handleExportPdf}
         onOrderBook={() => setOrderOpen(true)}
+        embedded={embedded}
       />
 
       {currentAudioUrl ? (

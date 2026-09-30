@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { handleImageError } from "@/components/ui/image-fallback";
 import { Card } from "@/components/ui/card";
 import { OrderBookModal } from "../../storybook/components/OrderBookModal";
+import { StoryBookReader } from "../../storybook/reader/StoryBookReader";
 import {
   Select,
   SelectContent,
@@ -233,7 +234,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
       const errorResponse = err instanceof AxiosError ? err.response : undefined;
       setCustomTemplateError(
         (errorResponse?.data as { message?: string } | undefined)?.message ||
-          "We couldn't build that story yet. Please try again."
+        "We couldn't build that story yet. Please try again."
       );
       return null;
     } finally {
@@ -380,10 +381,9 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
     );
   }
 
-  // Show 2-page preview UI after generation
+  // Teaser after generation: the book preview is capped at the first 2 pages,
+  // and flipping past them surfaces the "Order now" call to action.
   if (generatedStory) {
-    const previewPages = generatedStory.pages.slice(0, 2);
-
     return (
       <div className="max-w-5xl mx-auto space-y-8 pb-12">
         {/* Celebration Header */}
@@ -399,59 +399,23 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           </p>
         </Card>
 
-        {/* 2-Page Preview Spread */}
+        {/* Book preview — first 2 pages, then the reader's "Order now" gate */}
         <div className="space-y-4">
           <div className="flex items-center justify-between px-2">
             <h3 className="text-xl font-display font-bold text-violet-deep flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-primary" /> Story Preview (First 2 Pages)
+              <BookOpen className="w-5 h-5 text-primary" /> Book Preview
             </h3>
             <span className="text-xs font-semibold px-3 py-1 bg-buttercup/20 text-violet-deep rounded-full">
-              Pages 1 & 2 of {generatedStory.pages.length}
+              First 2 of {generatedStory.pages.length} pages
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {previewPages.map((page, idx) => (
-              <div
-                key={page.pageNumber || idx}
-                className="bg-white rounded-3xl border border-border shadow-xl overflow-hidden flex flex-col transition-all hover:shadow-2xl hover:-translate-y-1 duration-300"
-              >
-                {/* Page Header */}
-                <div className="bg-primary px-4 py-2.5 flex items-center justify-between text-white">
-                  <span className="text-xs font-bold uppercase tracking-wider text-buttercup">
-                    Page {page.pageNumber || idx + 1}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
-                    {generatedStory.childName}&apos;s Adventure
-                  </span>
-                </div>
-
-                {/* Illustration Frame */}
-                <div className="relative aspect-video bg-muted overflow-hidden group">
-                  {page.imageUrl ? (
-                    <img
-                      src={page.imageUrl}
-                      alt={`Illustration for page ${page.pageNumber}`}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={handleImageError}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-buttercup/10/50 p-6 text-center">
-                      <Sparkles className="w-8 h-8 text-buttercup mb-2 animate-pulse" />
-                      <p className="text-xs text-muted-foreground font-display">Illustration Preview</p>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-
-                {/* Story Text Content */}
-                <div className="p-6 bg-gradient-to-b from-buttercup/10 to-paper flex-1 flex flex-col justify-between border-t border-border">
-                  <p className="text-foreground font-display text-base leading-relaxed italic">
-                    &ldquo;{page.content}&rdquo;
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-hidden rounded-3xl border border-border shadow-xl">
+            <StoryBookReader
+              storyId={generatedStory.storyId}
+              previewLimit={3}
+              embedded
+            />
           </div>
         </div>
 
