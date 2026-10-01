@@ -351,6 +351,36 @@ export const arFeatures: Record<string, string> = {
   "Mon Petit Hero home": "الصفحة الرئيسية لـ Mon Petit Hero",
   "Bedtime Adventures": "مغامرات ما قبل النوم",
   "Storybook Platform": "منصة كتب القصص",
+  "Back to all books": "العودة إلى جميع الكتب",
+  "Personalised book": "كتاب مخصص",
+  "Personalise this book": "خصص هذا الكتاب",
+  "Personalise my book": "خصص كتابي",
+  "Talk to support": "تواصل مع الدعم",
+  "Your child is the hero": "طفلك هو البطل",
+  "Their photo, name and age are woven into every scene.":
+    "تظهر صورة طفلك واسمه وعمره في كل مشهد.",
+  "Personalised to perfection": "مخصص بكل عناية",
+  "Pick names, characters and details to make it truly theirs.":
+    "اختر الأسماء والشخصيات والتفاصيل لتجعل القصة خاصة بهم حقًا.",
+  "Printed with care, shipped fast": "طُبع بعناية ويُشحن بسرعة",
+  "Premium softcover books delivered right to your door.":
+    "كتب فاخرة بغلاف مرن تصل مباشرة إلى باب منزلك.",
+  "More stories to love": "المزيد من القصص التي ستحبها",
+  "Browse all": "تصفح الكل",
+  "Reviews": "المراجعات",
+  "Read Reviews": "اقرأ المراجعات",
+  "Rated": "التقييم",
+  "out of 5": "من 5",
+  "The pictures make counting so easy for my little one. She loves pointing at every animal and fruit!":
+    "الصور تجعل العد سهلًا جدًا على طفلتي الصغيرة. إنها تحب الإشارة إلى كل حيوان وكل فاكهة!",
+  "Preview available before ordering": "تتوفر معاينة قبل الطلب",
+  "For kids ages:": "للأطفال من عمر",
+  "years": "سنوات",
+  "Supports children through": "يساعد الأطفال على تطوير",
+  "A adventure story full of courage and heart": "قصة مغامرة مليئة بالشجاعة والقلب",
+  "How is the book personalized for my child?": "كيف يتم تخصيص الكتاب لطفلي؟",
+  "What if I need to make changes after personalizing?": "ماذا أفعل إذا احتجت إلى تعديلات بعد التخصيص؟",
+  "Size & Quality": "الحجم والجودة",
   "A child becoming the hero of a magical storybook adventure":
     "طفل يصبح بطل مغامرة سحرية في كتاب قصص",
   "A child reading a personalized storybook at bedtime":

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Camera, Heart, Sparkles, Truck } from "lucide-react";
 
 import { BookCard } from "@/components/book-card";
+import { LocalizedStoryText } from "@/components/localized-story-text";
 import { FillerImage } from "@/components/filler";
 import { SiteFooter } from "@/components/sections/site-footer";
 import {
@@ -97,10 +98,18 @@ export default async function BookDetailPage({
                 Personalised book
               </span>
               <h1 className="mt-4 font-display text-4xl font-bold text-violet-deep sm:text-5xl">
-                {book.title}
+                <LocalizedStoryText
+                  templateId={book.slug}
+                  field="title"
+                  fallback={book.title}
+                />
               </h1>
               <p className="mt-3 text-lg leading-relaxed text-muted-foreground">
-                {book.tagline}
+                <LocalizedStoryText
+                  templateId={book.slug}
+                  field="tagline"
+                  fallback={book.tagline}
+                />
               </p>
 
               <div className="mt-6 flex items-baseline gap-3">

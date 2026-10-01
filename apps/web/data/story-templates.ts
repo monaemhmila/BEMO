@@ -17,6 +17,18 @@ export interface StoryMedia {
   caption?: string;
 }
 
+export type StoryCopy = {
+  title: string | null;
+  description: string | null;
+  tagline: string | null;
+  excerpt: string | null;
+};
+
+export type StoryTranslations = {
+  fr: StoryCopy;
+  ar: StoryCopy;
+};
+
 /** Neutral stand-in slides used until a book has its own photos or preview video. */
 export function fillerSlides(count = 9): StoryMedia[] {
   return Array.from({ length: count }, () => ({
@@ -36,6 +48,7 @@ export interface StoryTemplate {
   tagline: string;
   description: string;
   excerpt: string;
+  translations?: StoryTranslations;
   coverImage: string;
   /**
    * Gallery slides from the catalogue. Empty/absent means the detail page falls
@@ -62,6 +75,7 @@ export interface StorefrontTemplate {
   description: string;
   tagline: string | null;
   excerpt: string | null;
+  translations?: StoryTranslations;
   emoji: string | null;
   audience: string;
   ageRange: string;

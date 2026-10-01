@@ -36,7 +36,9 @@ export function BookMobileCta({ href, targetId, priceFrom, price }: BookMobileCt
     <div className="fixed inset-x-0 bottom-0 z-[49] border-t border-border bg-white/85 px-6 py-4 backdrop-blur-md md:block lg:hidden">
       <div className="flex items-center justify-between gap-4">
         <p className="flex flex-col leading-tight">
-          <span className="text-[13px] text-muted-foreground">{priceFrom}</span>
+          {priceFrom ? (
+            <span className="text-[13px] text-muted-foreground">{priceFrom}</span>
+          ) : null}
           <span className="text-xl font-bold text-primary">{price}</span>
         </p>
 

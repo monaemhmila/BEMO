@@ -18,6 +18,7 @@
     "db:push": "prisma db push",
     "db:seed": "npx ts-node prisma/seed.ts",
     "db:seed:templates": "npx ts-node prisma/seed-templates.ts",
+    "db:backfill-localized-copy": "npx ts-node prisma/backfill-localized-copy.ts",
     "build": "tsc && prisma generate"
   },
   "dependencies": {

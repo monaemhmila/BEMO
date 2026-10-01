@@ -17,6 +17,8 @@ const envSchema = z.object({
   S3_ENDPOINT: z.string().optional(),
   STORAGE_PUBLIC_URL: z.string().optional(),
   WEBHOOK_BASE_URL: z.string().optional(),
+  FRONTEND_URL: z.string().url().optional(),
+  CORS_ORIGINS: z.string().optional(),
   REDIS_URL: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
   LOG_LEVEL: z.string().default("info"),
@@ -59,4 +61,3 @@ if (!env.OPENAI_API_KEY && process.env.AI_API_KEY) {
 }
 
 export { env };
-

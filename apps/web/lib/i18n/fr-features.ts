@@ -366,6 +366,36 @@ export const frFeatures: Record<string, string> = {
   "Mon Petit Hero home": "Accueil de Mon Petit Hero",
   "Bedtime Adventures": "Aventures du soir",
   "Storybook Platform": "Plateforme de livres d'histoires",
+  "Back to all books": "Retour à tous les livres",
+  "Personalised book": "Livre personnalisé",
+  "Personalise this book": "Personnaliser ce livre",
+  "Personalise my book": "Personnaliser mon livre",
+  "Talk to support": "Contacter l'assistance",
+  "Your child is the hero": "Votre enfant est le héros",
+  "Their photo, name and age are woven into every scene.":
+    "Sa photo, son prénom et son âge sont intégrés à chaque scène.",
+  "Personalised to perfection": "Personnalisé à la perfection",
+  "Pick names, characters and details to make it truly theirs.":
+    "Choisissez les prénoms, les personnages et les détails pour lui offrir une histoire unique.",
+  "Printed with care, shipped fast": "Imprimé avec soin, expédié rapidement",
+  "Premium softcover books delivered right to your door.":
+    "Des livres souples de qualité livrés directement à votre porte.",
+  "More stories to love": "Encore plus d'histoires à aimer",
+  "Browse all": "Tout parcourir",
+  "Reviews": "Avis",
+  "Read Reviews": "Lire les avis",
+  "Rated": "Noté",
+  "out of 5": "sur 5",
+  "The pictures make counting so easy for my little one. She loves pointing at every animal and fruit!":
+    "Les images rendent le comptage si facile pour ma petite fille. Elle adore montrer chaque animal et chaque fruit !",
+  "Preview available before ordering": "Aperçu disponible avant la commande",
+  "For kids ages:": "Pour les enfants de",
+  "years": "ans",
+  "Supports children through": "Aide les enfants à développer",
+  "A adventure story full of courage and heart": "Une histoire d'aventure pleine de courage et de cœur",
+  "How is the book personalized for my child?": "Comment le livre est-il personnalisé pour mon enfant ?",
+  "What if I need to make changes after personalizing?": "Puis-je demander des modifications après la personnalisation ?",
+  "Size & Quality": "Format et qualité",
   "A child becoming the hero of a magical storybook adventure":
     "Un enfant qui devient le héros d'une aventure magique en livre d'histoires",
   "A child reading a personalized storybook at bedtime":

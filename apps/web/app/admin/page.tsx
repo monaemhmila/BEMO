@@ -14,6 +14,7 @@ import {
   PencilLine, ScanFace, Save, Upload,
   ShoppingBag, Truck, Package, MapPin,
   Menu,
+  Languages,
   MousePointerClick,
   Plus, BookCopy, Power, Copy, ExternalLink, AlertTriangle,
   Loader2, ChevronLeft, ChevronRight,
@@ -1216,6 +1217,10 @@ interface AdminTemplate {
   id: string;
   name: string;
   description: string;
+  nameFr: string | null;
+  nameAr: string | null;
+  descriptionFr: string | null;
+  descriptionAr: string | null;
   ageRange: string;
   category: string;
   difficulty: number;
@@ -1226,6 +1231,10 @@ interface AdminTemplate {
   sampleImage: string | null;
   tagline: string | null;
   excerpt: string | null;
+  taglineFr: string | null;
+  taglineAr: string | null;
+  excerptFr: string | null;
+  excerptAr: string | null;
   emoji: string | null;
   audience: string;
   artStyle: string | null;
@@ -1254,6 +1263,10 @@ interface TemplateDraft {
   id: string;
   name: string;
   description: string;
+  nameFr: string;
+  nameAr: string;
+  descriptionFr: string;
+  descriptionAr: string;
   ageRange: string;
   category: string;
   difficulty: number;
@@ -1263,6 +1276,10 @@ interface TemplateDraft {
   sampleImage: string;
   tagline: string;
   excerpt: string;
+  taglineFr: string;
+  taglineAr: string;
+  excerptFr: string;
+  excerptAr: string;
   emoji: string;
   audience: string;
   artStyle: string;
@@ -1283,6 +1300,10 @@ function emptyTemplateDraft(): TemplateDraft {
     id: "",
     name: "",
     description: "",
+    nameFr: "",
+    nameAr: "",
+    descriptionFr: "",
+    descriptionAr: "",
     ageRange: "4-8",
     category: "adventure",
     difficulty: 1,
@@ -1292,6 +1313,10 @@ function emptyTemplateDraft(): TemplateDraft {
     sampleImage: "",
     tagline: "",
     excerpt: "",
+    taglineFr: "",
+    taglineAr: "",
+    excerptFr: "",
+    excerptAr: "",
     emoji: "",
     audience: "any",
     artStyle: "",
@@ -1315,6 +1340,10 @@ function toTemplateDraft(template: AdminTemplate): TemplateDraft {
     id: template.id,
     name: template.name,
     description: template.description,
+    nameFr: template.nameFr ?? "",
+    nameAr: template.nameAr ?? "",
+    descriptionFr: template.descriptionFr ?? "",
+    descriptionAr: template.descriptionAr ?? "",
     ageRange: template.ageRange,
     category: template.category,
     difficulty: template.difficulty,
@@ -1324,6 +1353,10 @@ function toTemplateDraft(template: AdminTemplate): TemplateDraft {
     sampleImage: template.sampleImage ?? "",
     tagline: template.tagline ?? "",
     excerpt: template.excerpt ?? "",
+    taglineFr: template.taglineFr ?? "",
+    taglineAr: template.taglineAr ?? "",
+    excerptFr: template.excerptFr ?? "",
+    excerptAr: template.excerptAr ?? "",
     emoji: template.emoji ?? "",
     audience: template.audience,
     artStyle: template.artStyle ?? "",
@@ -1360,6 +1393,7 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
   const [uploadError, setUploadError] = useState("");
   const [uploadingCover, setUploadingCover] = useState(false);
   const [coverError, setCoverError] = useState("");
+  const [translating, setTranslating] = useState(false);
   const previewInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -1369,6 +1403,66 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
 
   const set = <K extends keyof TemplateDraft>(key: K, value: TemplateDraft[K]) =>
     setDraft((prev) => ({ ...prev, [key]: value }));
+
+  const generateTranslations = async () => {
+    if (!draft.name.trim() || !draft.description.trim()) {
+      setError("Add the English name and description before generating translations.");
+      return;
+    }
+
+    const hasExistingTranslations = [
+      draft.nameFr,
+      draft.nameAr,
+      draft.descriptionFr,
+      draft.descriptionAr,
+      draft.taglineFr,
+      draft.taglineAr,
+      draft.excerptFr,
+      draft.excerptAr,
+    ].some((value) => value.trim());
+
+    if (
+      hasExistingTranslations &&
+      !window.confirm("Replace the current French and Arabic translations with new AI-generated copy?")
+    ) {
+      return;
+    }
+
+    setError("");
+    setTranslating(true);
+    try {
+      const headers = await authHeaders();
+      const response = await fetch(`${BACKEND_URL}/admin/templates/translate`, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: draft.name.trim(),
+          description: draft.description.trim(),
+          tagline: draft.tagline.trim(),
+          excerpt: draft.excerpt.trim(),
+        }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body?.message || "Automatic translation failed");
+
+      setDraft((prev) => ({
+        ...prev,
+        nameFr: body.translations.fr.name,
+        nameAr: body.translations.ar.name,
+        descriptionFr: body.translations.fr.description,
+        descriptionAr: body.translations.ar.description,
+        taglineFr: body.translations.fr.tagline,
+        taglineAr: body.translations.ar.tagline,
+        excerptFr: body.translations.fr.excerpt,
+        excerptAr: body.translations.ar.excerpt,
+      }));
+      toast.success("French and Arabic translations generated — review them before saving.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Automatic translation failed");
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const setBeat = (index: number, value: string) =>
     setDraft((prev) => ({
@@ -1528,6 +1622,10 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
       ...(isNew && draft.id.trim() ? { id: draft.id.trim() } : {}),
       name: draft.name.trim(),
       description: draft.description.trim(),
+      nameFr: orNull(draft.nameFr),
+      nameAr: orNull(draft.nameAr),
+      descriptionFr: orNull(draft.descriptionFr),
+      descriptionAr: orNull(draft.descriptionAr),
       ageRange: draft.ageRange.trim(),
       category: draft.category,
       difficulty: Number(draft.difficulty) || 1,
@@ -1540,6 +1638,10 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
       sampleImage: orNull(draft.sampleImage),
       tagline: orNull(draft.tagline),
       excerpt: orNull(draft.excerpt),
+      taglineFr: orNull(draft.taglineFr),
+      taglineAr: orNull(draft.taglineAr),
+      excerptFr: orNull(draft.excerptFr),
+      excerptAr: orNull(draft.excerptAr),
       emoji: orNull(draft.emoji),
       audience: draft.audience,
       artStyle: orNull(draft.artStyle),
@@ -1623,11 +1725,37 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
 
           {/* Shop copy */}
           <section className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">Shop listing</h4>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-white/40">Shop listing</h4>
+              <button
+                type="button"
+                onClick={generateTranslations}
+                disabled={translating || saving}
+                className="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {translating ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Languages className="size-3.5" />
+                )}
+                {translating ? "Translating…" : "Generate FR + AR copy"}
+              </button>
+            </div>
+            <p className="text-[11px] leading-relaxed text-white/40">
+              GPT-4o mini generates editable French and Arabic title, description, tagline, and excerpt. Review the fields below before saving.
+            </p>
             <div className="grid sm:grid-cols-2 gap-3">
               <label className="block sm:col-span-2">
                 <span className="text-xs text-white/50">Name</span>
                 <input className={adminInputCls} value={draft.name} onChange={(e) => set("name", e.target.value)} placeholder="Space Expedition" />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Name — Français</span>
+                <input className={adminInputCls} value={draft.nameFr} onChange={(e) => set("nameFr", e.target.value)} placeholder="Expédition spatiale" dir="ltr" />
+              </label>
+              <label className="block" dir="rtl">
+                <span className="text-xs text-white/50">الاسم — العربية</span>
+                <input className={adminInputCls} value={draft.nameAr} onChange={(e) => set("nameAr", e.target.value)} placeholder="رحلة استكشافية في الفضاء" />
               </label>
               <label className="block">
                 <span className="text-xs text-white/50">Url slug (id)</span>
@@ -1650,13 +1778,37 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
                 <span className="text-xs text-white/50">Tagline</span>
                 <input className={adminInputCls} value={draft.tagline} onChange={(e) => set("tagline", e.target.value)} placeholder="One-line hook shown on the card" />
               </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Tagline — Français</span>
+                <input className={adminInputCls} value={draft.taglineFr} onChange={(e) => set("taglineFr", e.target.value)} placeholder="Accroche affichée sur la carte" dir="ltr" />
+              </label>
+              <label className="block" dir="rtl">
+                <span className="text-xs text-white/50">الوصف المختصر — العربية</span>
+                <input className={adminInputCls} value={draft.taglineAr} onChange={(e) => set("taglineAr", e.target.value)} placeholder="عبارة قصيرة تظهر على البطاقة" />
+              </label>
               <label className="block sm:col-span-2">
                 <span className="text-xs text-white/50">Description</span>
                 <textarea className={`${adminInputCls} min-h-[70px]`} value={draft.description} onChange={(e) => set("description", e.target.value)} />
               </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Description — Français</span>
+                <textarea className={`${adminInputCls} min-h-[110px]`} value={draft.descriptionFr} onChange={(e) => set("descriptionFr", e.target.value)} placeholder="Description française de l'histoire" dir="ltr" />
+              </label>
+              <label className="block" dir="rtl">
+                <span className="text-xs text-white/50">الوصف — العربية</span>
+                <textarea className={`${adminInputCls} min-h-[110px]`} value={draft.descriptionAr} onChange={(e) => set("descriptionAr", e.target.value)} placeholder="الوصف العربي للقصة" />
+              </label>
               <label className="block sm:col-span-2">
                 <span className="text-xs text-white/50">Excerpt (pull quote)</span>
                 <textarea className={`${adminInputCls} min-h-[70px]`} value={draft.excerpt} onChange={(e) => set("excerpt", e.target.value)} />
+              </label>
+              <label className="block">
+                <span className="text-xs text-white/50">Excerpt — Français</span>
+                <textarea className={`${adminInputCls} min-h-[110px]`} value={draft.excerptFr} onChange={(e) => set("excerptFr", e.target.value)} placeholder="Extrait français" dir="ltr" />
+              </label>
+              <label className="block" dir="rtl">
+                <span className="text-xs text-white/50">المقتطف — العربية</span>
+                <textarea className={`${adminInputCls} min-h-[110px]`} value={draft.excerptAr} onChange={(e) => set("excerptAr", e.target.value)} placeholder="مقتطف عربي" />
               </label>
               <div className="block sm:col-span-2">
                 <span className="text-xs text-white/50">Cover image</span>
@@ -2036,6 +2188,10 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
         {
           name: `${template.name} (copy)`,
           description: template.description,
+          nameFr: template.nameFr,
+          nameAr: template.nameAr,
+          descriptionFr: template.descriptionFr,
+          descriptionAr: template.descriptionAr,
           ageRange: template.ageRange,
           category: template.category,
           difficulty: template.difficulty,
@@ -2046,6 +2202,10 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
           sampleImage: template.sampleImage,
           tagline: template.tagline,
           excerpt: template.excerpt,
+          taglineFr: template.taglineFr,
+          taglineAr: template.taglineAr,
+          excerptFr: template.excerptFr,
+          excerptAr: template.excerptAr,
           emoji: template.emoji,
           audience: template.audience,
           artStyle: template.artStyle,

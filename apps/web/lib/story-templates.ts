@@ -75,6 +75,7 @@ function toStoryTemplate(row: StorefrontTemplate): StoryTemplate {
     tagline: row.tagline ?? "",
     description: row.description,
     excerpt: row.excerpt ?? "",
+    translations: row.translations,
     coverImage: toImageUrl(row.coverImage),
     previews: toPreviews(row.previews),
     ageRange: row.ageRange,

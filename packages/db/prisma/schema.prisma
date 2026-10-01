@@ -122,6 +122,15 @@ model StoryTemplate {
   // book detail pages, so they live here rather than in frontend code.
   tagline    String?  // one-line hook shown under the title on a catalogue card
   excerpt    String?  // opening lines, shown as a pull quote on the detail page
+  // Localized storefront copy. English remains the canonical fallback.
+  nameFr        String?
+  nameAr        String?
+  descriptionFr String?
+  descriptionAr String?
+  taglineFr     String?
+  taglineAr     String?
+  excerptFr     String?
+  excerptAr     String?
   emoji      String?  // small badge on the card
   audience   String   @default("any") // girl | boy | any
   artStyle   String?  // art direction handed to the image generator

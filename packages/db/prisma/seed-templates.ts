@@ -77,6 +77,14 @@ export interface TemplateSeed {
   /** Storefront copy rendered by /books. Null/omitted fields simply go unused. */
   tagline?: string;
   excerpt?: string;
+  nameFr?: string;
+  nameAr?: string;
+  descriptionFr?: string;
+  descriptionAr?: string;
+  taglineFr?: string;
+  taglineAr?: string;
+  excerptFr?: string;
+  excerptAr?: string;
   emoji?: string;
   audience?: string;
   artStyle?: string;
@@ -96,6 +104,12 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
     name: "Let's Count! 1–10",
     description:
       "A playful counting adventure where the child counts animals from one to five and then discovers colorful fruits while counting from six to ten.",
+    nameFr: "Comptons ! De 1 à 10",
+    nameAr: "هيا نعدّ! من 1 إلى 10",
+    descriptionFr:
+      "Une aventure ludique où l'enfant compte des animaux de un à cinq, puis découvre des fruits colorés en comptant de six à dix.",
+    descriptionAr:
+      "مغامرة مرحة يعدّ فيها الطفل الحيوانات من واحد إلى خمسة، ثم يكتشف الفواكه الملونة وهو يعدّ من ستة إلى عشرة.",
     ageRange: "2-4",
     category: "adventure",
     difficulty: 1,
@@ -110,8 +124,14 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
     ],
     tagline:
       "Count the animals, count the fruits, and discover numbers 1 to 10!",
+    taglineFr: "Compte les animaux, compte les fruits et découvre les nombres de 1 à 10 !",
+    taglineAr: "عدّ الحيوانات والفواكه واكتشف الأرقام من 1 إلى 10!",
     excerpt:
       "The child begins a counting adventure with friendly animals. First there is one, then two, three, four, and five. After that, a colorful fruit garden appears, bringing six, seven, eight, nine, and ten into the adventure. Every number is shown clearly with exactly the right number of objects.",
+    excerptFr:
+      "L'enfant commence une aventure de comptage avec des animaux sympathiques. Puis un jardin de fruits colorés apparaît pour faire découvrir les nombres de six à dix.",
+    excerptAr:
+      "يبدأ الطفل مغامرة ممتعة في العد مع حيوانات لطيفة، ثم تظهر حديقة فواكه ملونة لتعرّفه إلى الأعداد من ستة إلى عشرة.",
     emoji: "🔢",
     audience: "any",
     artStyle:
@@ -157,14 +177,26 @@ export const STOREFRONT_TEMPLATES: TemplateSeed[] = [
     name: "My ABC Adventure",
     description:
       "A playful learning adventure where the child explores the alphabet two letters at a time, discovering a familiar word for each letter in the selected language.",
+    nameFr: "Mon aventure avec l'alphabet",
+    nameAr: "مغامرتي مع الحروف",
+    descriptionFr:
+      "Une aventure d'apprentissage où l'enfant explore l'alphabet deux lettres à la fois et découvre un mot familier pour chaque lettre dans la langue choisie.",
+    descriptionAr:
+      "مغامرة تعليمية يستكشف فيها الطفل الحروف حرفين في كل مرة، ويكتشف كلمة مألوفة لكل حرف باللغة المختارة.",
     ageRange: "3-5",
     category: "adventure",
     difficulty: 1,
     tags: ["alphabet", "ABC", "letters", "words", "learning", "language"],
     tagline:
       "Every letter opens the door to a new word!",
+    taglineFr: "Chaque lettre ouvre la porte vers un nouveau mot !",
+    taglineAr: "كل حرف يفتح الباب أمام كلمة جديدة!",
     excerpt:
       "The child begins a colorful alphabet adventure, discovering two new letters at a time. Each letter is paired with a simple familiar word in the selected language, helping the child recognize the letter, learn its sound, and connect it with a real word.",
+    excerptFr:
+      "L'enfant commence une aventure colorée dans l'alphabet et découvre deux nouvelles lettres à la fois. Chaque lettre est associée à un mot simple et familier dans la langue choisie.",
+    excerptAr:
+      "يبدأ الطفل مغامرة ملونة في عالم الحروف، فيكتشف حرفين جديدين في كل مرة، ويربط كل حرف بكلمة بسيطة ومألوفة باللغة المختارة.",
     emoji: "🔤",
     audience: "any",
     artStyle:
@@ -271,6 +303,14 @@ export async function seedStoryTemplates(client: PrismaClient): Promise<number> 
       ownerUserId: null,
       tagline: template.tagline ?? null,
       excerpt: template.excerpt ?? null,
+      nameFr: template.nameFr ?? null,
+      nameAr: template.nameAr ?? null,
+      descriptionFr: template.descriptionFr ?? null,
+      descriptionAr: template.descriptionAr ?? null,
+      taglineFr: template.taglineFr ?? null,
+      taglineAr: template.taglineAr ?? null,
+      excerptFr: template.excerptFr ?? null,
+      excerptAr: template.excerptAr ?? null,
       emoji: template.emoji ?? null,
       audience: template.audience ?? "any",
       artStyle: template.artStyle ?? null,

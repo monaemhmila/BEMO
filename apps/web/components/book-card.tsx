@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { FillerImage } from "@/components/filler";
+import { LocalizedStoryText } from "@/components/localized-story-text";
 import type { Book } from "@/lib/data";
 
 export function BookCard({ book }: { book: Book }) {
@@ -23,11 +24,19 @@ export function BookCard({ book }: { book: Book }) {
         <div className="flex-1">
           <h3 className="font-display text-[17px] leading-snug font-semibold text-violet-deep">
             <Link href={`/books/${book.slug}`} className="hover:underline">
-              {book.title}
+              <LocalizedStoryText
+                templateId={book.slug}
+                field="title"
+                fallback={book.title}
+              />
             </Link>
           </h3>
           <p className="mt-1.5 line-clamp-2 text-sm text-muted-foreground">
-            {book.tagline}
+            <LocalizedStoryText
+              templateId={book.slug}
+              field="tagline"
+              fallback={book.tagline}
+            />
           </p>
         </div>
 

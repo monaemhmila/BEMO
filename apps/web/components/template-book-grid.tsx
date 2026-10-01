@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 import { TemplateBookCover } from "@/components/template-book-cover";
+import { LocalizedStoryText } from "@/components/localized-story-text";
 import type { StoryTemplate } from "@/data/story-templates";
 
 const PRICE_FROM = "";
@@ -94,11 +95,21 @@ export function TemplateBookCard({ template }: { template: StoryTemplate }) {
         <div className="flex w-full flex-1 flex-col">
           <div className="grow">
             <span className="block text-left font-display text-[17px] font-semibold text-violet-deep line-clamp-2 md:text-[20px] md:line-clamp-1">
-              {template.title}
+              <LocalizedStoryText
+                templateId={template.slug}
+                field="title"
+                fallback={template.title}
+                translations={template.translations}
+              />
             </span>
 
             <span className="mt-1 block text-left text-[14px] leading-relaxed text-muted-foreground line-clamp-2 md:text-[16px]">
-              {template.tagline}
+              <LocalizedStoryText
+                templateId={template.slug}
+                field="tagline"
+                fallback={template.tagline}
+                translations={template.translations}
+              />
             </span>
           </div>
         </div>

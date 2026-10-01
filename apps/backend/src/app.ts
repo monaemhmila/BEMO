@@ -46,8 +46,22 @@ export function createApp() {
 
     next();
   });
+  const configuredOrigins = [
+    env.FRONTEND_URL,
+    ...(env.CORS_ORIGINS?.split(",").map((origin) => origin.trim()) ?? []),
+  ].filter((origin): origin is string => Boolean(origin));
+
   const corsOptions: cors.CorsOptions = {
-    origin: true,
+    origin: (requestOrigin, callback) => {
+      // Non-browser requests (health checks, webhooks, server-to-server calls)
+      // do not send an Origin header and should remain allowed.
+      if (!requestOrigin || env.NODE_ENV !== "production") {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, configuredOrigins.includes(requestOrigin));
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
     allowedHeaders: [
@@ -146,4 +160,3 @@ export function createApp() {
 
   return app;
 }
-

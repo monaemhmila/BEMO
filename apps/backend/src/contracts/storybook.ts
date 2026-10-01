@@ -306,6 +306,7 @@ export interface StorefrontTemplate {
   description: string;
   tagline: string | null;
   excerpt: string | null;
+  translations: StorefrontTemplateTranslations;
   emoji: string | null;
   audience: string;
   ageRange: string;
@@ -322,6 +323,21 @@ export interface StorefrontTemplate {
   review: StorefrontReview | null;
 }
 
+export interface StorefrontTemplateTranslations {
+  fr: {
+    title: string | null;
+    description: string | null;
+    tagline: string | null;
+    excerpt: string | null;
+  };
+  ar: {
+    title: string | null;
+    description: string | null;
+    tagline: string | null;
+    excerpt: string | null;
+  };
+}
+
 /** The subset of a `StoryTemplate` row the storefront payload is built from. */
 interface StoryTemplateRow {
   id: string;
@@ -335,6 +351,14 @@ interface StoryTemplateRow {
   sampleImage: string | null;
   tagline: string | null;
   excerpt: string | null;
+  nameFr: string | null;
+  nameAr: string | null;
+  descriptionFr: string | null;
+  descriptionAr: string | null;
+  taglineFr: string | null;
+  taglineAr: string | null;
+  excerptFr: string | null;
+  excerptAr: string | null;
   emoji: string | null;
   audience: string;
   artStyle: string | null;
@@ -412,6 +436,20 @@ export function toStorefrontTemplate(row: StoryTemplateRow): StorefrontTemplate 
     description: row.description,
     tagline: row.tagline,
     excerpt: row.excerpt,
+    translations: {
+      fr: {
+        title: row.nameFr,
+        description: row.descriptionFr,
+        tagline: row.taglineFr,
+        excerpt: row.excerptFr,
+      },
+      ar: {
+        title: row.nameAr,
+        description: row.descriptionAr,
+        tagline: row.taglineAr,
+        excerpt: row.excerptAr,
+      },
+    },
     emoji: row.emoji,
     audience: row.audience || "any",
     ageRange: row.ageRange,

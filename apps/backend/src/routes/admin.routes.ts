@@ -9,6 +9,7 @@ import { PDFService } from "../services/pdf.service";
 import { faceCanvasService } from "../services/face-canvas.service";
 import { z } from "zod";
 import { STORYBOOK_PAGE_COUNT } from "../contracts/storybook";
+import { env } from "../config/env";
 import {
   deleteTemplateImage,
   isTemplateImageFolder,
@@ -656,6 +657,28 @@ const TemplateReviewSchema = z
   })
   .nullable();
 
+const TranslateTemplateSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  description: z.string().trim().min(1).max(2000),
+  tagline: z.string().trim().max(300).default(""),
+  excerpt: z.string().trim().max(2000).default(""),
+});
+
+const GeneratedTranslationsSchema = z.object({
+  fr: z.object({
+    name: z.string().trim().max(200),
+    description: z.string().trim().max(2000),
+    tagline: z.string().trim().max(300),
+    excerpt: z.string().trim().max(2000),
+  }),
+  ar: z.object({
+    name: z.string().trim().max(200),
+    description: z.string().trim().max(2000),
+    tagline: z.string().trim().max(300),
+    excerpt: z.string().trim().max(2000),
+  }),
+});
+
 /**
  * Gallery slides and cover art. `src` may be a full http(s) URL or a
  * root-relative path, which is what the upload endpoint returns (/assets/...) and
@@ -698,6 +721,10 @@ const TemplateFieldsSchema = z.object({
     .optional(),
   name: z.string().trim().min(1, "Name is required").max(200),
   description: z.string().trim().min(1, "Description is required").max(2000),
+  nameFr: z.string().trim().max(200).nullable().optional(),
+  nameAr: z.string().trim().max(200).nullable().optional(),
+  descriptionFr: z.string().trim().max(2000).nullable().optional(),
+  descriptionAr: z.string().trim().max(2000).nullable().optional(),
   ageRange: z.string().trim().min(1, "Age range is required").max(40),
   category: z.enum(TEMPLATE_CATEGORY_VALUES).default("adventure"),
   difficulty: z.number().int().min(1).max(5).default(1),
@@ -707,6 +734,10 @@ const TemplateFieldsSchema = z.object({
   sampleImage: TemplateImageUrlSchema.nullable().optional(),
   tagline: z.string().trim().max(300).nullable().optional(),
   excerpt: z.string().trim().max(2000).nullable().optional(),
+  taglineFr: z.string().trim().max(300).nullable().optional(),
+  taglineAr: z.string().trim().max(300).nullable().optional(),
+  excerptFr: z.string().trim().max(2000).nullable().optional(),
+  excerptAr: z.string().trim().max(2000).nullable().optional(),
   emoji: z.string().trim().max(16).nullable().optional(),
   audience: z.enum(TEMPLATE_AUDIENCE_VALUES).default("any"),
   artStyle: z.string().trim().max(500).nullable().optional(),
@@ -849,6 +880,102 @@ router.get("/templates", async (req, res) => {
 });
 
 /**
+ * POST /admin/templates/translate
+ * Generate editable French and Arabic storefront copy from the English draft.
+ * Nothing is written to the database here; the admin reviews the result and
+ * saves it through the normal create/update endpoint.
+ */
+router.post("/templates/translate", async (req, res) => {
+  const parsed = TranslateTemplateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "English title and description are required", issues: parsed.error.issues });
+    return;
+  }
+
+  if (!env.OPENAI_API_KEY) {
+    res.status(503).json({ message: "Automatic translation is not configured on the server." });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You translate children's storybook storefront copy. Return only valid JSON. Preserve names, numbers, punctuation, warmth, age-appropriate language, and marketing meaning. Use natural French and Modern Standard Arabic. Do not translate the brand name Mon Petit Hero if it appears.",
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              task: "Translate every value into French and Arabic.",
+              outputShape: {
+                fr: { name: "", description: "", tagline: "", excerpt: "" },
+                ar: { name: "", description: "", tagline: "", excerpt: "" },
+              },
+              source: parsed.data,
+            }),
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      logger.warn({ status: response.status, detail }, "OpenAI template translation failed");
+      res.status(502).json({ message: "The translation service could not complete this request." });
+      return;
+    }
+
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) {
+      res.status(502).json({ message: "The translation service returned an empty response." });
+      return;
+    }
+
+    let generated: unknown;
+    try {
+      generated = JSON.parse(content);
+    } catch {
+      res.status(502).json({ message: "The translation service returned invalid JSON." });
+      return;
+    }
+
+    const translated = GeneratedTranslationsSchema.safeParse(generated);
+    if (!translated.success) {
+      res.status(502).json({ message: "The translation service returned incomplete copy." });
+      return;
+    }
+
+    res.json({ translations: translated.data, model: "gpt-4o-mini" });
+  } catch (error) {
+    const message = error instanceof Error && error.name === "AbortError"
+      ? "Translation timed out. Please try again."
+      : "The translation service is unavailable. Please try again.";
+    logger.warn({ error }, "Template translation request failed");
+    res.status(502).json({ message });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
+
+/**
  * POST /admin/templates
  * Create a predefined template. The id doubles as the storefront slug, so it is
  * derived from the name unless one is supplied.
@@ -870,6 +997,10 @@ router.post("/templates", async (req, res) => {
         id,
         name: data.name,
         description: data.description,
+        nameFr: nullable(data.nameFr),
+        nameAr: nullable(data.nameAr),
+        descriptionFr: nullable(data.descriptionFr),
+        descriptionAr: nullable(data.descriptionAr),
         ageRange: data.ageRange,
         category: data.category,
         difficulty: data.difficulty,
@@ -880,6 +1011,10 @@ router.post("/templates", async (req, res) => {
         sampleImage: nullable(data.sampleImage),
         tagline: nullable(data.tagline),
         excerpt: nullable(data.excerpt),
+        taglineFr: nullable(data.taglineFr),
+        taglineAr: nullable(data.taglineAr),
+        excerptFr: nullable(data.excerptFr),
+        excerptAr: nullable(data.excerptAr),
         emoji: nullable(data.emoji),
         audience: data.audience,
         artStyle: nullable(data.artStyle),
@@ -926,6 +1061,10 @@ router.put("/templates/:id", async (req, res) => {
       data: {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
+        ...(data.nameFr !== undefined && { nameFr: nullable(data.nameFr) }),
+        ...(data.nameAr !== undefined && { nameAr: nullable(data.nameAr) }),
+        ...(data.descriptionFr !== undefined && { descriptionFr: nullable(data.descriptionFr) }),
+        ...(data.descriptionAr !== undefined && { descriptionAr: nullable(data.descriptionAr) }),
         ...(data.ageRange !== undefined && { ageRange: data.ageRange }),
         ...(data.category !== undefined && { category: data.category }),
         ...(data.difficulty !== undefined && { difficulty: data.difficulty }),
@@ -936,6 +1075,10 @@ router.put("/templates/:id", async (req, res) => {
         ...(data.sampleImage !== undefined && { sampleImage: nullable(data.sampleImage) }),
         ...(data.tagline !== undefined && { tagline: nullable(data.tagline) }),
         ...(data.excerpt !== undefined && { excerpt: nullable(data.excerpt) }),
+        ...(data.taglineFr !== undefined && { taglineFr: nullable(data.taglineFr) }),
+        ...(data.taglineAr !== undefined && { taglineAr: nullable(data.taglineAr) }),
+        ...(data.excerptFr !== undefined && { excerptFr: nullable(data.excerptFr) }),
+        ...(data.excerptAr !== undefined && { excerptAr: nullable(data.excerptAr) }),
         ...(data.emoji !== undefined && { emoji: nullable(data.emoji) }),
         ...(data.artStyle !== undefined && { artStyle: nullable(data.artStyle) }),
         ...(data.review !== undefined && { review: data.review as any }),

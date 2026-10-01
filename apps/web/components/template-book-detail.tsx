@@ -6,6 +6,7 @@ import { BookFaq, type BookFaqItem } from "@/components/book-faq";
 import { BookGallery } from "@/components/book-gallery";
 import { BookMobileCta } from "@/components/book-mobile-cta";
 import { TemplateBookGrid } from "@/components/template-book-grid";
+import { LocalizedStoryText } from "@/components/localized-story-text";
 import { SiteFooter } from "@/components/sections/site-footer";
 import {
   CATEGORY_META,
@@ -14,8 +15,8 @@ import {
   type StoryTemplate,
 } from "@/data/story-templates";
 
-const PRICE_FROM = "From";
-const PRICE = "$34.99";
+const PRICE_FROM = "";
+const PRICE = "70 DT";
 const STAR_COLOR = "#ffd05a";
 const MUTED = "#ACACAC";
 const BODY = "#60646C";
@@ -130,7 +131,12 @@ export function TemplateBookDetail({
             {/* Mobile title block */}
             <div className="order-1 py-2 text-left md:block lg:hidden">
               <h1 className="font-display text-[30px] font-semibold leading-tight text-violet-deep">
-                {template.title}
+                <LocalizedStoryText
+                  templateId={template.slug}
+                  field="title"
+                  fallback={template.title}
+                  translations={template.translations}
+                />
               </h1>
               {review && (
                 <div className="mt-2 flex items-center gap-2">
@@ -141,7 +147,12 @@ export function TemplateBookDetail({
                 </div>
               )}
               <p className="mt-2 text-base" style={{ color: BODY }}>
-                {template.tagline}
+                    <LocalizedStoryText
+                      templateId={template.slug}
+                      field="tagline"
+                      fallback={template.tagline}
+                      translations={template.translations}
+                    />
               </p>
             </div>
 
@@ -157,7 +168,12 @@ export function TemplateBookDetail({
             {/* Product info */}
             <div className="order-3 py-2 lg:order-2 lg:w-[35%] lg:py-6 lg:pl-4">
               <h1 className="hidden font-display text-[34px] font-semibold leading-[34px] text-violet-deep lg:block">
-                {template.title}
+                <LocalizedStoryText
+                  templateId={template.slug}
+                  field="title"
+                  fallback={template.title}
+                  translations={template.translations}
+                />
               </h1>
 
               {review && (
@@ -170,8 +186,24 @@ export function TemplateBookDetail({
               )}
 
               <p className="mt-6 text-lg leading-relaxed" style={{ color: BODY }}>
-                {template.description}
+                <LocalizedStoryText
+                  templateId={template.slug}
+                  field="description"
+                  fallback={template.description}
+                  translations={template.translations}
+                />
               </p>
+
+              {template.excerpt && (
+                <blockquote className="mt-5 border-l-4 border-primary/30 pl-4 text-base italic leading-relaxed text-muted-foreground">
+                  <LocalizedStoryText
+                    templateId={template.slug}
+                    field="excerpt"
+                    fallback={template.excerpt}
+                    translations={template.translations}
+                  />
+                </blockquote>
+              )}
 
               <ul className="mt-4 list-disc space-y-1.5 pl-5 text-[16px] leading-relaxed" style={{ color: BODY }}>
                 <li>For kids ages: {ageLabel(template.ageRange)} years</li>
