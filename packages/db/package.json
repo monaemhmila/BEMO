@@ -19,6 +19,8 @@
     "db:seed": "npx ts-node prisma/seed.ts",
     "db:seed:templates": "npx ts-node prisma/seed-templates.ts",
     "db:backfill-localized-copy": "npx ts-node prisma/backfill-localized-copy.ts",
+    "migrate:stories": "npx ts-node prisma/migrate-story-templates.ts",
+    "migrate:generated-stories": "npx ts-node prisma/migrate-stories.ts",
     "build": "tsc && prisma generate"
   },
   "dependencies": {

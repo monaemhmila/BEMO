@@ -1,0 +1,722 @@
+{
+  "format": "mon-petit-hero-story-templates",
+  "version": 1,
+  "exportedAt": "2026-10-01T16:35:11.402Z",
+  "includesCustomTemplates": true,
+  "templates": [
+    {
+      "id": "birthday-adventure-and-the-greedy-goblin",
+      "name": "Birthday Adventure and the Greedy Goblin",
+      "description": "Every present is empty — until the biggest box turns out to be hiding a tiny goblin with a mountain of stolen toys.",
+      "ageRange": "4-8",
+      "category": "sentimental",
+      "prompts": {
+        "beats": [
+          "It is the hero's birthday, and the living room is buried under ribbons — a whole hill of wrapped boxes, and everyone is singing.",
+          "The first box is opened with a great tearing tug of paper, and out float nothing at all: one curled ribbon and a chocolate coin.",
+          "The second box is empty. So is the third, and the fourth — just tissue paper, confetti, and a lid.",
+          "Even the enormous round box with the golden ribbon weighs less than a feather, and the hero's smile slowly goes.",
+          "The hero counts the boxes and checks them all over twice, but nineteen empty boxes stay exactly nineteen empty boxes.",
+          "Then the door bursts open and all the neighbours' children tumble in — and every single one of them opens an empty box too.",
+          "Behind the sofa the hero finds green crumbs, a torn corner of paper, and tiny green footprints leading straight to the biggest box.",
+          "The hero goes in to look, tumbles, and lands on something that squeaks: a goblin no bigger than a teacup, asleep on a mountain of every toy in the world.",
+          "The goblin wakes, giggles, and admits he took them all because nobody ever gave him a single thing, and waves his wand: 'Everything is mine.'",
+          "The boxes slide away and the walls grow taller, and the hero backs into the corner, frightened and out of ideas.",
+          "The hero tries reason and kindness, but the goblin only curls tighter around the biggest toys and laughs.",
+          "Turning to run, the hero sees it — the goblin's long thin tail, curled right underfoot — and steps on it. Squeak! The wand clatters down.",
+          "The hero tells him the children have been crying all morning, and the goblin's grin fades as he stands on an empty floor with nothing of his own — until he quietly taps his wand, and every gift in the world flies home to the child it belongs to.",
+          "But the hero stops halfway up the stairs and looks back at the bare, echoing room — because the goblin is still there, all alone on the floor, hugging his own long thin tail, and for the very first time he is not laughing at all.",
+          "The hero climbs out to a house full of presents again, picks the smallest gift out of their own pile, ties a ribbon on it, and says: 'This one is for you. Will you come to my birthday?' The goblin's grin comes back bigger than before, and next year there are two names on the guest list."
+        ],
+        "theme": "opens a mountain of birthday presents to find every single box empty, falls into the very last one, discovers a greedy tiny goblin hiding inside who has stolen every gift in the whole world, confronts him and gets them all back magicly, then shares one of their own gifts with the lonely goblin nobody ever invited",
+        "moralLesson": "Taking what belongs to others leaves you alone; the best gift is the one you give away.",
+        "worldContext": "A birthday living room buried under ribbons and torn paper, a hill of empty cardboard boxes, a trail of green crumbs and tiny footprints, and a goblin no bigger than a teacup asleep on a mountain of stolen toys.",
+        "educationalFocus": "Counting and comparing how many gifts there are, and how sharing makes everyone happier."
+      },
+      "storyContent": {
+        "beats": [
+          "It is the hero's birthday, and the living room is buried under ribbons — a whole hill of wrapped boxes, and everyone is singing.",
+          "The first box is opened with a great tearing tug of paper, and out float nothing at all: one curled ribbon and a chocolate coin.",
+          "The second box is empty. So is the third, and the fourth — just tissue paper, confetti, and a lid.",
+          "Even the enormous round box with the golden ribbon weighs less than a feather, and the hero's smile slowly goes.",
+          "The hero counts the boxes and checks them all over twice, but nineteen empty boxes stay exactly nineteen empty boxes.",
+          "Then the door bursts open and all the neighbours' children tumble in — and every single one of them opens an empty box too.",
+          "Behind the sofa the hero finds green crumbs, a torn corner of paper, and tiny green footprints leading straight to the biggest box.",
+          "The hero goes in to look, tumbles, and lands on something that squeaks: a goblin no bigger than a teacup, asleep on a mountain of every toy in the world.",
+          "The goblin wakes, giggles, and admits he took them all because nobody ever gave him a single thing, and waves his wand: 'Everything is mine.'",
+          "The boxes slide away and the walls grow taller, and the hero backs into the corner, frightened and out of ideas.",
+          "The hero tries reason and kindness, but the goblin only curls tighter around the biggest toys and laughs.",
+          "Turning to run, the hero sees it — the goblin's long thin tail, curled right underfoot — and steps on it. Squeak! The wand clatters down.",
+          "The hero tells him the children have been crying all morning, and the goblin's grin fades as he stands on an empty floor with nothing of his own — until he quietly taps his wand, and every gift in the world flies home to the child it belongs to.",
+          "But the hero stops halfway up the stairs and looks back at the bare, echoing room — because the goblin is still there, all alone on the floor, hugging his own long thin tail, and for the very first time he is not laughing at all.",
+          "The hero climbs out to a house full of presents again, picks the smallest gift out of their own pile, ties a ribbon on it, and says: 'This one is for you. Will you come to my birthday?' The goblin's grin comes back bigger than before, and next year there are two names on the guest list."
+        ],
+        "theme": "opens a mountain of birthday presents to find every single box empty, falls into the very last one, discovers a greedy tiny goblin hiding inside who has stolen every gift in the whole world, confronts him and gets them all back magicly, then shares one of their own gifts with the lonely goblin nobody ever invited",
+        "moralLesson": "Taking what belongs to others leaves you alone; the best gift is the one you give away.",
+        "worldContext": "A birthday living room buried under ribbons and torn paper, a hill of empty cardboard boxes, a trail of green crumbs and tiny footprints, and a goblin no bigger than a teacup asleep on a mountain of stolen toys.",
+        "educationalFocus": "Counting and comparing how many gifts there are, and how sharing makes everyone happier."
+      },
+      "sampleImage": null,
+      "coverImage": "http://localhost:8080/assets/covers/g4918ceard1zpejdanmml-ocfw6wg0_00b7c5963a840c93.jpg",
+      "isActive": true,
+      "difficulty": 1,
+      "tags": [
+        "birthday",
+        "kindness",
+        "sharing",
+        "magic"
+      ],
+      "source": "PREDEFINED",
+      "tagline": "Every present is empty — until the biggest box starts moving.",
+      "excerpt": "The box was far deeper than any box has a right to be. I put in one hand, then one knee, and then I was falling — landing with a squeak. In the dark, two yellow eyes blinked open. On a mountain of every toy in the world, curled up no bigger than a teacup, was a goblin. And in his hand was a wand.",
+      "nameFr": "Aventure d'Anniversaire et le Gobelin Gourmand",
+      "nameAr": "مغامرة عيد الميلاد والجن الجشع",
+      "descriptionFr": "Chaque cadeau est vide — jusqu'à ce que la plus grande boîte révèle un petit gobelin avec une montagne de jouets volés.",
+      "descriptionAr": "كل هدية فارغة — حتى تتحول أكبر صندوق إلى إخفاء جن صغير مع جبل من الألعاب المسروقة.",
+      "taglineFr": "Chaque cadeau est vide — jusqu'à ce que la plus grande boîte commence à bouger.",
+      "taglineAr": "كل هدية فارغة — حتى تبدأ أكبر صندوق في التحرك.",
+      "excerptFr": "La boîte était bien plus profonde que n'importe quelle boîte ne devrait l'être. J'ai mis une main, puis un genou, et ensuite je tombais — atterrissant avec un couinement. Dans l'obscurité, deux yeux jaunes se sont ouverts. Sur une montagne de tous les jouets du monde, recroquevillé pas plus grand qu'une tasse à thé, se trouvait un gobelin. Et dans sa main, il tenait une baguette.",
+      "excerptAr": "كان الصندوق أعمق بكثير مما ينبغي أن يكون عليه أي صندوق. وضعت يدي واحدة، ثم ركبتي، ثم كنت أسقط — وهبطت مع صرير. في الظلام، فتحت عينان صفراء. على جبل من كل لعبة في العالم، ملتفًا بحجم فنجان شاي، كان هناك جن. وفي يده كانت عصا سحرية.",
+      "emoji": "🎁",
+      "audience": "any",
+      "artStyle": "cosy magical birthday storybook illustration",
+      "review": {
+        "count": 1467,
+        "quote": "My son read the part where the goblin admits nobody ever invited him twice, then asked if we could invite him to his party. I nearly cried.",
+        "author": "Dalia H.",
+        "rating": 5
+      },
+      "previews": [
+        {
+          "src": "/templates/birthday/preview-1.jpg",
+          "type": "image",
+          "caption": "A whole hill of presents — and not one thing inside.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/birthday/preview-2.jpg",
+          "type": "image",
+          "caption": "Asleep on a mountain of every toy in the world.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/birthday/preview-3.jpg",
+          "type": "image",
+          "caption": "The smallest gift, tied with a ribbon, offered to the goblin.",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "createdAt": "2026-09-27T15:49:45.484Z",
+      "updatedAt": "2026-10-01T11:53:22.619Z"
+    },
+    {
+      "id": "the-secret-of-the-forest",
+      "name": "The Secret of the Forest",
+      "description": "A curious child explores a living forest, discovers how its plants and animals depend on one another, and learns why protecting nature matters.",
+      "ageRange": "6-8",
+      "category": "adventure",
+      "prompts": {
+        "beats": [
+          "One sunny morning, the hero follows a little blue butterfly into a beautiful forest where tall trees reach toward the sky and birds sing between the branches.",
+          "The hero looks around and discovers that the forest is full of life: ants march beneath the leaves, bees visit flowers, squirrels jump between branches, and rabbits hide among the grass.",
+          "Deep in the forest, the hero finds a huge old oak tree covered with nests, insects, moss, and tiny holes where small animals live, and realizes that one tree can be a home for many creatures.",
+          "A little bee lands on a bright flower, and the hero learns that bees carry pollen from one flower to another, helping plants make new seeds.",
+          "Suddenly, the happy sounds of the forest become quiet, and the hero discovers that a nearby stream is blocked by fallen branches, leaves, and rubbish.",
+          "The thirsty animals gather near the blocked water, so the hero carefully begins clearing the smaller pieces while rabbits push twigs and birds carry leaves away.",
+          "After everyone works together, the stream begins flowing again, and the animals happily drink while the forest seems to come alive once more.",
+          "The hero discovers tiny tree seedlings growing in the soil and carefully plants them in safe places, imagining the homes they will someday provide for animals.",
+          "Looking at the young trees, the hero imagines a forest without them: fewer nests, less shade, fewer flowers, and fewer safe places for animals to live.",
+          "Before leaving, the hero walks along the forest path collecting rubbish and promises never to leave waste behind or damage the plants and homes of the animals.",
+          "The forest animals gather around the hero as birds sing, rabbits hop, deer watch from the trees, and butterflies dance through the sunlight as if the whole forest is saying thank you.",
+          "On the way back to the village the hero knocks on each door and asks the families to look after their own stretch of the stream, and soon the whole village is keeping watch over it.",
+          "Before saying goodbye, the hero ties a small wooden sign to a branch beside the stream asking everyone to keep the water clear, and drops the rubbish they carried out into the village bin.",
+          "The hero stops to watch a bee carry pollen from one flower to another, and realises that every small creature in the forest is busy keeping it alive — so caring for the forest really means caring for all of them.",
+          "As the hero walks home, the old oak tree rustles gently in the wind, and the hero finally understands the forest's secret: when we take care of nature, nature takes care of us."
+        ],
+        "theme": "a child exploring a beautiful living forest, discovering how trees, flowers, insects, birds, and animals depend on one another, helping restore a blocked stream, planting young trees, and learning to protect nature",
+        "moralLesson": "Every living thing has an important place in nature, and when we care for the natural world, we help protect life around us.",
+        "worldContext": "A lush green forest filled with tall ancient trees, wildflowers, butterflies, bees, birds, squirrels, rabbits, deer, mushrooms, moss-covered stones, and a clear stream flowing through the woodland.",
+        "educationalFocus": "Understanding forest ecosystems, animal habitats, the importance of trees and clean water, pollination, and caring for nature."
+      },
+      "storyContent": {
+        "beats": [
+          "One sunny morning, the hero follows a little blue butterfly into a beautiful forest where tall trees reach toward the sky and birds sing between the branches.",
+          "The hero looks around and discovers that the forest is full of life: ants march beneath the leaves, bees visit flowers, squirrels jump between branches, and rabbits hide among the grass.",
+          "Deep in the forest, the hero finds a huge old oak tree covered with nests, insects, moss, and tiny holes where small animals live, and realizes that one tree can be a home for many creatures.",
+          "A little bee lands on a bright flower, and the hero learns that bees carry pollen from one flower to another, helping plants make new seeds.",
+          "Suddenly, the happy sounds of the forest become quiet, and the hero discovers that a nearby stream is blocked by fallen branches, leaves, and rubbish.",
+          "The thirsty animals gather near the blocked water, so the hero carefully begins clearing the smaller pieces while rabbits push twigs and birds carry leaves away.",
+          "After everyone works together, the stream begins flowing again, and the animals happily drink while the forest seems to come alive once more.",
+          "The hero discovers tiny tree seedlings growing in the soil and carefully plants them in safe places, imagining the homes they will someday provide for animals.",
+          "Looking at the young trees, the hero imagines a forest without them: fewer nests, less shade, fewer flowers, and fewer safe places for animals to live.",
+          "Before leaving, the hero walks along the forest path collecting rubbish and promises never to leave waste behind or damage the plants and homes of the animals.",
+          "The forest animals gather around the hero as birds sing, rabbits hop, deer watch from the trees, and butterflies dance through the sunlight as if the whole forest is saying thank you.",
+          "On the way back to the village the hero knocks on each door and asks the families to look after their own stretch of the stream, and soon the whole village is keeping watch over it.",
+          "Before saying goodbye, the hero ties a small wooden sign to a branch beside the stream asking everyone to keep the water clear, and drops the rubbish they carried out into the village bin.",
+          "The hero stops to watch a bee carry pollen from one flower to another, and realises that every small creature in the forest is busy keeping it alive — so caring for the forest really means caring for all of them.",
+          "As the hero walks home, the old oak tree rustles gently in the wind, and the hero finally understands the forest's secret: when we take care of nature, nature takes care of us."
+        ],
+        "theme": "a child exploring a beautiful living forest, discovering how trees, flowers, insects, birds, and animals depend on one another, helping restore a blocked stream, planting young trees, and learning to protect nature",
+        "moralLesson": "Every living thing has an important place in nature, and when we care for the natural world, we help protect life around us.",
+        "worldContext": "A lush green forest filled with tall ancient trees, wildflowers, butterflies, bees, birds, squirrels, rabbits, deer, mushrooms, moss-covered stones, and a clear stream flowing through the woodland.",
+        "educationalFocus": "Understanding forest ecosystems, animal habitats, the importance of trees and clean water, pollination, and caring for nature."
+      },
+      "sampleImage": null,
+      "coverImage": "http://localhost:8080/assets/covers/x0a5tbjrhyxgbxcpqpf0r-lnojgayl-1_097444811cb33583.jpg",
+      "isActive": true,
+      "difficulty": 2,
+      "tags": [
+        "forest",
+        "nature",
+        "animals",
+        "trees",
+        "adventure",
+        "environment"
+      ],
+      "source": "PREDEFINED",
+      "tagline": "Every tree has a story, and every creature has a place.",
+      "excerpt": "The forest was full of tiny sounds. Birds sang above, insects buzzed below, and somewhere nearby, water trickled over stones. But when the child discovered a blocked stream, the forest suddenly became very quiet. Something needed help.",
+      "nameFr": "Le Secret de la Forêt",
+      "nameAr": "سر الغابة",
+      "descriptionFr": "Un enfant curieux explore une forêt vivante, découvre comment ses plantes et ses animaux dépendent les uns des autres, et apprend pourquoi il est important de protéger la nature.",
+      "descriptionAr": "يستكشف طفل فضولي غابة حية، ويكتشف كيف تعتمد نباتاتها وحيواناتها على بعضها البعض، ويتعلم لماذا تعتبر حماية الطبيعة مهمة.",
+      "taglineFr": "Chaque arbre a une histoire, et chaque créature a sa place.",
+      "taglineAr": "لكل شجرة قصة، ولكل مخلوق مكان.",
+      "excerptFr": "La forêt était pleine de petits sons. Les oiseaux chantaient au-dessus, les insectes bourdonnaient en dessous, et quelque part à proximité, l'eau s'écoulait sur les pierres. Mais lorsque l'enfant découvrit un ruisseau bloqué, la forêt devint soudain très silencieuse. Quelque chose avait besoin d'aide.",
+      "excerptAr": "كانت الغابة مليئة بالأصوات الصغيرة. كانت الطيور تغني في الأعلى، والحشرات تطن في الأسفل، وفي مكان قريب، كانت المياه تتدفق فوق الحجارة. ولكن عندما اكتشف الطفل مجرى مائي مسدود، أصبحت الغابة فجأة هادئة جداً. كان هناك شيء يحتاج إلى مساعدة.",
+      "emoji": "🌳",
+      "audience": "any",
+      "artStyle": "colorful 3D animated nature adventure storybook illustration",
+      "review": {
+        "count": 982,
+        "quote": "My daughter loved discovering that every animal and plant has a job in the forest. She wanted to go outside and plant a tree afterward.",
+        "author": "Sarah M.",
+        "rating": 5
+      },
+      "previews": [
+        {
+          "src": "/templates/forest/preview-1.jpg",
+          "type": "image",
+          "caption": "A curious child discovers a beautiful forest full of life.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/forest/preview-2.jpg",
+          "type": "image",
+          "caption": "A tiny stream is blocked, leaving the forest animals without easy access to water.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/forest/preview-3.jpg",
+          "type": "image",
+          "caption": "The child and the forest animals work together to help the stream flow again.",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "createdAt": "2026-09-27T18:52:43.773Z",
+      "updatedAt": "2026-10-01T11:54:07.333Z"
+    },
+    {
+      "id": "the-secret-beneath-the-sea",
+      "name": "The Secret Beneath the Sea",
+      "description": "A child discovers a colorful underwater world, meets wonderful sea creatures, and learns why keeping the ocean clean is everyone's responsibility.",
+      "ageRange": "6-8",
+      "category": "adventure",
+      "prompts": {
+        "beats": [
+          "One bright morning, the hero walks along the beach and watches the sparkling blue sea when something mysterious glimmers beneath the waves.",
+          "The hero discovers a magical way to explore underwater and finds an incredible world filled with colorful fish swimming between rocks and coral.",
+          "A friendly sea turtle swims toward the hero and begins showing them around its underwater home, where tiny fish hide among the rocks and crabs crawl across the ocean floor.",
+          "The turtle leads the hero to a beautiful coral reef, and the hero discovers that coral reefs provide shelter and homes for many different sea creatures.",
+          "A playful family of dolphins suddenly appears, jumping through the water and swimming happily around the hero before disappearing into the blue.",
+          "The happy adventure changes when the hero notices a plastic bag floating through the water and sees the turtle trying to swim away from it.",
+          "The hero carefully helps remove the dangerous rubbish from the turtle and realizes that there is even more rubbish scattered across the ocean floor.",
+          "Together with the sea creatures, the hero collects safe-to-remove rubbish such as bottles, plastic bags, and old pieces of fishing line.",
+          "The hero begins to understand that rubbish thrown on land can travel through drains, streams, and rivers until it reaches the ocean.",
+          "When the hero returns to the village, they teach everyone to use rubbish bins, recycle what they can, and keep the beach clean.",
+          "Days later, the beach is clean and beautiful again, the water is clear, seabirds return to the shore, dolphins swim nearby, and the friendly turtle appears in the waves.",
+          "The fish and the crabs join in as well, and together they clear a whole stretch of reef until the water is so clean that sunlight reaches right down to the sand.",
+          "Before leaving, the hero ties a small painted sign to the rail reminding everyone that only bins, bins and bins belong in the sea, and asks the shopkeeper to put the same message up inside.",
+          "That evening the hero thinks about the turtle, the dolphins and the little fish hiding between the rocks, and realises that a single piece of rubbish can travel a very long way before it ever reaches them.",
+          "Looking across the sparkling sea, the hero understands its secret: the ocean is not empty water but a giant home full of life, and protecting the sea means protecting everyone who lives there."
+        ],
+        "theme": "a child discovering a magical underwater world filled with colorful fish, coral reefs, sea turtles, dolphins, crabs, seabirds, and other marine life, learning how ocean pollution can harm animals and helping protect the sea",
+        "moralLesson": "The ocean is home to countless living creatures, and keeping our beaches and waterways clean helps protect their home.",
+        "worldContext": "A beautiful coastal village beside a sparkling blue sea, with a colorful underwater world containing coral reefs, tropical fish, sea turtles, dolphins, crabs, sea plants, rocks, and sunlight filtering through the waves.",
+        "educationalFocus": "Learning about marine ecosystems, coral reefs, ocean animals, plastic pollution, how rubbish reaches the sea, recycling, and protecting marine habitats."
+      },
+      "storyContent": {
+        "beats": [
+          "One bright morning, the hero walks along the beach and watches the sparkling blue sea when something mysterious glimmers beneath the waves.",
+          "The hero discovers a magical way to explore underwater and finds an incredible world filled with colorful fish swimming between rocks and coral.",
+          "A friendly sea turtle swims toward the hero and begins showing them around its underwater home, where tiny fish hide among the rocks and crabs crawl across the ocean floor.",
+          "The turtle leads the hero to a beautiful coral reef, and the hero discovers that coral reefs provide shelter and homes for many different sea creatures.",
+          "A playful family of dolphins suddenly appears, jumping through the water and swimming happily around the hero before disappearing into the blue.",
+          "The happy adventure changes when the hero notices a plastic bag floating through the water and sees the turtle trying to swim away from it.",
+          "The hero carefully helps remove the dangerous rubbish from the turtle and realizes that there is even more rubbish scattered across the ocean floor.",
+          "Together with the sea creatures, the hero collects safe-to-remove rubbish such as bottles, plastic bags, and old pieces of fishing line.",
+          "The hero begins to understand that rubbish thrown on land can travel through drains, streams, and rivers until it reaches the ocean.",
+          "When the hero returns to the village, they teach everyone to use rubbish bins, recycle what they can, and keep the beach clean.",
+          "Days later, the beach is clean and beautiful again, the water is clear, seabirds return to the shore, dolphins swim nearby, and the friendly turtle appears in the waves.",
+          "The fish and the crabs join in as well, and together they clear a whole stretch of reef until the water is so clean that sunlight reaches right down to the sand.",
+          "Before leaving, the hero ties a small painted sign to the rail reminding everyone that only bins, bins and bins belong in the sea, and asks the shopkeeper to put the same message up inside.",
+          "That evening the hero thinks about the turtle, the dolphins and the little fish hiding between the rocks, and realises that a single piece of rubbish can travel a very long way before it ever reaches them.",
+          "Looking across the sparkling sea, the hero understands its secret: the ocean is not empty water but a giant home full of life, and protecting the sea means protecting everyone who lives there."
+        ],
+        "theme": "a child discovering a magical underwater world filled with colorful fish, coral reefs, sea turtles, dolphins, crabs, seabirds, and other marine life, learning how ocean pollution can harm animals and helping protect the sea",
+        "moralLesson": "The ocean is home to countless living creatures, and keeping our beaches and waterways clean helps protect their home.",
+        "worldContext": "A beautiful coastal village beside a sparkling blue sea, with a colorful underwater world containing coral reefs, tropical fish, sea turtles, dolphins, crabs, sea plants, rocks, and sunlight filtering through the waves.",
+        "educationalFocus": "Learning about marine ecosystems, coral reefs, ocean animals, plastic pollution, how rubbish reaches the sea, recycling, and protecting marine habitats."
+      },
+      "sampleImage": null,
+      "coverImage": "http://localhost:8080/assets/covers/knl1c7fwcsuyitsnxbdcu-morjpg46-1_769272988c46884c.jpg",
+      "isActive": true,
+      "difficulty": 2,
+      "tags": [
+        "sea",
+        "ocean",
+        "marine-life",
+        "turtles",
+        "dolphins",
+        "fish",
+        "environment",
+        "adventure"
+      ],
+      "source": "PREDEFINED",
+      "tagline": "Beneath the waves is a whole world waiting to be protected.",
+      "excerpt": "The sea looked calm from the beach, but beneath the waves was a world bursting with color. Fish flashed between coral gardens, dolphins danced in the distance, and a friendly turtle appeared beside the child. Then something strange floated past — a piece of plastic.",
+      "nameFr": "Le Secret Sous la Mer",
+      "nameAr": "السر تحت البحر",
+      "descriptionFr": "Un enfant découvre un monde sous-marin coloré, rencontre de merveilleuses créatures marines et apprend pourquoi il est de la responsabilité de chacun de garder l'océan propre.",
+      "descriptionAr": "يكتشف طفل عالمًا تحت الماء ملونًا، ويقابل مخلوقات بحرية رائعة، ويتعلم لماذا يجب على الجميع الحفاظ على نظافة المحيط.",
+      "taglineFr": "Sous les vagues se cache tout un monde à protéger.",
+      "taglineAr": "تحت الأمواج يوجد عالم كامل ينتظر أن يتم حمايته.",
+      "excerptFr": "La mer semblait calme depuis la plage, mais sous les vagues se trouvait un monde débordant de couleurs. Des poissons scintillaient entre les jardins de corail, des dauphins dansaient au loin, et une tortue amicale est apparue à côté de l'enfant. Puis quelque chose d'étrange a flotté — un morceau de plastique.",
+      "excerptAr": "بدت البحر هادئة من الشاطئ، لكن تحت الأمواج كان هناك عالم مليء بالألوان. كانت الأسماك تومض بين حدائق الشعاب المرجانية، والدلافين ترقص في المسافة، وظهرت سلحفاة ودودة بجانب الطفل. ثم مرت شيئًا غريبًا — قطعة من البلاستيك.",
+      "emoji": "🌊",
+      "audience": "any",
+      "artStyle": "colorful 3D animated underwater adventure storybook illustration",
+      "review": {
+        "count": 1134,
+        "quote": "A wonderful way to introduce children to ocean animals and explain why plastic belongs in the bin, not in the sea.",
+        "author": "Maya R.",
+        "rating": 5
+      },
+      "previews": [
+        {
+          "src": "/templates/sea/preview-1.jpg",
+          "type": "image",
+          "caption": "A child discovers a magical underwater world filled with colorful sea life.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/sea/preview-2.jpg",
+          "type": "image",
+          "caption": "A friendly sea turtle leads the child through a beautiful coral reef.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/sea/preview-3.jpg",
+          "type": "image",
+          "caption": "The child helps protect the ocean by removing dangerous rubbish.",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "createdAt": "2026-09-27T18:52:43.790Z",
+      "updatedAt": "2026-10-01T11:54:54.919Z"
+    },
+    {
+      "id": "the-village-hero",
+      "name": "The Village Hero",
+      "description": "When a powerful storm causes trouble in a peaceful village, one child steps forward to help neighbors, rescue a lost puppy, and bring everyone together.",
+      "ageRange": "6-8",
+      "category": "adventure",
+      "prompts": {
+        "beats": [
+          "The hero lives in a small peaceful village where everyone knows one another, neighbors share food, children play together, and everyone has a special place in the community.",
+          "One afternoon, dark clouds fill the sky and a powerful storm arrives, bringing heavy rain that quickly covers parts of the village.",
+          "The village road becomes flooded, some families cannot reach their homes, and everyone begins wondering how they can help.",
+          "The hero notices several strong wooden boards near an old barn and suggests using them to create a safe path across the flooded section of the road.",
+          "The villagers work together while the hero helps an elderly neighbor reach a dry place and other people help families carry important belongings to safety.",
+          "Suddenly, someone cries out that their little puppy is missing, and the hero decides to search for it even though the rain is still falling.",
+          "The hero follows tiny paw prints through the mud until they lead to an old wooden shed, where the frightened puppy is found hiding safely inside.",
+          "After bringing the puppy home, the hero helps divide the village work so everyone has a job: some clean the roads, some help families, and others repair damaged homes.",
+          "When the storm finally passes, the village square is covered with mud and fallen branches, but the hero picks up the first branch instead of waiting for someone else to begin.",
+          "One by one, the villagers join in, and together they clear the square, clean the roads, repair what they can, and make the village beautiful again.",
+          "That evening, everyone gathers in the village square and thanks the hero, but the hero looks around and explains that the village became strong because everyone helped.",
+          "The hero thinks about how nobody had told anyone what to do first, and so the hero makes a simple plan: every morning the village will meet in the square and decide together what needs doing first.",
+          "The next morning the hero wakes early and walks the whole village, checking the roads, helping a neighbour mend a fence, and carrying shopping for anyone who asks.",
+          "By the end of the day the hero notices that the village already feels different — the shops are open, the children are playing outside again, and nobody is asking who is in charge any more.",
+          "The village elder smiles and explains that a true hero is not someone who does everything alone, but someone who sees a problem, cares about others, and takes the first step to help."
+        ],
+        "theme": "a child becoming a village hero by helping neighbors during a powerful storm, finding a lost puppy, solving problems, organizing teamwork, and discovering that true heroism comes from courage, kindness, responsibility, and helping others",
+        "moralLesson": "A true hero does not need to be the strongest or most powerful; a hero notices when others need help, takes responsibility, and brings people together.",
+        "worldContext": "A peaceful little village surrounded by green fields, rolling hills, a small river, cozy homes, a village square, an old wooden barn, gardens, trees, and friendly neighbors.",
+        "educationalFocus": "Learning about teamwork, community responsibility, problem-solving, empathy, helping neighbors, and how people can work together during difficult situations."
+      },
+      "storyContent": {
+        "beats": [
+          "The hero lives in a small peaceful village where everyone knows one another, neighbors share food, children play together, and everyone has a special place in the community.",
+          "One afternoon, dark clouds fill the sky and a powerful storm arrives, bringing heavy rain that quickly covers parts of the village.",
+          "The village road becomes flooded, some families cannot reach their homes, and everyone begins wondering how they can help.",
+          "The hero notices several strong wooden boards near an old barn and suggests using them to create a safe path across the flooded section of the road.",
+          "The villagers work together while the hero helps an elderly neighbor reach a dry place and other people help families carry important belongings to safety.",
+          "Suddenly, someone cries out that their little puppy is missing, and the hero decides to search for it even though the rain is still falling.",
+          "The hero follows tiny paw prints through the mud until they lead to an old wooden shed, where the frightened puppy is found hiding safely inside.",
+          "After bringing the puppy home, the hero helps divide the village work so everyone has a job: some clean the roads, some help families, and others repair damaged homes.",
+          "When the storm finally passes, the village square is covered with mud and fallen branches, but the hero picks up the first branch instead of waiting for someone else to begin.",
+          "One by one, the villagers join in, and together they clear the square, clean the roads, repair what they can, and make the village beautiful again.",
+          "That evening, everyone gathers in the village square and thanks the hero, but the hero looks around and explains that the village became strong because everyone helped.",
+          "The hero thinks about how nobody had told anyone what to do first, and so the hero makes a simple plan: every morning the village will meet in the square and decide together what needs doing first.",
+          "The next morning the hero wakes early and walks the whole village, checking the roads, helping a neighbour mend a fence, and carrying shopping for anyone who asks.",
+          "By the end of the day the hero notices that the village already feels different — the shops are open, the children are playing outside again, and nobody is asking who is in charge any more.",
+          "The village elder smiles and explains that a true hero is not someone who does everything alone, but someone who sees a problem, cares about others, and takes the first step to help."
+        ],
+        "theme": "a child becoming a village hero by helping neighbors during a powerful storm, finding a lost puppy, solving problems, organizing teamwork, and discovering that true heroism comes from courage, kindness, responsibility, and helping others",
+        "moralLesson": "A true hero does not need to be the strongest or most powerful; a hero notices when others need help, takes responsibility, and brings people together.",
+        "worldContext": "A peaceful little village surrounded by green fields, rolling hills, a small river, cozy homes, a village square, an old wooden barn, gardens, trees, and friendly neighbors.",
+        "educationalFocus": "Learning about teamwork, community responsibility, problem-solving, empathy, helping neighbors, and how people can work together during difficult situations."
+      },
+      "sampleImage": null,
+      "coverImage": "http://localhost:8080/assets/covers/tr-gdwpqfz392sezt-7lm-cdstijof_d9ce0c195310c3ed.jpg",
+      "isActive": true,
+      "difficulty": 2,
+      "tags": [
+        "village",
+        "hero",
+        "courage",
+        "kindness",
+        "teamwork",
+        "helping",
+        "community",
+        "family"
+      ],
+      "source": "PREDEFINED",
+      "tagline": "A true hero is the one who takes the first step to help.",
+      "excerpt": "The village was peaceful until dark clouds covered the sky. Rain poured down, roads disappeared beneath the water, and everyone needed help. While the grown-ups wondered what to do first, the child noticed something simple: everyone could help with something.",
+      "nameFr": "Le Héros du Village",
+      "nameAr": "بطل القرية",
+      "descriptionFr": "Quand une tempête puissante cause des problèmes dans un village paisible, un enfant se porte volontaire pour aider ses voisins, sauver un chiot perdu et rassembler tout le monde.",
+      "descriptionAr": "عندما تتسبب عاصفة قوية في مشاكل في قرية هادئة، يتقدم طفل واحد لمساعدة الجيران، وإنقاذ جرو ضائع، وجمع الجميع معًا.",
+      "taglineFr": "Un vrai héros est celui qui fait le premier pas pour aider.",
+      "taglineAr": "البطل الحقيقي هو من يتخذ الخطوة الأولى للمساعدة.",
+      "excerptFr": "Le village était paisible jusqu'à ce que des nuages sombres couvrent le ciel. La pluie tombait à verse, les routes disparaissaient sous l'eau, et tout le monde avait besoin d'aide. Pendant que les adultes se demandaient quoi faire en premier, l'enfant remarqua quelque chose de simple : tout le monde pouvait aider avec quelque chose.",
+      "excerptAr": "كانت القرية هادئة حتى غطت السحب الداكنة السماء. هطلت الأمطار بغزارة، واختفت الطرق تحت الماء، وكان الجميع بحاجة إلى المساعدة. بينما كان البالغون يتساءلون عما يجب فعله أولاً، لاحظ الطفل شيئًا بسيطًا: يمكن للجميع المساعدة بشيء ما.",
+      "emoji": "🦸",
+      "audience": "any",
+      "artStyle": "warm colorful 3D animated village adventure storybook illustration",
+      "review": {
+        "count": 1268,
+        "quote": "My son loved the idea that being a hero doesn't mean doing everything alone. It means noticing who needs help and taking the first step.",
+        "author": "Daniel K.",
+        "rating": 5
+      },
+      "previews": [
+        {
+          "src": "/templates/village-hero/preview-1.jpg",
+          "type": "image",
+          "caption": "A peaceful village prepares for a powerful storm.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/village-hero/preview-2.jpg",
+          "type": "image",
+          "caption": "The child helps neighbors cross the flooded village safely.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/village-hero/preview-3.jpg",
+          "type": "image",
+          "caption": "The whole village works together to rebuild and clean their home.",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "createdAt": "2026-09-27T18:52:43.796Z",
+      "updatedAt": "2026-10-01T11:53:56.197Z"
+    },
+    {
+      "id": "the-princess-magical-garden",
+      "name": "The Princess's Magical Garden",
+      "description": "A little princess discovers that her flowers need more than magic to grow. With water, sunlight, patience, and love, she helps her sleepy garden bloom.",
+      "ageRange": "2-3",
+      "category": "adventure",
+      "prompts": {
+        "beats": [
+          "One sunny morning, the little princess wakes up and runs to her magical garden to say hello to her flowers.",
+          "But the flowers are tiny and sleepy, with their little petals closed tightly instead of showing their beautiful colors.",
+          "The princess waves her magic wand and says a big magic word, but nothing happens, so she looks at her flowers with a curious little smile.",
+          "A friendly butterfly lands beside her, and the princess notices that the soil is dry and the flowers look very thirsty.",
+          "The princess picks up a little blue watering can and gently gives each flower some fresh water.",
+          "Then she moves the flower pots into the warm sunshine, where the flowers can feel the bright golden light.",
+          "The princess visits the garden again the next morning, but the flowers are still small, so she learns that growing takes time and decides not to give up.",
+          "Every day, the princess gives the flowers water, makes sure they get sunlight, gently removes little weeds, and talks to them with a happy smile.",
+          "Slowly, tiny green leaves appear, and one little pink flower opens its first petal while a butterfly dances beside it.",
+          "More flowers begin to open in red, yellow, pink, purple, and blue, filling the garden with color and sweet little scents.",
+          "The princess dances happily through her blooming garden as butterflies, bees, birds, and ladybugs arrive to enjoy the flowers.",
+          "But one very hot day the sun beats down all afternoon, and when the princess comes back she finds the flowers drooping sadly and wonders if she has done something wrong.",
+          "So the princess moves the pots into the shade of a little tree, keeps a careful note of the days she waters them, and waits as patiently as she can for them to lift their heads again.",
+          "The next morning she sits quietly in the garden and watches a bee visit every single flower, marvelling at how much has changed since the day she first found them asleep.",
+          "The princess learns that her garden did not grow because of a magic spell — it grew because she gave it water, sunlight, patience, and love, and she promises to care for it every day."
+        ],
+        "theme": "a sweet little princess discovering that her sleepy garden flowers need water, sunlight, time, care, and love to grow, learning to patiently care for them every day until the entire magical garden blooms",
+        "moralLesson": "Beautiful things take time and care to grow, and patience, kindness, and responsibility help us make things better.",
+        "worldContext": "A beautiful magical castle garden filled with colorful flowers, butterflies, ladybugs, small birds, green leaves, soft grass, a little stone fountain, flower pots, and warm golden sunlight.",
+        "educationalFocus": "Learning the basic needs of plants: water, sunlight, healthy soil, time, and care."
+      },
+      "storyContent": {
+        "beats": [
+          "One sunny morning, the little princess wakes up and runs to her magical garden to say hello to her flowers.",
+          "But the flowers are tiny and sleepy, with their little petals closed tightly instead of showing their beautiful colors.",
+          "The princess waves her magic wand and says a big magic word, but nothing happens, so she looks at her flowers with a curious little smile.",
+          "A friendly butterfly lands beside her, and the princess notices that the soil is dry and the flowers look very thirsty.",
+          "The princess picks up a little blue watering can and gently gives each flower some fresh water.",
+          "Then she moves the flower pots into the warm sunshine, where the flowers can feel the bright golden light.",
+          "The princess visits the garden again the next morning, but the flowers are still small, so she learns that growing takes time and decides not to give up.",
+          "Every day, the princess gives the flowers water, makes sure they get sunlight, gently removes little weeds, and talks to them with a happy smile.",
+          "Slowly, tiny green leaves appear, and one little pink flower opens its first petal while a butterfly dances beside it.",
+          "More flowers begin to open in red, yellow, pink, purple, and blue, filling the garden with color and sweet little scents.",
+          "The princess dances happily through her blooming garden as butterflies, bees, birds, and ladybugs arrive to enjoy the flowers.",
+          "But one very hot day the sun beats down all afternoon, and when the princess comes back she finds the flowers drooping sadly and wonders if she has done something wrong.",
+          "So the princess moves the pots into the shade of a little tree, keeps a careful note of the days she waters them, and waits as patiently as she can for them to lift their heads again.",
+          "The next morning she sits quietly in the garden and watches a bee visit every single flower, marvelling at how much has changed since the day she first found them asleep.",
+          "The princess learns that her garden did not grow because of a magic spell — it grew because she gave it water, sunlight, patience, and love, and she promises to care for it every day."
+        ],
+        "theme": "a sweet little princess discovering that her sleepy garden flowers need water, sunlight, time, care, and love to grow, learning to patiently care for them every day until the entire magical garden blooms",
+        "moralLesson": "Beautiful things take time and care to grow, and patience, kindness, and responsibility help us make things better.",
+        "worldContext": "A beautiful magical castle garden filled with colorful flowers, butterflies, ladybugs, small birds, green leaves, soft grass, a little stone fountain, flower pots, and warm golden sunlight.",
+        "educationalFocus": "Learning the basic needs of plants: water, sunlight, healthy soil, time, and care."
+      },
+      "sampleImage": null,
+      "coverImage": "http://localhost:8080/assets/covers/d857r-k7zrny0sct8uvuh-itbpiqrh-1_91e1a2adbd5667e3.jpg",
+      "isActive": true,
+      "difficulty": 1,
+      "tags": [
+        "princess",
+        "garden",
+        "flowers",
+        "nature",
+        "learning",
+        "kindness"
+      ],
+      "source": "PREDEFINED",
+      "tagline": "With a little water, sunshine, and love, beautiful things can grow.",
+      "excerpt": "The little princess had a beautiful garden, but something was wrong. Her flowers were tiny, sleepy, and closed. She tried her biggest magic spell, but nothing happened. Then she discovered that the flowers did not need a magic spell at all — they needed water, sunlight, patience, and lots of love.",
+      "nameFr": "Le Jardin Magique de la Princesse",
+      "nameAr": "حديقة الأميرة السحرية",
+      "descriptionFr": "Une petite princesse découvre que ses fleurs ont besoin de plus que de la magie pour grandir. Avec de l'eau, de la lumière du soleil, de la patience et de l'amour, elle aide son jardin endormi à fleurir.",
+      "descriptionAr": "تكتشف الأميرة الصغيرة أن زهورها تحتاج إلى أكثر من السحر لتنمو. مع الماء، وضوء الشمس، والصبر، والحب، تساعد حديقتها النائمة على الإزهار.",
+      "taglineFr": "Avec un peu d'eau, de soleil et d'amour, de belles choses peuvent grandir.",
+      "taglineAr": "مع قليل من الماء، وضوء الشمس، والحب، يمكن أن تنمو أشياء جميلة.",
+      "excerptFr": "La petite princesse avait un beau jardin, mais quelque chose n'allait pas. Ses fleurs étaient petites, endormies et fermées. Elle a essayé son plus grand sort magique, mais rien ne s'est passé. Puis elle a découvert que les fleurs n'avaient pas besoin d'un sort magique du tout — elles avaient besoin d'eau, de lumière du soleil, de patience et beaucoup d'amour.",
+      "excerptAr": "كانت لدى الأميرة الصغيرة حديقة جميلة، لكن كان هناك شيء خاطئ. كانت زهورها صغيرة، نائمة، ومغلقة. جربت أكبر تعويذة سحرية لديها، لكن لم يحدث شيء. ثم اكتشفت أن الزهور لم تكن بحاجة إلى تعويذة سحرية على الإطلاق - بل كانت بحاجة إلى الماء، وضوء الشمس، والصبر، والكثير من الحب.",
+      "emoji": "🌸",
+      "audience": "girl",
+      "artStyle": "soft colorful 3D animated princess storybook illustration",
+      "review": {
+        "count": 864,
+        "quote": "My little girl loved watering the flowers after reading this story. Now she checks our garden every morning!",
+        "author": "Sophie L.",
+        "rating": 5
+      },
+      "previews": [
+        {
+          "src": "/templates/princess-garden/preview-1.jpg",
+          "type": "image",
+          "caption": "The little princess discovers a garden full of sleepy flowers.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/princess-garden/preview-2.jpg",
+          "type": "image",
+          "caption": "The princess carefully gives her flowers water and sunlight.",
+          "mimeType": "image/jpeg"
+        },
+        {
+          "src": "/templates/princess-garden/preview-3.jpg",
+          "type": "image",
+          "caption": "The magical garden finally bursts into beautiful colorful flowers.",
+          "mimeType": "image/jpeg"
+        }
+      ],
+      "createdAt": "2026-09-27T19:21:18.529Z",
+      "updatedAt": "2026-10-01T11:54:41.762Z"
+    },
+    {
+      "id": "lets-count-1-10",
+      "name": "Let's Count! 1–10",
+      "description": "A playful counting adventure where the child counts animals from one to five and then discovers colorful fruits while counting from six to ten.",
+      "ageRange": "2-4",
+      "category": "educative",
+      "prompts": {
+        "beats": [
+          "The child enters a cheerful meadow and discovers that the day's adventure is all about counting.",
+          "The child finds exactly one friendly animal and learns that this quantity is called the first number.",
+          "The child discovers exactly two animals together and carefully counts them one by one.",
+          "The child finds exactly three animals and points to each animal while saying the numbers in order.",
+          "The child discovers exactly four animals and practices making sure every animal is counted only once.",
+          "The child reaches a sunny meadow with exactly five animals and proudly counts all five.",
+          "The child leaves the meadow and enters a colorful fruit garden where a new part of the counting adventure begins.",
+          "The child discovers exactly six pieces of fruit and counts each piece carefully from the beginning.",
+          "The child finds exactly seven pieces of fruit and learns that seven means there are seven separate fruits to count.",
+          "The child discovers exactly eight pieces of fruit and checks the group carefully to make sure none are missed.",
+          "The child finds exactly nine pieces of fruit and counts them slowly and clearly.",
+          "The child reaches a beautiful fruit table containing exactly ten pieces of fruit and counts all ten.",
+          "The child mixes the animals and fruits in a playful review but is reminded to count each visible object carefully.",
+          "The child practices recognizing several numbers again by matching each number with the correct quantity shown in the scene.",
+          "The child celebrates reaching ten and learns that counting carefully helps us know exactly how many things we have."
+        ],
+        "theme": "a playful counting adventure where the child learns numbers one through ten by physically counting clearly visible animals and then fruits",
+        "moralLesson": "Learning numbers becomes easier and more fun when we practice by counting things we can see.",
+        "worldContext": "A bright playful world containing a friendly animal meadow followed by a colorful fruit garden, with large clear spaces where groups of objects can be easily seen and counted.",
+        "educationalFocus": "Number recognition, one-to-one counting, quantity recognition, and connecting spoken numbers with the correct number of visible objects."
+      },
+      "storyContent": {
+        "beats": [
+          "The child enters a cheerful meadow and discovers that the day's adventure is all about counting.",
+          "The child finds exactly one friendly animal and learns that this quantity is called the first number.",
+          "The child discovers exactly two animals together and carefully counts them one by one.",
+          "The child finds exactly three animals and points to each animal while saying the numbers in order.",
+          "The child discovers exactly four animals and practices making sure every animal is counted only once.",
+          "The child reaches a sunny meadow with exactly five animals and proudly counts all five.",
+          "The child leaves the meadow and enters a colorful fruit garden where a new part of the counting adventure begins.",
+          "The child discovers exactly six pieces of fruit and counts each piece carefully from the beginning.",
+          "The child finds exactly seven pieces of fruit and learns that seven means there are seven separate fruits to count.",
+          "The child discovers exactly eight pieces of fruit and checks the group carefully to make sure none are missed.",
+          "The child finds exactly nine pieces of fruit and counts them slowly and clearly.",
+          "The child reaches a beautiful fruit table containing exactly ten pieces of fruit and counts all ten.",
+          "The child mixes the animals and fruits in a playful review but is reminded to count each visible object carefully.",
+          "The child practices recognizing several numbers again by matching each number with the correct quantity shown in the scene.",
+          "The child celebrates reaching ten and learns that counting carefully helps us know exactly how many things we have."
+        ],
+        "theme": "a playful counting adventure where the child learns numbers one through ten by physically counting clearly visible animals and then fruits",
+        "moralLesson": "Learning numbers becomes easier and more fun when we practice by counting things we can see.",
+        "worldContext": "A bright playful world containing a friendly animal meadow followed by a colorful fruit garden, with large clear spaces where groups of objects can be easily seen and counted.",
+        "educationalFocus": "Number recognition, one-to-one counting, quantity recognition, and connecting spoken numbers with the correct number of visible objects."
+      },
+      "sampleImage": null,
+      "coverImage": "http://localhost:8080/assets/covers/ucsztwwukpofztjwwd6ak-u6zghcy6-1_6a5b14b0ea793472.jpg",
+      "isActive": true,
+      "difficulty": 1,
+      "tags": [
+        "numbers",
+        "counting",
+        "animals",
+        "fruits",
+        "1-10",
+        "math",
+        "learning"
+      ],
+      "source": "PREDEFINED",
+      "tagline": "Count the animals, count the fruits, and discover numbers 1 to 10!",
+      "excerpt": "The child begins a counting adventure with friendly animals. First there is one, then two, three, four, and five. After that, a colorful fruit garden appears, bringing six, seven, eight, nine, and ten into the adventure. Every number is shown clearly with exactly the right number of objects.",
+      "nameFr": "Comptons ! De 1 à 10",
+      "nameAr": "هيا نعدّ! من 1 إلى 10",
+      "descriptionFr": "Une aventure ludique où l'enfant compte des animaux de un à cinq, puis découvre des fruits colorés en comptant de six à dix.",
+      "descriptionAr": "مغامرة مرحة يعدّ فيها الطفل الحيوانات من واحد إلى خمسة، ثم يكتشف الفواكه الملونة وهو يعدّ من ستة إلى عشرة.",
+      "taglineFr": "Compte les animaux, compte les fruits et découvre les nombres de 1 à 10 !",
+      "taglineAr": "عدّ الحيوانات والفواكه واكتشف الأرقام من 1 إلى 10!",
+      "excerptFr": "L'enfant commence une aventure de comptage avec des animaux sympathiques. Puis un jardin de fruits colorés apparaît pour faire découvrir les nombres de six à dix.",
+      "excerptAr": "يبدأ الطفل مغامرة ممتعة في العد مع حيوانات لطيفة، ثم تظهر حديقة فواكه ملونة لتعرّفه إلى الأعداد من ستة إلى عشرة.",
+      "emoji": "🔢",
+      "audience": "any",
+      "artStyle": "soft colorful 3D animated educational children's storybook illustration",
+      "review": {
+        "count": 1047,
+        "quote": "The pictures make counting so easy for my little one. She loves pointing at every animal and fruit!",
+        "author": "Claire M.",
+        "rating": 5
+      },
+      "previews": [],
+      "createdAt": "2026-09-28T12:48:32.642Z",
+      "updatedAt": "2026-09-29T18:47:56.825Z"
+    },
+    {
+      "id": "my-abc-adventure",
+      "name": "My ABC Adventure",
+      "description": "A playful learning adventure where the child explores the alphabet two letters at a time, discovering a familiar word for each letter in the selected language.",
+      "ageRange": "3-5",
+      "category": "educative",
+      "prompts": {
+        "beats": [
+          "The child begins a magical alphabet adventure and learns that the adventure will reveal the letters of the selected language's alphabet two letters at a time.",
+          "The child discovers LETTER 1 and LETTER 2 of the selected language's alphabet. The child learns to recognize both letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 3 and LETTER 4 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 5 and LETTER 6 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 7 and LETTER 8 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 9 and LETTER 10 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 11 and LETTER 12 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 13 and LETTER 14 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 15 and LETTER 16 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 17 and LETTER 18 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 19 and LETTER 20 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 21 and LETTER 22 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 23 and LETTER 24 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 25 and LETTER 26 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child reaches the end of the alphabet adventure and discovers any remaining letters of the selected language's alphabet. If only one letter remains, the child learns that letter and its matching word. The child proudly reviews the letters and words discovered throughout the adventure."
+        ],
+        "theme": "a playful alphabet adventure where the child learns the letters of the selected language's alphabet two letters at a time, with each letter connected to one simple familiar word in that same language",
+        "moralLesson": "Learning can be fun, and practicing a little at a time helps us discover new things.",
+        "worldContext": "A colorful magical learning world containing playful paths, gardens, classrooms, toy houses, friendly animals, colorful objects, floating letters, books, and cheerful decorations.",
+        "educationalFocus": "Letter recognition, alphabet order, and connecting every letter with one simple age-appropriate word in the selected language."
+      },
+      "storyContent": {
+        "beats": [
+          "The child begins a magical alphabet adventure and learns that the adventure will reveal the letters of the selected language's alphabet two letters at a time.",
+          "The child discovers LETTER 1 and LETTER 2 of the selected language's alphabet. The child learns to recognize both letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 3 and LETTER 4 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 5 and LETTER 6 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 7 and LETTER 8 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 9 and LETTER 10 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 11 and LETTER 12 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 13 and LETTER 14 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 15 and LETTER 16 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 17 and LETTER 18 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 19 and LETTER 20 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 21 and LETTER 22 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 23 and LETTER 24 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child discovers LETTER 25 and LETTER 26 of the selected language's alphabet. The child learns to recognize both new letters and discovers one simple, familiar, age-appropriate word for each letter.",
+          "The child reaches the end of the alphabet adventure and discovers any remaining letters of the selected language's alphabet. If only one letter remains, the child learns that letter and its matching word. The child proudly reviews the letters and words discovered throughout the adventure."
+        ],
+        "theme": "a playful alphabet adventure where the child learns the letters of the selected language's alphabet two letters at a time, with each letter connected to one simple familiar word in that same language",
+        "moralLesson": "Learning can be fun, and practicing a little at a time helps us discover new things.",
+        "worldContext": "A colorful magical learning world containing playful paths, gardens, classrooms, toy houses, friendly animals, colorful objects, floating letters, books, and cheerful decorations.",
+        "educationalFocus": "Letter recognition, alphabet order, and connecting every letter with one simple age-appropriate word in the selected language."
+      },
+      "sampleImage": null,
+      "coverImage": "http://localhost:8080/assets/covers/iopvhnfueqwjm0im3p0a-fzlmduzj-1_3365b220b8a67817.jpg",
+      "isActive": true,
+      "difficulty": 1,
+      "tags": [
+        "alphabet",
+        "ABC",
+        "letters",
+        "words",
+        "learning",
+        "language"
+      ],
+      "source": "PREDEFINED",
+      "tagline": "Every letter opens the door to a new word!",
+      "excerpt": "The child begins a colorful alphabet adventure, discovering two new letters at a time. Each letter is paired with a simple familiar word in the selected language, helping the child recognize the letter, learn its sound, and connect it with a real word.",
+      "nameFr": "Mon aventure avec l'alphabet",
+      "nameAr": "مغامرتي مع الحروف",
+      "descriptionFr": "Une aventure d'apprentissage où l'enfant explore l'alphabet deux lettres à la fois et découvre un mot familier pour chaque lettre dans la langue choisie.",
+      "descriptionAr": "مغامرة تعليمية يستكشف فيها الطفل الحروف حرفين في كل مرة، ويكتشف كلمة مألوفة لكل حرف باللغة المختارة.",
+      "taglineFr": "Chaque lettre ouvre la porte vers un nouveau mot !",
+      "taglineAr": "كل حرف يفتح الباب أمام كلمة جديدة!",
+      "excerptFr": "L'enfant commence une aventure colorée dans l'alphabet et découvre deux nouvelles lettres à la fois. Chaque lettre est associée à un mot simple et familier dans la langue choisie.",
+      "excerptAr": "يبدأ الطفل مغامرة ملونة في عالم الحروف، فيكتشف حرفين جديدين في كل مرة، ويربط كل حرف بكلمة بسيطة ومألوفة باللغة المختارة.",
+      "emoji": "🔤",
+      "audience": "any",
+      "artStyle": "soft colorful 3D animated educational children's storybook illustration",
+      "review": {
+        "count": 912,
+        "quote": "My child started recognizing letters and asking what words begin with them after just a few readings!",
+        "author": "Emma R.",
+        "rating": 5
+      },
+      "previews": [],
+      "createdAt": "2026-09-28T12:48:32.682Z",
+      "updatedAt": "2026-09-29T18:47:50.677Z"
+    }
+  ]
+}
