@@ -224,7 +224,6 @@ export const frFeatures: Record<string, string> = {
     "Comment elle devient l'histoire de votre enfant",
   "Story not found": "Histoire introuvable",
   "My Books": "Mes livres",
-  "Go to My Books": "Aller à mes livres",
   "Back to My Books": "Retour à mes livres",
   "Back to my books": "Retour à mes livres",
   "Previous page": "Page précédente",
@@ -327,4 +326,61 @@ export const frFeatures: Record<string, string> = {
   "Dinosaur Expedition": "Expédition dinosaures",
   "Sleepy Stars": "Étoiles endormies",
   "Forest Guardians": "Gardiens de la forêt",
+
+  // ── Homepage storefront additions ─────────────────────────────────
+  "From photo to storybook": "De la photo au livre d'histoires",
+  "See How a Simple Photo": "Voyez comment une simple photo",
+  "Becomes a Beautiful Story": "devient une belle histoire",
+  "A simple photo becomes a magical gift, bringing their imagined character to life.":
+    "Une simple photo devient un cadeau magique qui donne vie à leur personnage imaginé.",
+  "Describe any story you can imagine — a holiday memory, an imaginary friend, a lesson you want to teach — and watch it become a fully illustrated book with your child as the hero.":
+    "Décrivez l'histoire que vous imaginez — un souvenir de fête, un ami imaginaire ou une leçon à transmettre — et regardez-la devenir un livre entièrement illustré où votre enfant est le héros.",
+  "Drag the handle to reveal the transformation.":
+    "Faites glisser la poignée pour révéler la transformation.",
+  "Before": "Avant",
+  "After": "Après",
+  "Your story, your rules": "Votre histoire, vos règles",
+  "No template? Write your own story.": "Pas de modèle ? Écrivez votre propre histoire.",
+  "Create Your Own Story": "Créez votre propre histoire",
+  "Use a Template": "Utiliser un modèle",
+  "Choose language": "Choisir la langue",
+  "Open menu": "Ouvrir le menu",
+  "Shop books": "Acheter des livres",
+  "Go to My Books": "Aller à mes livres",
+  "Stories for every little hero": "Des histoires pour chaque petit héros",
+  "Browse Books": "Parcourir les livres",
+  "Back to library": "Retour à la bibliothèque",
+  "Clear filters": "Effacer les filtres",
+  "Search books...": "Rechercher des livres...",
+  "Child Age": "Âge de l'enfant",
+  "Art Style": "Style artistique",
+  "Story Language": "Langue de l'histoire",
+  "Extras to include": "Extras à inclure",
+  "No reviews yet for this story.": "Aucun avis pour cette histoire pour le moment.",
+  "Order printed book": "Commander le livre imprimé",
+  "Contact form": "Formulaire de contact",
+  "A message to teach": "Un message à transmettre",
+  "Hero video": "Vidéo du héros",
+  "Child preview": "Aperçu de l'enfant",
+  "Before and after comparison slider": "Curseur de comparaison avant/après",
+  "Mon Petit Hero home": "Accueil de Mon Petit Hero",
+  "Bedtime Adventures": "Aventures du soir",
+  "Storybook Platform": "Plateforme de livres d'histoires",
+  "A child becoming the hero of a magical storybook adventure":
+    "Un enfant qui devient le héros d'une aventure magique en livre d'histoires",
+  "A child reading a personalized storybook at bedtime":
+    "Un enfant qui lit un livre d'histoires personnalisé au moment du coucher",
+  "A parent and child creating a storybook together":
+    "Un parent et son enfant créant ensemble un livre d'histoires",
+  "A girl as a princess in a flower garden":
+    "Une fille devenue princesse dans un jardin fleuri",
+  "A girl in her everyday clothes in a flower garden":
+    "Une fille dans ses vêtements de tous les jours dans un jardin fleuri",
+  "Parent or child’s full name": "Nom complet du parent ou de l'enfant",
+  "e.g., A fluffy rabbit, a magic sleigh": "ex. : Un lapin tout doux, un traîneau magique",
+  "e.g., A snowy mountain village": "ex. : Un village de montagne enneigé",
+  "e.g., Helping others makes us braver": "ex. : Aider les autres nous rend plus courageux",
+  "e.g., Leo visits grandma's bakery and secretly helps save the day when the oven breaks before the town festival...":
+    "ex. : Léo rend visite à la boulangerie de mamie et aide secrètement à sauver la fête du village quand le four tombe en panne...",
+  "you@example.com": "vous@exemple.com",
 };

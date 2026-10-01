@@ -2,9 +2,6 @@ import { Hero } from "@/components/sections/hero";
 import { StoryRail } from "@/components/sections/story-rail";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { BeforeAfter } from "@/components/sections/before-after";
-import { CharacterShowcase } from "@/components/sections/character-showcase";
-import { CareerDreams } from "@/components/sections/career-dreams";
-import { BrowseByAge } from "@/components/sections/browse-by-age";
 import { CustomStoryBanner } from "@/components/sections/custom-story-banner";
 import { Faq } from "@/components/sections/faq";
 import { FinalCta } from "@/components/sections/final-cta";
@@ -43,7 +40,6 @@ export default async function HomePage() {
   const bestsellersShelf = nextShelf(bestsellers(templates));
   const newReleasesShelf = nextShelf(newReleases(templates));
   const forGirls = nextShelf(forAudience(templates, "girl"));
-  const forBoys = nextShelf(forAudience(templates, "boy"));
 
   return (
     // The app bar is fixed, so the storefront sits below it.
@@ -68,30 +64,16 @@ export default async function HomePage() {
       )}
 
       <HowItWorks />
-
       <BeforeAfter />
 
       {forGirls && (
         <StoryRail
           eyebrow="Our books"
-          title="Books for your little girl!"
+          title="Stories for every little hero"
           templates={forGirls}
-        />
-      )}
-
-      <CharacterShowcase />
-
-      {forBoys && (
-        <StoryRail
-          eyebrow="Our books"
-          title="Books for your little boy!"
-          templates={forBoys}
           className="bg-paper"
         />
       )}
-
-      <CareerDreams />
-      <BrowseByAge />
       <CustomStoryBanner />
       <Faq />
       <FinalCta />

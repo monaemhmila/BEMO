@@ -312,4 +312,60 @@ export const arFeatures: Record<string, string> = {
   "Dinosaur Expedition": "بعثة الديناصورات",
   "Sleepy Stars": "النجوم النائمة",
   "Forest Guardians": "حراس الغابة",
+
+  // ── Homepage storefront additions ─────────────────────────────────
+  "From photo to storybook": "من الصورة إلى كتاب قصص",
+  "See How a Simple Photo": "شاهد كيف تتحول صورة بسيطة",
+  "Becomes a Beautiful Story": "إلى قصة جميلة",
+  "A simple photo becomes a magical gift, bringing their imagined character to life.":
+    "تتحول الصورة البسيطة إلى هدية سحرية تمنح الشخصية التي تخيلوها الحياة.",
+  "Describe any story you can imagine — a holiday memory, an imaginary friend, a lesson you want to teach — and watch it become a fully illustrated book with your child as the hero.":
+    "صف أي قصة تتخيلها — ذكرى عطلة، أو صديقًا خياليًا، أو درسًا تريد تعليمه — وشاهدها تتحول إلى كتاب مصور بالكامل يكون فيه طفلك هو البطل.",
+  "Drag the handle to reveal the transformation.":
+    "اسحب المقبض لكشف التحول.",
+  "Before": "قبل",
+  "After": "بعد",
+  "Your story, your rules": "قصتك، وقواعدك",
+  "No template? Write your own story.": "لا يوجد نموذج؟ اكتب قصتك الخاصة.",
+  "Create Your Own Story": "أنشئ قصتك الخاصة",
+  "Use a Template": "استخدم نموذجًا",
+  "Choose language": "اختر اللغة",
+  "Open menu": "فتح القائمة",
+  "Shop books": "تسوق الكتب",
+  "Stories for every little hero": "قصص لكل بطل صغير",
+  "Browse Books": "تصفح الكتب",
+  "Back to library": "العودة إلى المكتبة",
+  "Clear filters": "مسح عوامل التصفية",
+  "Search books...": "ابحث عن الكتب...",
+  "Child Age": "عمر الطفل",
+  "Art Style": "أسلوب الرسم",
+  "Story Language": "لغة القصة",
+  "Extras to include": "إضافات لتضمينها",
+  "No reviews yet for this story.": "لا توجد مراجعات لهذه القصة بعد.",
+  "Order printed book": "اطلب الكتاب المطبوع",
+  "Contact form": "نموذج التواصل",
+  "A message to teach": "رسالة نريد تعليمها",
+  "Hero video": "فيديو البطل",
+  "Child preview": "معاينة الطفل",
+  "Before and after comparison slider": "شريط مقارنة قبل وبعد",
+  "Mon Petit Hero home": "الصفحة الرئيسية لـ Mon Petit Hero",
+  "Bedtime Adventures": "مغامرات ما قبل النوم",
+  "Storybook Platform": "منصة كتب القصص",
+  "A child becoming the hero of a magical storybook adventure":
+    "طفل يصبح بطل مغامرة سحرية في كتاب قصص",
+  "A child reading a personalized storybook at bedtime":
+    "طفل يقرأ كتاب قصص مخصصًا قبل النوم",
+  "A parent and child creating a storybook together":
+    "والد وطفله ينشئان كتاب قصص معًا",
+  "A girl as a princess in a flower garden":
+    "طفلة أميرة في حديقة من الزهور",
+  "A girl in her everyday clothes in a flower garden":
+    "طفلة بملابسها اليومية في حديقة من الزهور",
+  "Parent or child’s full name": "الاسم الكامل للوالد أو الطفل",
+  "e.g., A fluffy rabbit, a magic sleigh": "مثال: أرنب لطيف، زلاجة سحرية",
+  "e.g., A snowy mountain village": "مثال: قرية جبلية مغطاة بالثلوج",
+  "e.g., Helping others makes us braver": "مثال: مساعدة الآخرين تجعلنا أشجع",
+  "e.g., Leo visits grandma's bakery and secretly helps save the day when the oven breaks before the town festival...":
+    "مثال: يزور ليو مخبز جدته ويساعد سرًا في إنقاذ اليوم عندما يتعطل الفرن قبل مهرجان البلدة...",
+  "you@example.com": "you@example.com",
 };

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/carousel";
 import { type StoryTemplate } from "@/data/story-templates";
 import { cn } from "@/lib/utils";
+import { PlayfulShapes } from "@/components/sections/playful-shapes";
 
 type StoryRailProps = {
   eyebrow: string;
@@ -35,9 +36,10 @@ export function StoryRail({
   className,
 }: StoryRailProps) {
   return (
-    <section className={cn("py-12 lg:py-16", className)}>
-      <div className="shell">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+    <section className={cn("relative overflow-hidden py-12 lg:py-16", className)}>
+      <PlayfulShapes tone={className?.includes("bg-paper") ? "paper" : "light"} />
+      <div className="shell relative">
+        <div className="animate-reveal-up flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-sm font-bold tracking-wide text-primary">
               {eyebrow}
@@ -59,7 +61,7 @@ export function StoryRail({
             {templates.map((template, i) => (
               <CarouselItem
                 key={`${template.slug}-${i}`}
-                className="basis-[85%] pl-4 sm:basis-1/2 lg:basis-1/3"
+                className="animate-story-card basis-[85%] pl-4 sm:basis-1/2 lg:basis-1/3"
               >
                 <TemplateBookCard template={template} />
               </CarouselItem>

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { faqs } from "@/lib/data";
+import { PlayfulShapes } from "@/components/sections/playful-shapes";
 
 function faqAnchor(question: string, index: number) {
   return (
@@ -20,9 +21,10 @@ function faqAnchor(question: string, index: number) {
 
 export function Faq() {
   return (
-    <section className="bg-paper py-16 lg:py-20">
-      <div className="shell max-w-[880px]">
-        <h2 className="text-center font-display text-3xl font-bold text-violet-deep sm:text-4xl">
+    <section className="relative overflow-hidden bg-paper py-16 lg:py-20">
+      <PlayfulShapes tone="paper" />
+      <div className="shell relative max-w-[880px]">
+        <h2 className="animate-reveal-up text-center font-display text-3xl font-bold text-violet-deep sm:text-4xl">
           Frequently asked questions
         </h2>
 
@@ -37,7 +39,7 @@ export function Faq() {
               key={faq.q}
               value={`item-${i}`}
               id={faqAnchor(faq.q, i)}
-              className="rounded-2xl border-0 bg-white px-5 shadow-[0_2px_0_0_rgba(31,22,54,.06)] scroll-mt-28"
+              className="rounded-2xl border-0 bg-white px-5 shadow-[0_2px_0_0_rgba(31,22,54,.06)] transition-transform duration-300 hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-18px_rgba(31,22,54,.45)] scroll-mt-28"
             >
               <AccordionTrigger className="py-5 text-left font-display text-base font-semibold text-violet-deep">
                 {faq.q}

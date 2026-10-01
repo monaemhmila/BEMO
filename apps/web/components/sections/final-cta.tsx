@@ -1,14 +1,16 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
-import { FillerImage } from "@/components/filler";
+import { PlayfulShapes } from "@/components/sections/playful-shapes";
 
 export function FinalCta() {
   return (
-    <section className="py-16 lg:py-20">
-      <div className="shell">
-        <div className="grid items-center gap-10 overflow-hidden rounded-[2.25rem] bg-blush p-8 sm:p-12 lg:grid-cols-2">
-          <div className="order-2 lg:order-1">
+    <section className="relative overflow-hidden py-16 lg:py-20">
+      <div className="shell relative">
+        <div className="relative grid items-center gap-10 overflow-hidden rounded-[2.25rem] bg-blush p-8 sm:p-12 lg:grid-cols-2">
+          <PlayfulShapes />
+          <div className="animate-reveal-up relative z-10 order-2 lg:order-1">
             <h2 className="font-display text-3xl leading-tight font-bold text-violet-deep sm:text-4xl">
               Bring your child&apos;s imagination to life!
             </h2>
@@ -25,8 +27,14 @@ export function FinalCta() {
             </Button>
           </div>
 
-          <div className="order-1 aspect-[5/4] overflow-hidden rounded-[1.75rem] border-4 border-white lg:order-2">
-            <FillerImage label="Child reading book" />
+          <div className="animate-reveal-up relative z-10 order-1 aspect-[5/4] overflow-hidden rounded-[1.75rem] border-4 border-white transition-transform duration-500 hover:-rotate-1 hover:scale-[1.02] lg:order-2">
+            <Image
+              src="/home/reading-story.png"
+              alt="A child reading a personalized storybook at bedtime"
+              width={1024}
+              height={819}
+              className="h-full w-full object-cover"
+            />
           </div>
         </div>
       </div>

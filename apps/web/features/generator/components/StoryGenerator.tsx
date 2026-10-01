@@ -46,11 +46,13 @@ import { BACKEND_URL } from "../../../app/config";
 import { STORY_LANGUAGES } from "../constants";
 import type { StorefrontTemplate, StoryTemplate } from "@/data/story-templates";
 import { CARTOON_ART_STYLES, DEFAULT_ART_STYLE, getArtStyle } from "../../../services/fal/cartoonGeneration";
+import { CreationMagicAnimation } from "./CreationMagicAnimation";
 
 const STEPS = [
   { title: "Your Hero", description: "Photo, name, age & gender", icon: User },
-  { title: "Story Style", description: "Art style, language & extras", icon: Palette },
-  { title: "Generate", description: "Create your story", icon: Sparkles },
+  { title: "Your Story", description: "Story, language & dedication", icon: BookOpen },
+  { title: "Art Style", description: "Choose the look and feel", icon: Palette },
+  { title: "Review", description: "Create your story", icon: Sparkles },
 ];
 
 interface StoryPageData {
@@ -349,7 +351,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         // A story the server cannot serve must never be replaced by another one.
         if (shelfStoryMissing) return false;
         return customMode ? !!customIdea.trim() : !!selectedTemplateId;
-      case 2: return true;
+      case 2: return !!artStyle;
       default: return false;
     }
   };
@@ -387,10 +389,17 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
     return (
       <div className="max-w-5xl mx-auto space-y-8 pb-12">
         {/* Celebration Header */}
-        <Card className="p-8 text-center bg-gradient-to-b from-buttercup/15 via-white to-blush/40 shadow-xl border-buttercup/30 rounded-3xl">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-violet-deep text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
+        <Card className="relative overflow-hidden p-8 text-center bg-gradient-to-b from-buttercup/15 via-white to-blush/40 shadow-xl border-buttercup/30 rounded-3xl">
+          <motion.span aria-hidden className="absolute left-[16%] top-8 text-2xl text-buttercup" animate={{ y: [0, -9, 0], rotate: [0, 16, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.8, repeat: Infinity }}>✦</motion.span>
+          <motion.span aria-hidden className="absolute right-[16%] top-12 text-xl text-primary" animate={{ y: [0, 8, 0], rotate: [0, -16, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 2.1, repeat: Infinity, delay: 0.2 }}>✦</motion.span>
+          <motion.div
+            initial={{ scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", bounce: 0.55 }}
+            className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-violet-deep text-white flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20"
+          >
             <Sparkles className="w-8 h-8" />
-          </div>
+          </motion.div>
           <h2 className="text-3xl sm:text-4xl font-display font-bold text-violet-deep mb-2">
             {generatedStory.title} is Ready! 🎉
           </h2>
@@ -506,6 +515,10 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         </Card>
       </div>
     );
+  }
+
+  if (loading) {
+    return <CreationMagicAnimation heroName={childName.trim() || undefined} />;
   }
 
   return (
@@ -659,7 +672,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
             </motion.div>
           )}
 
-          {/* Step 1: Story style - the story itself was chosen on the shelf */}
+          {/* Step 1: Story details - the story itself was chosen on the shelf */}
           {step === 1 && (
             <motion.div
               key="step1"
@@ -675,7 +688,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 <p className="text-muted-foreground mt-2">
                   {customMode
                     ? "Describe the story you want and we will build it around your hero."
-                    : "Your story is already picked - now choose how it should look and read."}
+                    : "Your story is already picked - add the language and dedication for your hero."}
                 </p>
               </div>
 
@@ -835,41 +848,21 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 </div>
               )}
 
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Story Language</Label>
-                  <Select
-                    value={storyLanguage}
-                    onValueChange={(v) => setStoryLanguage(v as "english" | "french" | "arabic")}
-                  >
-                    <SelectTrigger className="mt-1 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STORY_LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="sm:col-span-2">
-                  <Label>Art Style</Label>
-                  <Select value={artStyle} onValueChange={setArtStyle}>
-                    <SelectTrigger className="mt-1 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CARTOON_ART_STYLES.map((style) => (
-                        <SelectItem key={style.id} value={style.id}>
-                          {style.emoji} {style.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    {getArtStyle(artStyle).description}
-                  </p>
-                </div>
+              <div>
+                <Label>Story Language</Label>
+                <Select
+                  value={storyLanguage}
+                  onValueChange={(v) => setStoryLanguage(v as "english" | "french" | "arabic")}
+                >
+                  <SelectTrigger className="mt-1 w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STORY_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.value} value={lang.value}>{lang.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -883,10 +876,78 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
             </motion.div>
           )}
 
-          {/* Step 2: Generate */}
+          {/* Step 2: Art style */}
           {step === 2 && (
             <motion.div
               key="step2"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="mb-8 text-center">
+                <h2 className="font-display text-3xl font-bold text-violet-deep">
+                  Choose your story&apos;s art style
+                </h2>
+                <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
+                  Pick the visual world your hero will live in. These examples show the same fictional 7-year-old Tunisian hero in every style.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                {CARTOON_ART_STYLES.map((style) => {
+                  const selected = artStyle === style.id;
+                  return (
+                    <button
+                      key={style.id}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setArtStyle(style.id)}
+                      className={`group overflow-hidden rounded-2xl border-2 bg-white text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${selected
+                        ? "border-primary shadow-lg shadow-primary/15 ring-4 ring-primary/10"
+                        : "border-border hover:border-primary/50"
+                        }`}
+                    >
+                      <div className="relative aspect-square overflow-hidden bg-muted">
+                        <Image
+                          src={style.image}
+                          alt={`${style.name} example with a fictional 7-year-old Tunisian boy`}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 220px"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        {selected && (
+                          <span className="absolute right-2 top-2 grid size-8 place-items-center rounded-full bg-primary text-white shadow-md">
+                            <CheckCircle2 className="size-5" aria-hidden />
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-3">
+                        <p className="font-display text-sm font-bold text-violet-deep sm:text-base">
+                          {style.emoji} {style.name}
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                          {style.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-3 rounded-2xl bg-buttercup/10 p-4 text-sm text-violet-deep">
+                <Palette className="size-5 shrink-0 text-primary" aria-hidden />
+                <p>
+                  Selected style: <strong>{getArtStyle(artStyle).name}</strong>. You can change it before creating your book.
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Generate */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
@@ -917,7 +978,16 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                   </div>
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Art Style</span>
-                    <p className="font-medium text-violet-deep">{getArtStyle(artStyle).emoji} {getArtStyle(artStyle).name}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Image
+                        src={getArtStyle(artStyle).image}
+                        alt=""
+                        width={40}
+                        height={40}
+                        className="size-10 rounded-lg object-cover ring-1 ring-border"
+                      />
+                      <p className="font-medium text-violet-deep">{getArtStyle(artStyle).emoji} {getArtStyle(artStyle).name}</p>
+                    </div>
                   </div>
                   {dedication.trim() && (
                     <div className="col-span-2">

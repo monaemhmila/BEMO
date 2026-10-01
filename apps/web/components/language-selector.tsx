@@ -22,6 +22,8 @@ const SHORT_LABEL: Record<Locale, string> = {
 
 export function LanguageSelector({ className }: { className?: string }) {
   const { locale, setLocale } = useLanguage();
+  const chooseLanguageLabel =
+    locale === "fr" ? "Choisir la langue" : locale === "ar" ? "اختر اللغة" : "Choose language";
 
   return (
     <div data-nolit className={cn("shrink-0", className)}>
@@ -31,7 +33,7 @@ export function LanguageSelector({ className }: { className?: string }) {
             variant="outline"
             size="sm"
             className="gap-1.5 rounded-full px-3 font-bold"
-            aria-label="Choose language"
+            aria-label={chooseLanguageLabel}
           >
             <Languages className="size-4" aria-hidden />
             <span className="text-xs">{SHORT_LABEL[locale]}</span>

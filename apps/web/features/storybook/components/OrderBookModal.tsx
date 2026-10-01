@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { motion } from "framer-motion";
 import {
   CheckCircle2,
   Loader2,
@@ -344,7 +345,12 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 </div>
                 <div className="font-semibold text-violet-deep">
                   {priceLoading ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <motion.span
+                      animate={{ rotate: [0, 12, -12, 0], y: [0, -2, 0] }}
+                      transition={{ duration: 0.8, repeat: Infinity }}
+                    >
+                      <Package className="size-4" />
+                    </motion.span>
                   ) : price !== null ? (
                     formatMoney(price)
                   ) : (
@@ -453,8 +459,33 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
         {step === "success" && order && (
           <>
             <DialogHeader>
-              <div className="flex justify-center">
-                <CheckCircle2 className="size-14 text-emerald-500" />
+              <div className="relative flex justify-center py-2">
+                <motion.span
+                  aria-hidden
+                  className="absolute left-[22%] top-0 text-xl text-buttercup"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: [0, 1, 0], scale: [0.5, 1.2, 0.8], y: [8, -12, -26] }}
+                  transition={{ duration: 1.4, delay: 0.15 }}
+                >
+                  ✦
+                </motion.span>
+                <motion.span
+                  aria-hidden
+                  className="absolute right-[22%] top-3 text-lg text-primary"
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: [0, 1, 0], scale: [0.5, 1.15, 0.8], y: [8, -10, -22] }}
+                  transition={{ duration: 1.3, delay: 0.3 }}
+                >
+                  ✦
+                </motion.span>
+                <motion.div
+                  initial={{ scale: 0, rotate: -18 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", bounce: 0.6 }}
+                  className="grid size-16 place-items-center rounded-full bg-emerald-100"
+                >
+                  <CheckCircle2 className="size-12 text-emerald-500" />
+                </motion.div>
               </div>
               <DialogTitle className="text-center">
                 Order Confirmed!
@@ -464,6 +495,26 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 You also unlocked 1 extra free story generation!
               </DialogDescription>
             </DialogHeader>
+
+            <div className="relative mx-auto flex w-full max-w-xs items-center justify-between px-4 py-2 text-emerald-600">
+              <div className="absolute left-10 right-10 top-1/2 border-t-2 border-dashed border-emerald-200" />
+              <motion.div
+                initial={{ x: -22 }}
+                animate={{ x: 22 }}
+                transition={{ duration: 1.2, delay: 0.35, ease: "easeInOut" }}
+                className="relative z-10 grid size-10 place-items-center rounded-full bg-white shadow-sm ring-4 ring-emerald-50"
+              >
+                <Package className="size-5" />
+              </motion.div>
+              <motion.div
+                initial={{ x: -22 }}
+                animate={{ x: 22 }}
+                transition={{ duration: 1.2, delay: 0.35, ease: "easeInOut" }}
+                className="relative z-10 grid size-10 place-items-center rounded-full bg-white shadow-sm ring-4 ring-emerald-50"
+              >
+                <Truck className="size-5" />
+              </motion.div>
+            </div>
 
             <div className="grid gap-3">
               <div className="rounded-lg border border-border p-4 text-center">

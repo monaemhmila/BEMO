@@ -11,6 +11,7 @@ export interface ArtStyleOption {
   id: string;
   name: string;
   emoji: string;
+  image: string;
   prompt: string;
   description: string;
 }
@@ -25,6 +26,7 @@ export const DEFAULT_ART_STYLE = "photo-realistic";
 export const CARTOON_ART_STYLES: ArtStyleOption[] = [
   {
     id: "photo-realistic",
+    image: "/art-styles/photo-realistic.png",
     name: "Photo Realistic",
     emoji: "📸",
     prompt:
@@ -33,6 +35,7 @@ export const CARTOON_ART_STYLES: ArtStyleOption[] = [
   },
   {
     id: "disney-pixar",
+    image: "/art-styles/disney-pixar.png",
     name: "Disney Pixar Cartoon",
     emoji: "🏰",
     prompt:
@@ -41,6 +44,7 @@ export const CARTOON_ART_STYLES: ArtStyleOption[] = [
   },
   {
     id: "watercolor-whimsy",
+    image: "/art-styles/watercolor-whimsy.png",
     name: "Watercolor Whimsy",
     emoji: "🎨",
     prompt:
@@ -49,6 +53,7 @@ export const CARTOON_ART_STYLES: ArtStyleOption[] = [
   },
   {
     id: "claymation",
+    image: "/art-styles/claymation.png",
     name: "Claymation",
     emoji: "🧸",
     prompt:
@@ -57,6 +62,7 @@ export const CARTOON_ART_STYLES: ArtStyleOption[] = [
   },
   {
     id: "anime-cute",
+    image: "/art-styles/anime-cute.png",
     name: "Anime Adorable",
     emoji: "✨",
     prompt:
@@ -65,6 +71,7 @@ export const CARTOON_ART_STYLES: ArtStyleOption[] = [
   },
   {
     id: "classic-storybook",
+    image: "/art-styles/classic-storybook.png",
     name: "Classic Tale",
     emoji: "📖",
     prompt:
@@ -73,6 +80,7 @@ export const CARTOON_ART_STYLES: ArtStyleOption[] = [
   },
   {
     id: "3d-cartoon",
+    image: "/art-styles/3d-cartoon.png",
     name: "3D Cartoon",
     emoji: "🎬",
     prompt:

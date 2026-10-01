@@ -1,7 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
-import { FillerVideo } from "@/components/filler";
 
 export function Hero() {
   return (
@@ -46,10 +46,14 @@ export function Hero() {
         </div>
 
         <div className="relative order-1 lg:order-2">
-          <div className="aspect-[4/3] w-full overflow-hidden rounded-[2rem] border-4 border-white shadow-[0_28px_60px_-28px_rgba(31,22,54,.5)]">
-            <FillerVideo
-              src="/monpetitherovideo.mp4"
-              label="Storybook preview"
+          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2rem] border-4 border-white bg-[#f5e9dc] shadow-[0_28px_60px_-28px_rgba(31,22,54,.5)]">
+            <Image
+              src="/home/hero-storybook.png"
+              alt="A child becoming the hero of a magical storybook adventure"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
             />
           </div>
           <span
