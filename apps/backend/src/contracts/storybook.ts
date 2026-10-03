@@ -260,7 +260,7 @@ export function getPageTextLayout(
  * Guards identity, anatomy, and the no-AI-text rule.
  */
 export const STORYBOOK_NEGATIVE_PROMPT =
-  "cartoon, cartoon character, cartoonized child, anime, manga, illustration, children's book illustration, drawing, painting, comic, stylized character, 3D cartoon, CGI character, toy-like appearance, plastic skin, exaggerated facial features, empty side areas, empty left side, empty right side, white side margins, white side panels, blank areas, blank margins, borders, letterboxing, pillarboxing, vertical bars, unused canvas, isolated central composition, text, typography, words, letters, signs, speech bubbles, logos, watermark, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, shorts, bare legs, partial crop, truncated frame";
+  "cartoon, cartoon character, cartoonized child, anime, manga, illustration, children's book illustration, drawing, painting, comic, stylized character, 3D cartoon, CGI character, toy-like appearance, plastic skin, exaggerated facial features, stretched child, widened child, broad shoulders, distorted torso, squashed proportions, oversized head, empty side areas, empty left side, empty right side, white side margins, white side panels, blank areas, blank margins, borders, letterboxing, pillarboxing, vertical bars, unused canvas, isolated central composition, text, typography, words, letters, signs, speech bubbles, logos, watermark, bad anatomy, deformed feet, extra feet, missing feet, mutated legs, shorts, bare legs, partial crop, truncated frame";
 
 /**
  * The categories a story template may belong to. Anything else (including a

@@ -125,16 +125,18 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           }
         }
       } catch (err) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted || (err instanceof DOMException && err.name === "AbortError")) return;
         console.error("Failed to fetch story", err);
         setLoading(false);
         setError(true);
       }
     };
 
-    void connect();
+    // Keep the promise explicitly handled: aborting an SSE reader during
+    // navigation is expected and must not surface as an unhandled rejection.
+    void connect().catch(() => undefined);
     return () => {
-      controller.abort();
+      if (!controller.signal.aborted) controller.abort("reader-unmounted");
     };
   }, [storyId, getToken]);
 

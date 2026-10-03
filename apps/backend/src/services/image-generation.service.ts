@@ -1,6 +1,7 @@
 import { fal } from "@fal-ai/client";
 import { logger } from "../lib/logger";
 import { env } from "../config/env";
+import sharp from "sharp";
 import {
   STORYBOOK_IMAGE_ASPECT_RATIO,
   STORYBOOK_NEGATIVE_PROMPT,
@@ -60,28 +61,47 @@ export class ImageGenerationService {
     return ImageGenerationService.instance;
   }
 
-  /**
-   * Upload base64 images to Fal storage so they can be used as references.
-   */
+  /** Crop the uploaded portrait to a face-focused reference before Fal sees it. */
+  private async cropFaceReference(url: string): Promise<string> {
+    const base64Data = url.split(",")[1];
+    if (!base64Data) throw new Error("Invalid image data");
+
+    const source = Buffer.from(base64Data, "base64");
+    const metadata = await sharp(source).metadata();
+    const width = metadata.width ?? 0;
+    const height = metadata.height ?? 0;
+    if (!width || !height) throw new Error("Invalid image dimensions");
+
+    // User uploads generally place the face near the upper centre. Use a
+    // zoomed square crop so wide images cannot make the generated child wide.
+    const cropSize = Math.max(1, Math.floor(Math.min(width, height) * 0.75));
+    const left = Math.max(0, Math.floor((width - cropSize) / 2));
+    const top = Math.max(0, Math.floor((height - cropSize) * 0.15));
+    const cropped = await sharp(source)
+      .extract({ left, top, width: cropSize, height: cropSize })
+      .resize(512, 512, { fit: "cover" })
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    return `data:image/jpeg;base64,${cropped.toString("base64")}`;
+  }
+
+  /** Crop and upload base64 images to Fal storage as face references. */
   private async ensurePublicImageUrl(url: string): Promise<string> {
     if (!url.startsWith("data:")) {
       return url;
     }
 
     try {
-      const base64Data = url.split(",")[1];
-
-      if (!base64Data) {
-        throw new Error("Invalid image data");
-      }
-
-      const mimeType = url.match(/data:(.*?);/)?.[1] || "image/jpeg";
+      const croppedDataUrl = await this.cropFaceReference(url);
+      const base64Data = croppedDataUrl.split(",")[1];
+      if (!base64Data) throw new Error("Invalid cropped image data");
       const buffer = Buffer.from(base64Data, "base64");
 
       const file = new File(
-        [new Blob([buffer], { type: mimeType })],
+        [new Blob([buffer], { type: "image/jpeg" })],
         `child-reference-${Date.now()}.jpg`,
-        { type: mimeType }
+        { type: "image/jpeg" }
       );
 
       return await fal.storage.upload(file);

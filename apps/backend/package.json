@@ -6,6 +6,7 @@
   "scripts": {
     "start": "ts-node index.ts",
     "dev": "ts-node index.ts",
+    "prebuild": "prisma generate --schema=../../packages/db/prisma/schema.prisma",
     "build": "tsc",
     "test:security": "ts-node src/lib/safe-image-fetcher.test.ts",
     "test:integration": "ts-node src/integration/health.integration.test.ts"
@@ -24,7 +25,7 @@
     "common": "*",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
-    "db": "*",
+    "@portrait-ai/db": "*",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.1",

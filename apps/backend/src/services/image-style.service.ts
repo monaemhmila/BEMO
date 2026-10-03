@@ -99,19 +99,19 @@ export function getCharacterEdgeDirective(side: "left" | "right"): string {
  * scene description, `[FILL_CANVAS]` with the canvas-ratio sentence and
  * `[EDGE_PLACEMENT]` with the per-page edge rule (middle pages only).
  */
-export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference for the child.
+export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference for the child .
 
 Preserve the child's recognizable facial identity accurately, including facial features, face shape, skin tone, eyes, eyebrows, nose, mouth, hair characteristics, and apparent age. The child must remain recognizable as the same child throughout the generated image.
 
-The supplied image is a FACE REFERENCE ONLY. Do not preserve or reproduce its background, framing, crop, white areas, lighting setup, camera composition, or any other visual elements from the reference image. Do not place the face inside the original reference frame.
+Do not reproduce the reference image's background, framing, crop, white areas, lighting setup, or camera composition. Do not place the face inside the original reference frame.
 
-Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet.  Choose a distinctive, age-appropriate costume or outfit for the child that clearly fits their role in the story. The costume should change according to the story and make the child visually feel like the protagonist of that particular adventure.
+Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Preserve a natural age-appropriate head-to-body ratio, shoulder width, and torso proportions; never stretch, widen, compress, or distort the child to fit the canvas. Choose a distinctive, age-appropriate costume or outfit for the child that clearly fits their role in the story. The costume should change according to the story and make the child visually feel like the protagonist of that particular adventure.
 
 Create the following scene:
 
 [SCENE]
 
-[EDGE_PLACEMENT]Create a completely new, rich, immersive environment around the child. The environment must naturally surround and integrate the child with detailed foreground, middle-ground, and background elements.
+[EDGE_PLACEMENT][FILL_CANVAS]Create a completely new, rich, immersive environment around the child. The environment must naturally surround and integrate the child with detailed foreground, middle-ground, and background elements.
 
 The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings. The result must look like one cohesive scene, not a face pasted onto a generated body or background.
 
@@ -129,7 +129,9 @@ export function buildStorybookImagePrompt(input: {
   edgePlacementSide?: "left" | "right";
 }): string {
   const scene = applyArtStyle(input.sceneDescription, input.artStyle);
-  const ratio = input.aspectRatio === "1:1" ? "1:1" : "16:9";
+  const ratio = input.aspectRatio === "1:1"
+    ? "Use a square 1:1 composition."
+    : "Use a composition with the child kept naturally proportioned and relatively small enough to leave surrounding space; expand the environment to fill the frame instead of widening the child.";
   const edge = input.edgePlacementSide
     ? `${getCharacterEdgeDirective(input.edgePlacementSide)}\n\n`
     : "";

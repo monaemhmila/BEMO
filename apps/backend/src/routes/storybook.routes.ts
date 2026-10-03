@@ -459,8 +459,16 @@ router.get("/:id/pdf", authMiddleware, async (req, res) => {
       res.status(404).json({ message: "Story not found" });
       return;
     }
-    if (story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated")) {
+    if (story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
       res.status(409).json({ message: "Wait until all story illustrations are ready before exporting." });
+      return;
+    }
+
+    // PDF generation is expensive because it downloads and processes every
+    // illustration. Reuse the completed export instead of rebuilding it for
+    // every download request.
+    if (story.pdfUrl) {
+      res.redirect(story.pdfUrl);
       return;
     }
 
@@ -478,6 +486,10 @@ router.get("/:id/pdf", authMiddleware, async (req, res) => {
     res.send(pdfBuffer);
   } catch (error) {
     logger.error({ error, storyId: req.params.id }, "Failed to export storybook PDF");
+    if (error instanceof Error && error.message.startsWith("PDF for ")) {
+      res.status(409).json({ message: "Some page artwork could not be downloaded. Please retry the failed pages." });
+      return;
+    }
     res.status(500).json({ message: "Could not export the storybook PDF" });
   }
 });
@@ -808,8 +820,8 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       "Starting no-training PDF storybook generation"
     );
 
-    // Fal's edit endpoint receives the original uploaded portrait directly;
-    // no local face detector or model weights are required.
+    // The image service creates and uploads a face-focused crop before Fal sees
+    // the reference, so the original client upload is never sent directly.
     const storyRef = childImage || null;
 
     // Parent-confirmed identity facts are optional; the uploaded portrait is always the authority.
@@ -999,6 +1011,24 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
             orderBy: { pageNumber: "asc" },
           });
 
+          const incompletePages = allStoryPages.filter(
+            (page) => page.status !== "Generated" || !page.imageUrl
+          );
+          if (incompletePages.length > 0) {
+            await prismaClient.story.update({
+              where: { id: story.id },
+              data: { status: "Failed" },
+            });
+            logger.error(
+              {
+                storyId: story.id,
+                pages: incompletePages.map((page) => page.pageNumber),
+              },
+              "Story generation finished with missing page artwork"
+            );
+            return;
+          }
+
           const allPagesFormatted = allStoryPages.map((p) => ({
             pageNumber: p.pageNumber,
             content: p.content,
@@ -1026,10 +1056,22 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
           logger.info({ storyId: story.id }, "Full story generation & PDF compilation complete in background");
         } catch (bgError) {
           logger.error({ bgError, storyId: story.id }, "Background page generation/PDF creation error");
+          await prismaClient.story.update({
+            where: { id: story.id },
+            data: { status: "Failed" },
+          }).catch(() => undefined);
         }
       })();
     } else {
       // If story only has 2 pages total, build PDF immediately
+      if (previewPages.some((page) => !page.imageUrl)) {
+        await prismaClient.story.update({
+          where: { id: story.id },
+          data: { status: "Failed" },
+        });
+        res.status(500).json({ message: "Some story illustrations could not be generated." });
+        return;
+      }
       const pdfService = new PDFService();
       const pdfBuffer = await pdfService.generateStorybookPdf(
         { title: script.title, dedication, childName },

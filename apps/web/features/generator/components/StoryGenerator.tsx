@@ -352,6 +352,15 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         if (shelfStoryMissing) return false;
         return customMode ? !!customIdea.trim() : !!selectedTemplateId;
       case 2: return !!artStyle;
+      case 3:
+        return (
+          !!childName.trim() &&
+          !!childImage &&
+          !!childGender &&
+          !shelfStoryMissing &&
+          (customMode ? !!customIdea.trim() : !!selectedTemplateId) &&
+          !!artStyle
+        );
       default: return false;
     }
   };

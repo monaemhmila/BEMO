@@ -12,7 +12,9 @@ export const MAX_IMAGE_DIMENSION = 8192;
 export const MAX_IMAGE_PIXELS = 33554432; // 32 Megapixels
 
 /** Timeout for remote image fetch in milliseconds */
-export const IMAGE_FETCH_TIMEOUT_MS = 10000;
+// Fal story illustrations can be several megabytes; allow slow CDN responses
+// enough time to finish instead of producing an incomplete PDF.
+export const IMAGE_FETCH_TIMEOUT_MS = 120000;
 
 /** Allowed raster image formats */
 export const ALLOWED_IMAGE_FORMATS = new Set(["jpeg", "png", "webp", "gif", "avif"]);

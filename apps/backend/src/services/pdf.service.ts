@@ -284,6 +284,7 @@ export class PDFService {
         `The image host was unreachable; the book was rendered without those illustrations.`;
       console.error(message);
       onWarning?.(message);
+      throw new Error(message);
     }
 
     // A 16:9 story page becomes two PDF leaves (left square, then right square).

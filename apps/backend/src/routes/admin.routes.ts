@@ -369,6 +369,16 @@ router.get("/story/:id/pdf", async (req, res) => {
       return;
     }
 
+    if (story.pdfUrl) {
+      res.redirect(story.pdfUrl);
+      return;
+    }
+
+    if (story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
+      res.status(409).json({ message: "Wait until all story illustrations are ready before exporting." });
+      return;
+    }
+
     let missingArtWarning: string | undefined;
     const pdfBuffer = await new PDFService().generateStorybookPdf(
       { title: story.title, dedication: story.dedication, childName: story.childName },
@@ -394,6 +404,10 @@ router.get("/story/:id/pdf", async (req, res) => {
     res.send(pdfBuffer);
   } catch (error) {
     logger.error({ error, storyId }, "Failed to generate admin story PDF");
+    if (error instanceof Error && error.message.startsWith("PDF for ")) {
+      res.status(409).json({ message: "Some page artwork could not be downloaded. Please retry the failed pages." });
+      return;
+    }
     res.status(500).json({ message: "Failed to generate story PDF" });
   }
 });
