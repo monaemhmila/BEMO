@@ -170,6 +170,24 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
+    overflow-x: hidden;
+    min-width: 320px;
+  }
+
+  /* Prevent iOS Safari from zooming every form field when it receives focus. */
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  @media (max-width: 639px) {
+    input,
+    textarea,
+    select {
+      font-size: 16px;
+    }
   }
   h1,
   h2,

@@ -387,9 +387,9 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
   // and flipping past them surfaces the "Order now" call to action.
   if (generatedStory) {
     return (
-      <div className="max-w-5xl mx-auto space-y-8 pb-12">
+      <div className="mx-auto max-w-5xl space-y-8 px-1 pb-12 sm:px-0">
         {/* Celebration Header */}
-        <Card className="relative overflow-hidden p-8 text-center bg-gradient-to-b from-buttercup/15 via-white to-blush/40 shadow-xl border-buttercup/30 rounded-3xl">
+        <Card className="relative overflow-hidden rounded-3xl border-buttercup/30 bg-gradient-to-b from-buttercup/15 via-white to-blush/40 p-4 text-center shadow-xl sm:p-8">
           <motion.span aria-hidden className="absolute left-[16%] top-8 text-2xl text-buttercup" animate={{ y: [0, -9, 0], rotate: [0, 16, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.8, repeat: Infinity }}>✦</motion.span>
           <motion.span aria-hidden className="absolute right-[16%] top-12 text-xl text-primary" animate={{ y: [0, 8, 0], rotate: [0, -16, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 2.1, repeat: Infinity, delay: 0.2 }}>✦</motion.span>
           <motion.div
@@ -429,7 +429,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         </div>
 
         {/* Action CTA Banner */}
-        <Card className="p-8 bg-gradient-to-r from-violet-deep via-violet-ink to-violet-deep text-white rounded-3xl shadow-2xl border-purple-500/20">
+        <Card className="rounded-3xl border-purple-500/20 bg-gradient-to-r from-violet-deep via-violet-ink to-violet-deep p-4 text-white shadow-2xl sm:p-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center md:text-left">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-buttercup/20 text-buttercup rounded-full text-xs font-semibold border border-buttercup/40">
@@ -557,7 +557,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
       </div>
 
       {/* Main Card */}
-      <Card className="p-8 shadow-xl border-border overflow-hidden">
+          <Card className="overflow-hidden border-border p-4 shadow-xl sm:p-8">
         <AnimatePresence mode="wait">
 
           {/* Step 0: Upload child photo */}
@@ -570,14 +570,14 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-display font-bold text-violet-deep">Who is the Hero?</h2>
+                <h2 className="font-display text-2xl font-bold text-violet-deep sm:text-3xl">Who is the Hero?</h2>
                 <p className="text-muted-foreground mt-2">Use one clear, front-facing photo so the hero stays recognizable on every page.</p>
               </div>
 
               {/* Photo upload */}
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className={`cursor-pointer border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${childImagePreview
+                className={`cursor-pointer rounded-2xl border-2 border-dashed p-4 text-center transition-colors sm:p-8 ${childImagePreview
                   ? "border-emerald-400 bg-emerald-50/30"
                   : "border-buttercup/50 hover:border-primary bg-buttercup/10/20"
                   }`}
@@ -622,7 +622,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Hero&apos;s Name *</Label>
                   <Input
@@ -682,7 +682,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
               className="space-y-6"
             >
               <div className="text-center mb-8">
-                <h2 className="text-3xl font-display font-bold text-violet-deep">
+                <h2 className="font-display text-2xl font-bold text-violet-deep sm:text-3xl">
                   {customMode ? "Tell us your story" : "Make it yours"}
                 </h2>
                 <p className="text-muted-foreground mt-2">
@@ -886,7 +886,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
               className="space-y-6"
             >
               <div className="mb-8 text-center">
-                <h2 className="font-display text-3xl font-bold text-violet-deep">
+                <h2 className="font-display text-2xl font-bold text-violet-deep sm:text-3xl">
                   Choose your story&apos;s art style
                 </h2>
                 <p className="mx-auto mt-2 max-w-2xl text-muted-foreground">
@@ -959,8 +959,8 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
               </div>
 
               {/* Summary */}
-              <div className="bg-gradient-to-br from-buttercup/15 to-blush/40 rounded-2xl p-6 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 rounded-2xl bg-gradient-to-br from-buttercup/15 to-blush/40 p-4 sm:p-6">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <span className="text-xs uppercase tracking-wide text-muted-foreground">Hero</span>
                     <p className="font-medium text-violet-deep text-lg">
@@ -990,7 +990,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                     </div>
                   </div>
                   {dedication.trim() && (
-                    <div className="col-span-2">
+                    <div className="sm:col-span-2">
                       <span className="text-xs uppercase tracking-wide text-muted-foreground">Dedication</span>
                       <p className="font-medium text-violet-deep">{dedication.trim()}</p>
                     </div>

@@ -28,7 +28,7 @@ export function CreateChooser({ covers, shelfTemplate }: CreateChooserProps) {
 
   if (templateId || custom) {
     return (
-      <div>
+      <div className="px-1 pb-10 sm:px-0">
         <motion.div
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
@@ -51,7 +51,7 @@ export function CreateChooser({ covers, shelfTemplate }: CreateChooserProps) {
   }
 
   return (
-    <div className="relative overflow-hidden pb-10">
+    <div className="relative overflow-hidden px-1 pb-10 sm:px-0">
       <div
         aria-hidden
         className="pointer-events-none absolute -right-24 -top-24 size-64 rounded-full bg-buttercup/25 blur-3xl"

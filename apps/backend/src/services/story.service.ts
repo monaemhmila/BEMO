@@ -15,6 +15,8 @@ import {
   PageType,
   normalizeStoryCategory,
 } from "../contracts/storybook";
+import { chooseStoryCover } from "./story-cover.service";
+import { GenerationQueue, PageGenerationJob } from "../lib/generation-queue";
 
 /** The canonical 14-beat prompt document stored in `StoryTemplate.prompts`. */
 export interface StoryTemplatePrompts {
@@ -104,6 +106,7 @@ export class StoryService {
 
   private faceConsistency = FaceConsistencyService.getInstance();
   private storyCompletion = StoryCompletionService.getInstance();
+  private generationQueue = GenerationQueue.getInstance();
 
   /**
    * Cooldown for the expensive pending-page reconciliation (it calls the fal.ai
@@ -662,6 +665,19 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
       )
     );
 
+    // Keep every generated story page intact and append the reusable closing
+    // cover as a new final page. It is resolved locally when generation is
+    // triggered, so it never replaces the story's own closing scene.
+    const coverPage = await prismaClient.storyPage.create({
+      data: {
+        storyId: story.id,
+        pageNumber: pages.length + 1,
+        content: "",
+        imagePrompt: "Printed closing cover",
+        status: "Pending",
+      },
+    });
+
     logger.info(
       {
         storyId: story.id,
@@ -675,7 +691,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
       `story_${story.id}`
     );
 
-    return { story, pages };
+    return { story, pages: [...pages, coverPage] };
   }
 
   /**
@@ -699,12 +715,45 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; position?: "left" | "right"; artStyle?: string }
+    options?: { childName?: string; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
+  ) {
+    const job = {
+      pageId,
+      prompt,
+      referenceImageUrl,
+      options,
+    } satisfies Omit<PageGenerationJob, "jobId">;
+    const jobId = await this.generationQueue.enqueue(job, async () => {
+      await this.processQueuedPageGeneration({ ...job, jobId: `local:${pageId}` });
+    });
+    return { requestId: `job:${jobId}`, jobId };
+  }
+
+  async processQueuedPageGeneration(job: PageGenerationJob) {
+    return this.processPageGeneration(job.pageId, job.prompt, job.referenceImageUrl, job.options);
+  }
+
+  private async processPageGeneration(
+    pageId: string,
+    prompt: string,
+    referenceImageUrl?: string | null,
+    options?: { childName?: string; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
   ) {
     try {
       const page = await prismaClient.storyPage.findUnique({
         where: { id: pageId },
-        select: { pageNumber: true, storyId: true },
+        select: {
+          pageNumber: true,
+          storyId: true,
+          story: {
+            select: {
+              title: true,
+              category: true,
+              pages: { select: { imagePrompt: true } },
+              template: { select: { name: true, description: true, prompts: true } },
+            },
+          },
+        },
       });
       if (!page) return { requestId: "" };
 
@@ -714,6 +763,27 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
       const totalPages = await prismaClient.storyPage.count({
         where: { storyId: page.storyId },
       });
+
+      // The final page is a reusable printed closing cover. Selecting it here
+      // covers the queued-generation route as well as retries and future
+      // templates, without spending an external image-generation call.
+      if (page.pageNumber === totalPages) {
+        const cover = chooseStoryCover({
+          category: page.story.category,
+          title: page.story.title,
+          templateName: page.story.template?.name,
+          templateDescription: page.story.template?.description,
+          templatePrompts: page.story.template?.prompts,
+          pagePrompts: page.story.pages.map((item) => item.imagePrompt),
+          gender: options?.gender,
+        });
+        await prismaClient.storyPage.update({
+          where: { id: pageId },
+          data: { imageUrl: cover.url, falAiRequestId: null, status: "Generated" },
+        });
+        logger.info({ pageId, cover: cover.color }, "Applied story closing cover");
+        return { requestId: `local-cover:${cover.color}` };
+      }
       const isSquarePage = isSquareBookPage(page.pageNumber, totalPages);
 
       let position: "left" | "right" = options?.position || "right";

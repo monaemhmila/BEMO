@@ -107,7 +107,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "templates" | "facelab" | "orders" | "activity" | "analytics";
+type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "activity" | "analytics";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -329,6 +329,10 @@ function downloadDataUrl(dataUrl: string, filename: string) {
   document.body.removeChild(link);
 }
 
+// Kept as a legacy local diagnostic component for existing admin bundles; the
+// production admin navigation no longer exposes it after the local model
+// pipeline was removed.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function FaceLabTab({ authHeaders }: { authHeaders: () => Promise<Record<string, string>> }) {
   const [sourceImage, setSourceImage] = useState<string | null>(null);
   const [sourceName, setSourceName] = useState("");
@@ -2686,7 +2690,6 @@ export default function AdminPage() {
     { id: "users", label: "Users", icon: <Users className="w-4 h-4" />, count: users.length },
     { id: "stories", label: "Stories", icon: <BookOpen className="w-4 h-4" />, count: stories.length },
     { id: "templates", label: "Templates", icon: <BookCopy className="w-4 h-4" />, count: templates.length },
-    { id: "facelab", label: "Face Lab", icon: <ScanFace className="w-4 h-4" /> },
     { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" />, count: orders.length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
     { id: "analytics", label: "Analytics", icon: <MousePointerClick className="w-4 h-4" /> },
@@ -2868,9 +2871,7 @@ export default function AdminPage() {
                 <h1 className="font-bold text-white text-lg sm:text-xl capitalize truncate">
                   {activeTab === "overview"
                     ? "Dashboard Overview"
-                    : activeTab === "facelab"
-                      ? "Face Detection Lab"
-                      : activeTab === "orders"
+                    : activeTab === "orders"
                         ? "Order Management"
                         : activeTab === "templates"
                           ? "Story Templates"
@@ -2890,7 +2891,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="space-y-6 p-4 sm:p-6">
 
             {/* ── OVERVIEW TAB ─────────────────────────────────────────────── */}
             {activeTab === "overview" && (
@@ -3189,8 +3190,6 @@ export default function AdminPage() {
             )}
 
             {/* ── FACE LAB TAB ─────────────────────────────────────────────── */}
-            {activeTab === "facelab" && <FaceLabTab authHeaders={authHeaders} />}
-
             {/* ── ANALYTICS TAB ────────────────────────────────────────────── */}
             {activeTab === "analytics" && <AnalyticsTab authHeaders={authHeaders} />}
 

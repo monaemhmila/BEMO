@@ -1,9 +1,4 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
 /** @type {import('next').NextConfig} */
-
-const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 // Allow next/image to optimise images served by the backend (generated pages,
 // cover art) without hard-coding a deployment host: derive it from the public
@@ -34,8 +29,6 @@ const backendPattern = (() => {
 
 const nextConfig = {
   poweredByHeader: false,
-  output: "standalone",
-  outputFileTracingRoot: appDirectory,
   experimental: {
     // Tree-shake these barrel packages per import instead of shipping them whole.
     optimizePackageImports: ["lucide-react", "framer-motion", "date-fns"],

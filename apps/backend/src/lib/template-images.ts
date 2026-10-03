@@ -3,7 +3,6 @@ import path from "path";
 import crypto from "crypto";
 
 import sharp from "sharp";
-
 import { env } from "../config/env";
 import { getAssetsPath } from "./storage";
 import { logger } from "./logger";
@@ -43,7 +42,7 @@ export const MAX_PREVIEWS = 12;
 function publicAssetBase(): string {
   const configured = process.env.PUBLIC_ASSET_BASE_URL?.trim();
   if (configured) return configured.replace(/\/+$/, "");
-  return `http://localhost:${env.PORT}`;
+  return env.PUBLIC_ASSET_BASE_URL || `http://localhost:${env.PORT}`;
 }
 
 /** Strip anything that could escape the assets directory or confuse a browser. */

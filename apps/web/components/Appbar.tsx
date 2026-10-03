@@ -77,12 +77,12 @@ export function Appbar() {
           scrolled && "shadow-[0_6px_24px_-12px_rgba(31,22,54,.35)]",
         )}
       >
-        <div className="shell flex h-[72px] items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-2" aria-label="Mon Petit Hero home">
+        <div className="shell flex h-[72px] items-center justify-between gap-2 sm:gap-4">
+          <Link href="/" className="flex min-w-0 items-center gap-2" aria-label="Mon Petit Hero home">
             <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
               <BookOpen className="size-5" aria-hidden />
             </span>
-            <span className="font-display text-xl font-semibold text-violet-deep">
+            <span className="truncate font-display text-lg font-semibold text-violet-deep sm:text-xl">
               Mon Petit Hero
             </span>
           </Link>

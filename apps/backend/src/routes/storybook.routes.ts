@@ -1,5 +1,3 @@
-import fs, { existsSync } from "fs";
-import path from "path";
 import { Router } from "express";
 import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
@@ -9,12 +7,11 @@ import { trialService } from "../services/trial.service";
 import { ImageGenerationService } from "../services/image-generation.service";
 import { PDFService } from "../services/pdf.service";
 import { storyGenerationLimiter } from "../middleware/rateLimiter";
-import {
-  faceCanvasService,
-} from "../services/face-canvas.service";
 import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT, toStorefrontTemplate } from "../contracts/storybook";
 import { logger } from "../lib/logger";
 import { z } from "zod";
+import { chooseStoryCover } from "../services/story-cover.service";
+import { saveBufferAsset } from "../lib/storage";
 
 const router = Router();
 const storyService = StoryService.getInstance();
@@ -363,7 +360,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     // Step 5: Trigger every page with the child reference portrait through Fal Grok Imagine edit model
     const generationResults = await Promise.allSettled(
       pages.map((page) =>
-        storyService.triggerPageGeneration(page.id, page.imagePrompt, childImage, { childName, artStyle })
+        storyService.triggerPageGeneration(page.id, page.imagePrompt, childImage, { childName, artStyle, gender })
       )
     );
 
@@ -811,21 +808,9 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       "Starting no-training PDF storybook generation"
     );
 
-    // Crop the uploaded photo to the child's face ONCE per story: detect +
-    // crop locally (no network), upload the single crop to fal storage a
-    // single time so page calls reuse the URL instead of re-uploading the raw
-    // photo on every page.
-    let storyRef: string | null = null;
-    if (childImage) {
-      const inputImage: string = childImage;
-      try {
-        const faceRefs = await faceCanvasService.generateFaceReferences(inputImage);
-        storyRef = await imageService.uploadReferenceImage(faceRefs.face);
-        logger.info("Face crop generated and uploaded for story");
-      } catch (err) {
-        logger.warn({ err }, "Face reference generation failed; falling back to the raw child photo");
-      }
-    }
+    // Fal's edit endpoint receives the original uploaded portrait directly;
+    // no local face detector or model weights are required.
+    const storyRef = childImage || null;
 
     // Parent-confirmed identity facts are optional; the uploaded portrait is always the authority.
     const identityFacts = [
@@ -861,6 +846,15 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
     );
 
     // Step 2: Generate first 2 images (pages 1 & 2) synchronously for instant preview trigger
+    const closingCover = chooseStoryCover({
+      category: template.category,
+      title: script.title,
+      templateName: template.name,
+      templateDescription: template.description,
+      templatePrompts: template.prompts,
+      pagePrompts: script.pages.map((page) => page.imageDescription),
+      gender,
+    });
     const firstTwoPages = script.pages.slice(0, 2);
     const remainingPages = script.pages.slice(2);
 
@@ -951,6 +945,14 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
           imageUrl: null,
           status: "Pending" as "Pending",
         })),
+        {
+          storyId: story.id,
+          pageNumber: script.pages.length + 1,
+          content: "",
+          imagePrompt: "Printed closing cover",
+          imageUrl: closingCover.url,
+          status: "Generated" as "Generated",
+        },
       ],
     });
 
@@ -1010,14 +1012,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
             allPagesFormatted
           );
 
-          const pdfDir = path.join(process.cwd(), "assets", "pdfs");
-          if (!existsSync(pdfDir)) {
-            fs.mkdirSync(pdfDir, { recursive: true });
-          }
-          const pdfFilePath = path.join(pdfDir, `${story.id}.pdf`);
-          fs.writeFileSync(pdfFilePath, pdfBuffer);
-
-          const pdfUrl = `/assets/pdfs/${story.id}.pdf`;
+          const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
 
           await prismaClient.story.update({
             where: { id: story.id },
@@ -1040,13 +1035,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
         { title: script.title, dedication, childName },
         previewPages
       );
-      const pdfDir = path.join(process.cwd(), "assets", "pdfs");
-      if (!existsSync(pdfDir)) {
-        fs.mkdirSync(pdfDir, { recursive: true });
-      }
-      const pdfFilePath = path.join(pdfDir, `${story.id}.pdf`);
-      fs.writeFileSync(pdfFilePath, pdfBuffer);
-      const pdfUrl = `/assets/pdfs/${story.id}.pdf`;
+      const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
       await prismaClient.story.update({
         where: { id: story.id },
         data: { status: "Completed", completedAt: new Date(), pdfUrl },

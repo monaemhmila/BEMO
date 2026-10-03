@@ -155,7 +155,7 @@ export function Camera() {
           open={!!selectedImage}
           onOpenChange={(open) => !open && setSelectedImage(null)}
         >
-          <DialogContent className="max-w-5xl p-10 overflow-hidden bg-black/90 backdrop-blur-xl">
+          <DialogContent className="max-h-[calc(100dvh-2rem)] max-w-5xl overflow-y-auto bg-black/90 p-4 backdrop-blur-xl sm:p-10">
             <DialogTitle className="sr-only">Image Preview</DialogTitle>
             <motion.div
               initial={{ opacity: 0 }}

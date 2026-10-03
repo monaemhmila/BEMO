@@ -1,12 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
 import { prismaClient } from "../lib/prisma";
 import { logger } from "../lib/logger";
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "monemehamila@gmail.com";
+import { env } from "../config/env";
 
 /**
  * Admin authorization middleware
- * Ensures the requesting user is the super administrator (monemehamila@gmail.com)
+ * Ensures the requesting user matches the configured administrator account.
  */
 export async function adminAuthMiddleware(
   req: Request,
@@ -31,13 +30,22 @@ export async function adminAuthMiddleware(
     }
   }
 
-  const targetAdmin = (process.env.ADMIN_EMAIL || ADMIN_EMAIL).toLowerCase();
+  const targetAdmin = env.ADMIN_EMAIL?.toLowerCase();
+
+  if (!targetAdmin) {
+    logger.error("ADMIN_EMAIL is not configured; refusing admin access");
+    res.status(503).json({
+      success: false,
+      message: "Admin access is not configured",
+    });
+    return;
+  }
 
   if (!userEmail || userEmail.toLowerCase() !== targetAdmin) {
     logger.warn({ userId: req.userId, email: userEmail, expectedAdmin: targetAdmin }, "Unauthorized admin access attempt");
     res.status(403).json({
       success: false,
-      message: `Forbidden: Admin privileges required for ${targetAdmin}`,
+      message: "Forbidden: Admin privileges required",
     });
     return;
   }

@@ -2,6 +2,8 @@ import { createApp } from "./app";
 import { env } from "./config/env";
 import { logger } from "./lib/logger";
 import { validateStartup } from "./lib/startup";
+import { GenerationQueue } from "./lib/generation-queue";
+import { StoryService } from "./services/story.service";
 
 export async function startServer() {
   // Validate database before starting server
@@ -12,6 +14,9 @@ export async function startServer() {
   }
 
   const app = createApp();
+  const generationQueue = GenerationQueue.getInstance();
+  const storyService = StoryService.getInstance();
+  generationQueue.start((job) => storyService.processQueuedPageGeneration(job).then(() => undefined));
   let preferredPort = env.PORT;
 
   const listenOnPort = (portToTry: number) => {
@@ -33,4 +38,3 @@ export async function startServer() {
 
   listenOnPort(preferredPort);
 }
-

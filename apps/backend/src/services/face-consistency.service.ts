@@ -2,10 +2,6 @@ import {
   imageGenerationService,
   STORYBOOK_IMAGE_CONFIG,
 } from "./image-generation.service";
-import {
-  faceCanvasService,
-  FaceReferences,
-} from "./face-canvas.service";
 
 interface FaceConsistentImageRequest {
   prompt: string;
@@ -25,7 +21,6 @@ interface FaceConsistentImageRequest {
  */
 export class FaceConsistencyService {
   private static instance: FaceConsistencyService;
-  private referenceCache: Map<string, FaceReferences> = new Map();
 
   static getInstance(): FaceConsistencyService {
     if (!FaceConsistencyService.instance) {
@@ -34,37 +29,14 @@ export class FaceConsistencyService {
     return FaceConsistencyService.instance;
   }
 
-  /**
-   * Crop the uploaded photo to the child's face (cached per source URL).
-   */
-  async getOrGenerateFaceCrop(referenceImageUrl: string): Promise<FaceReferences> {
-    if (this.referenceCache.has(referenceImageUrl)) {
-      return this.referenceCache.get(referenceImageUrl)!;
-    }
-    const refs = await faceCanvasService.generateFaceReferences(referenceImageUrl);
-    this.referenceCache.set(referenceImageUrl, refs);
-    return refs;
-  }
-
   async generateFaceConsistentImage(
     request: FaceConsistentImageRequest,
     webhookUrl?: string
   ): Promise<{ requestId: string; responseUrl: string }> {
-    let processedReferenceUrl = request.referenceImageUrl;
-
-    if (request.referenceImageUrl) {
-      try {
-        const refs = await this.getOrGenerateFaceCrop(request.referenceImageUrl);
-        processedReferenceUrl = refs.face || processedReferenceUrl;
-      } catch (err) {
-        processedReferenceUrl = request.referenceImageUrl;
-      }
-    }
-
     const result = await imageGenerationService.generateStorybookImage(
       {
         prompt: request.prompt,
-        imageUrl: processedReferenceUrl,
+        imageUrl: request.referenceImageUrl,
         aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
         childName: request.childName,
         artStyle: request.artStyle,
@@ -81,20 +53,9 @@ export class FaceConsistencyService {
   async generateFaceConsistentImageSync(
     request: FaceConsistentImageRequest
   ): Promise<string> {
-    let processedReferenceUrl = request.referenceImageUrl;
-
-    if (request.referenceImageUrl) {
-      try {
-        const refs = await this.getOrGenerateFaceCrop(request.referenceImageUrl);
-        processedReferenceUrl = refs.face || processedReferenceUrl;
-      } catch (err) {
-        processedReferenceUrl = request.referenceImageUrl;
-      }
-    }
-
     return imageGenerationService.generateImageSync({
       prompt: request.prompt,
-      imageUrl: processedReferenceUrl,
+      imageUrl: request.referenceImageUrl,
       aspectRatio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
       childName: request.childName,
       artStyle: request.artStyle,

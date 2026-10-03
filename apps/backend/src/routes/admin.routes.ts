@@ -6,7 +6,6 @@ import { authMiddleware } from "../middleware/auth";
 import { adminAuthMiddleware } from "../middleware/adminAuth";
 import { logger } from "../lib/logger";
 import { PDFService } from "../services/pdf.service";
-import { faceCanvasService } from "../services/face-canvas.service";
 import { z } from "zod";
 import { STORYBOOK_PAGE_COUNT } from "../contracts/storybook";
 import { env } from "../config/env";
@@ -594,32 +593,6 @@ router.put("/page/:pageId", async (req, res) => {
 // ─────────────────────────────────────────
 // FACE LAB (detection test + canvas references)
 // ─────────────────────────────────────────
-
-const FaceLabSchema = z.object({
-  image: z.string().min(1, "Image data URL is required"),
-});
-
-/**
- * POST /admin/face-lab
- * Run local face detection on an uploaded photo (base64 data URL) and return
- * the tightly-cropped face reference fed to the fal image-edit endpoint (no
- * white canvas). Fully local: no image API is called.
- */
-router.post("/face-lab", async (req, res) => {
-  const parsed = FaceLabSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-    return;
-  }
-
-  try {
-    const result = await faceCanvasService.generateFaceLab(parsed.data.image);
-    res.json(result);
-  } catch (error) {
-    logger.error({ error }, "Admin face lab failed");
-    res.status(500).json({ message: "Face detection / reference generation failed" });
-  }
-});
 
 // ─────────────────────────────────────────
 // STORY TEMPLATES

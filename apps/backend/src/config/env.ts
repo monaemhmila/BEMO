@@ -16,13 +16,16 @@ const envSchema = z.object({
   BUCKET_NAME: z.string().optional(),
   S3_ENDPOINT: z.string().optional(),
   STORAGE_PUBLIC_URL: z.string().optional(),
+  PUBLIC_ASSET_BASE_URL: z.string().url().optional(),
   WEBHOOK_BASE_URL: z.string().optional(),
   FRONTEND_URL: z.string().url().optional(),
   CORS_ORIGINS: z.string().optional(),
+  ADMIN_EMAIL: z.string().email().optional(),
   REDIS_URL: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
   LOG_LEVEL: z.string().default("info"),
-  BOOK_PRICE_DOLLARS: z.coerce.number().positive().default(34.99),
+  BOOK_PRICE_TND: z.coerce.number().positive().default(70),
+  BOOK_CURRENCY: z.string().trim().length(3).default("TND"),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -58,6 +61,10 @@ if (!env.STORAGE_PUBLIC_URL && process.env.CLOUDFLARE_URL) {
 // Support AI_API_KEY as alias for OPENAI_API_KEY
 if (!env.OPENAI_API_KEY && process.env.AI_API_KEY) {
   env.OPENAI_API_KEY = process.env.AI_API_KEY;
+}
+
+if (env.NODE_ENV === "production" && env.BUCKET_NAME && env.S3_ACCESS_KEY && env.S3_SECRET_KEY && !env.STORAGE_PUBLIC_URL) {
+  throw new Error("STORAGE_PUBLIC_URL is required when S3/R2 storage is configured");
 }
 
 export { env };

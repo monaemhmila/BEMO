@@ -23,8 +23,8 @@ const CreateOrderSchema = z.object({
  */
 router.get("/config", authMiddleware, (_req, res) => {
   res.json({
-    price: env.BOOK_PRICE_DOLLARS,
-    currency: "USD",
+    price: env.BOOK_PRICE_TND,
+    currency: env.BOOK_CURRENCY,
     paymentMethod: "CASH_ON_DELIVERY",
   });
 });

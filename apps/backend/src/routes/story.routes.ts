@@ -197,6 +197,48 @@ router.get("/mine", authMiddleware, async (req, res) => {
 });
 
 /**
+ * GET /story/events/:id
+ * Server-sent status stream. The client keeps one authenticated connection
+ * instead of creating a request every few seconds while images are generated.
+ */
+router.get("/events/:id", authMiddleware, async (req, res) => {
+  res.status(200).set({
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache, no-transform",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+  res.flushHeaders();
+
+  let closed = false;
+  const send = async () => {
+    if (closed) return;
+    const story = await storyService.getStoryWithStatus(req.params.id, req.userId!);
+    if (!story) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: "Story not found" })}\n\n`);
+      res.end();
+      closed = true;
+      return;
+    }
+    res.write(`event: story\ndata: ${JSON.stringify({ story })}\n\n`);
+    if (story.status === "Completed" || story.status === "Failed") {
+      res.write("event: complete\ndata: {}\n\n");
+      res.end();
+      closed = true;
+    }
+  };
+
+  const heartbeat = setInterval(() => { res.write(": heartbeat\n\n"); }, 15_000);
+  const updates = setInterval(() => { void send().catch((error) => logger.error({ error }, "Story SSE update failed")); }, 2_000);
+  req.on("close", () => {
+    closed = true;
+    clearInterval(heartbeat);
+    clearInterval(updates);
+  });
+  await send();
+});
+
+/**
  * GET /story/:id
  * Get a single story with all pages
  */

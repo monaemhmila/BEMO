@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: portrait_ai
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U ci -d portrait_ai"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/portrait_ai?schema=public
+      REDIS_URL: redis://localhost:6379
+      CLERK_JWT_PUBLIC_KEY: ci-placeholder
+      FAL_KEY: ci-placeholder
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run generate:db
+      - run: npm run db:deploy
+      - run: npm run build --workspace backend
+      - run: npm run check-types --workspace web
+      - run: npm run lint --workspace web
+      - run: npm run test:security --workspace backend
+      - run: npm run test:integration --workspace backend
+      - run: npm run migrate:stories --workspace @portrait-ai/db -- import --file story-templates-export.json
+      - run: npm audit --omit=dev --audit-level=high

@@ -72,20 +72,6 @@ export async function requestImageGeneration(
 }
 
 /**
- * Poll for image generation status
- */
-export async function pollImageStatus(
-  token: string,
-  pageId: string
-): Promise<ImageGenerationResponse> {
-  const response = await axios.get(`${BACKEND_URL}/story/page/${pageId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  return response.data;
-}
-
-/**
  * Art style options for storybook generation
  */
 export const ART_STYLES = [
@@ -130,7 +116,5 @@ export const ART_STYLES = [
 export default {
   buildImagePrompt,
   requestImageGeneration,
-  pollImageStatus,
   ART_STYLES,
 };
-

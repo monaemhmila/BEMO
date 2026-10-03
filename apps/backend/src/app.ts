@@ -153,6 +153,22 @@ export function createApp() {
       })
     );
   }
+  // Built-in story closing covers live in the source tree and are copied into
+  // the production image. Keep the catalogue upload directory as a fallback.
+  app.use(
+    "/assets/covers",
+    express.static(path.join(process.cwd(), "src", "covers"), {
+      maxAge: "365d",
+      fallthrough: true,
+    })
+  );
+  app.use(
+    "/assets/covers",
+    express.static(path.join(process.cwd(), "apps", "backend", "src", "covers"), {
+      maxAge: "365d",
+      fallthrough: true,
+    })
+  );
 
   app.use(notFoundHandler);
   app.use(sentryErrorHandler());

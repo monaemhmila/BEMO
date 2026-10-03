@@ -78,60 +78,63 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
 
   // ---- Data -------------------------------------------------------------
   useEffect(() => {
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    const fetchStory = async () => {
+    const controller = new AbortController();
+    const connect = async () => {
       try {
         const token = await getToken?.();
         if (!token) {
           setLoading(false);
           setError(true);
-          if (intervalId) clearInterval(intervalId);
           return;
         }
 
-        const res = await axios.get(`${BACKEND_URL}/story/${storyId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await fetch(`${BACKEND_URL}/story/events/${storyId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
+          signal: controller.signal,
         });
+        if (!response.ok || !response.body) throw new Error(`Story stream failed: ${response.status}`);
 
-        const nextStory: ReaderStory = res.data.story;
-        setStory((prev) =>
-          prev && JSON.stringify(prev) === JSON.stringify(nextStory)
-            ? prev
-            : nextStory
-        );
-        setLoading(false);
-        setError(false);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (!controller.signal.aborted) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          buffer += decoder.decode(chunk.value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() ?? "";
+          for (const event of events) {
+            const data = event.split("\n").find((line) => line.startsWith("data: "))?.slice(6);
+            if (!data || data === "{}") continue;
+            const parsed = JSON.parse(data) as { story?: ReaderStory };
+            if (!parsed.story) continue;
+            const nextStory = parsed.story;
+            setStory((prev) => prev && JSON.stringify(prev) === JSON.stringify(nextStory) ? prev : nextStory);
+            setLoading(false);
+            setError(false);
 
-        const isTerminal =
-          nextStory.status === "Completed" || nextStory.status === "Failed";
-
-        if (isTerminal && nextStory.pages.length === 0) {
-          setError(true);
-          if (intervalId) clearInterval(intervalId);
-          return;
-        }
-
-        if (isTerminal) {
-          pendingStartRef.current = null;
-          setSlowGenerating(false);
-          if (intervalId) clearInterval(intervalId);
-        } else {
-          if (pendingStartRef.current === null) pendingStartRef.current = Date.now();
-          if (Date.now() - pendingStartRef.current > 90000) setSlowGenerating(true);
+            const isTerminal = nextStory.status === "Completed" || nextStory.status === "Failed";
+            if (isTerminal && nextStory.pages.length === 0) setError(true);
+            if (isTerminal) {
+              pendingStartRef.current = null;
+              setSlowGenerating(false);
+            } else {
+              if (pendingStartRef.current === null) pendingStartRef.current = Date.now();
+              if (Date.now() - pendingStartRef.current > 90000) setSlowGenerating(true);
+            }
+          }
         }
       } catch (err) {
+        if (controller.signal.aborted) return;
         console.error("Failed to fetch story", err);
         setLoading(false);
         setError(true);
-        if (intervalId) clearInterval(intervalId);
       }
     };
 
-    fetchStory();
-    intervalId = setInterval(fetchStory, 3000);
+    void connect();
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      controller.abort();
     };
   }, [storyId, getToken]);
 

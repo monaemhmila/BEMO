@@ -178,8 +178,14 @@ async function downloadImage(url: string): Promise<Buffer> {
       const assetRelative = url.slice(url.indexOf(marker) + marker.length);
       const safeRelative = path.normalize(assetRelative).replace(/^(\.\.[\/\\])+/, "");
       const fullPath = path.join(process.cwd(), "assets", safeRelative);
-      if (existsSync(fullPath)) {
-        const fileBuf = fs.readFileSync(fullPath);
+      const localCandidates = [
+        fullPath,
+        path.join(process.cwd(), "src", safeRelative),
+        path.join(process.cwd(), "apps", "backend", "src", safeRelative),
+      ];
+      for (const candidate of localCandidates) {
+        if (!existsSync(candidate)) continue;
+        const fileBuf = fs.readFileSync(candidate);
         const validated = await validateImageBuffer(fileBuf);
         return validated.buffer;
       }
@@ -322,16 +328,17 @@ export class PDFService {
         if (index > 0) {
           doc.addPage();
         }
-        const pageType = getPageType(leaf.pageNumber);
+        const totalBookPages = sortedPages.length;
+        const pageType = getPageType(leaf.pageNumber, totalBookPages);
         switch (pageType) {
           case "cover":
             this.renderCoverPage(doc, leaf, story);
             break;
           case "ending":
-            this.renderEndingPage(doc, leaf);
+            this.renderEndingPage(doc, leaf, totalBookPages);
             break;
           case "closing":
-            this.renderClosingPage(doc, leaf);
+            this.renderClosingPage(doc, leaf, totalBookPages);
             break;
           default:
             this.renderStoryPage(doc, leaf);
@@ -428,12 +435,13 @@ export class PDFService {
    */
   private renderEndingPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf
+    leaf: PdfLeaf,
+    totalPages: number
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawStoryText(doc, leaf.pageNumber, leaf.content);
+    this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
   }
 
   /**
@@ -442,12 +450,13 @@ export class PDFService {
    */
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf
+    leaf: PdfLeaf,
+    totalPages: number
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawStoryText(doc, leaf.pageNumber, leaf.content);
+    this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
   }
 
   /**
@@ -495,8 +504,8 @@ export class PDFService {
    * derived from the page number via the contracts, keeping the PDF layout
    * identical to the text-safe area the image generator was told to reserve.
    */
-  private drawStoryText(doc: PDFKit.PDFDocument, pageNumber: number, text: string) {
-    const layout = getPageTextLayout(pageNumber);
+  private drawStoryText(doc: PDFKit.PDFDocument, pageNumber: number, text: string, totalPages = 15) {
+    const layout = getPageTextLayout(pageNumber, totalPages);
     const cleanText = (text || "").trim();
     if (!cleanText) return;
 

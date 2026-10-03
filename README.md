@@ -2,7 +2,7 @@
 AI-powered personalized bedtime stories for kids
 
 Mon Petit Hero is a production-grade SaaS platform that generates personalized bedtime stories for children using AI.  
-Each child becomes the hero of their own story through custom **FLUX LoRA training**, with consistent characters, illustrations, and narrated audio.
+Each child becomes the hero of their own story through Fal.ai image editing, with consistent characters, illustrations, and narrated audio.
 
 The platform is built as a **TurboRepo monorepo**, with a modern SaaS dashboard, scalable backend, and AI services designed for real-world production use.
 
@@ -10,7 +10,7 @@ The platform is built as a **TurboRepo monorepo**, with a modern SaaS dashboard,
 
 ## ✨ Features tested
 
-- 🧒 Personalized child heroes using FLUX LoRA training
+- 🧒 Personalized child heroes using Fal.ai image editing
 - 📖 AI-generated bedtime stories (safe, age-appropriate)
 - 🎨 Illustrated story pages with character consistency
 - 🔊 Story narration using **ElevenLabs** (natural voice TTS)
@@ -25,8 +25,8 @@ The platform is built as a **TurboRepo monorepo**, with a modern SaaS dashboard,
 ## 🧠 How It Works
 
 1. Parents upload child images
-2. Images are used to train a **FLUX LoRA** model
-3. The trained model represents the child as a story hero
+2. The uploaded portrait is passed to Fal.ai's image-edit endpoint as the character reference
+3. Fal.ai generates each story illustration while preserving the child as the hero
 4. AI generates:
    - A bedtime story
    - Matching illustrations
@@ -79,7 +79,7 @@ storybook-ai/
 - Clerk
 
 ### AI & Media
-- FLUX LoRA (custom character training)
+- Fal.ai image editing with portrait references
 - AI text generation for stories
 - AI image generation for illustrations
 - **ElevenLabs** for story narration (Text-to-Speech)
@@ -94,7 +94,7 @@ storybook-ai/
 The platform includes a professional SaaS dashboard that allows parents to:
 
 - Manage child profiles
-- Upload training images
+- Upload a child portrait reference
 - Generate and view stories
 - Listen to narrated bedtime stories
 - Access story history
@@ -111,7 +111,7 @@ The platform includes a professional SaaS dashboard that allows parents to:
 - Clerk account
 - ElevenLabs account
 - Cloudflare account
-- FLUX LoRA training setup
+- Fal.ai API setup
 
 ---
 
@@ -167,7 +167,7 @@ This will start:
 ## 🔒 Privacy & Safety
 
 - Child images are handled securely  
-- Trained LoRA models are private and isolated  
+- Uploaded portrait references are private and isolated
 - Age-appropriate content filtering  
 - Privacy-first system design  
 
@@ -208,4 +208,3 @@ MIT License
 
 To make bedtime magical, personal, and unforgettable —  
 where every child is the hero of their own story.
-

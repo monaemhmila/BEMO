@@ -133,6 +133,25 @@ function parseExportFile(value: unknown): ExportFile {
 async function importTemplates(filePath: string) {
   const contents = await readFile(filePath, "utf8");
   const migration = parseExportFile(JSON.parse(contents));
+  const apply = hasFlag("--apply");
+  const ids = new Set<string>();
+  for (const template of migration.templates) {
+    if (!template.id || ids.has(template.id)) throw new Error(`Duplicate or missing template ID: ${template.id}`);
+    ids.add(template.id);
+    if (!template.name || !template.description || !Array.isArray(template.tags)) {
+      throw new Error(`Invalid template payload for ${template.id}`);
+    }
+    if (!Array.isArray(template.prompts) && (!template.prompts || typeof template.prompts !== "object")) {
+      throw new Error(`Invalid prompts payload for ${template.id}`);
+    }
+  }
+
+  if (!apply) {
+    console.log(`DRY RUN: validated ${migration.templates.length} template(s) from ${filePath}.`);
+    console.log("No database rows were changed. Re-run with --apply to update only these IDs.");
+    return;
+  }
+
   const prisma = new PrismaClient();
 
   try {
@@ -228,7 +247,7 @@ async function main() {
   }
 
   throw new Error(
-    "Usage: ts-node prisma/migrate-story-templates.ts export|import [--file path] [--include-custom]",
+    "Usage: ts-node prisma/migrate-story-templates.ts export|import [--file path] [--include-custom] [--apply]",
   );
 }
 

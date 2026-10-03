@@ -33,18 +33,18 @@ export function BookMobileCta({ href, targetId, priceFrom, price }: BookMobileCt
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[49] border-t border-border bg-white/85 px-6 py-4 backdrop-blur-md md:block lg:hidden">
-      <div className="flex items-center justify-between gap-4">
+    <div className="fixed inset-x-0 bottom-0 z-[49] border-t border-border bg-white/90 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-md md:block lg:hidden">
+      <div className="flex items-center justify-between gap-3">
         <p className="flex flex-col leading-tight">
           {priceFrom ? (
             <span className="text-[13px] text-muted-foreground">{priceFrom}</span>
           ) : null}
-          <span className="text-xl font-bold text-primary">{price}</span>
+          <span className="text-lg font-bold text-primary">{price}</span>
         </p>
 
         <Link
           href={href}
-          className="inline-flex h-16 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-6 text-lg font-bold text-white shadow-md shadow-primary/25 transition-colors hover:bg-violet-deep"
+          className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-primary px-3 text-sm font-bold text-white shadow-md shadow-primary/25 transition-colors hover:bg-violet-deep sm:px-6 sm:text-base"
         >
           <Sparkles aria-hidden className="size-5" />
           Personalise my book

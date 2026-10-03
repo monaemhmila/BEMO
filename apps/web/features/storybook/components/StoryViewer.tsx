@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
@@ -25,6 +25,7 @@ import { BACKEND_URL } from "../../../app/config";
 import { GenerationProgress } from "@/features/generator";
 import { OrderBookModal } from "./OrderBookModal";
 import { handleImageError } from "@/components/ui/image-fallback";
+import { useStoryEvents } from "@/hooks/use-story-events";
 
 interface StoryPage {
   id: string;
@@ -70,38 +71,9 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
   const currentPage = story?.pages[currentPageIndex];
   const isLastPage = !!story && currentPageIndex === story.pages.length - 1;
 
-  // Fetch story with polling for generating state
-  useEffect(() => {
-    const fetchStory = async () => {
-      try {
-        const token = await getToken?.();
-        if (!token) return;
-
-        const res = await axios.get(`${BACKEND_URL}/story/${storyId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        setStory(res.data.story);
-        setLoading(false);
-
-        // Stop polling if story is complete or failed
-        if (
-          res.data.story.status === "Completed" ||
-          res.data.story.status === "Failed"
-        ) {
-          clearInterval(intervalId);
-        }
-      } catch (error) {
-        console.error("Failed to fetch story", error);
-        setLoading(false);
-      }
-    };
-
-    fetchStory();
-    const intervalId = setInterval(fetchStory, 3000);
-
-    return () => clearInterval(intervalId);
-  }, [storyId, getToken]);
+  const handleStoryEvent = useCallback((nextStory: Story) => setStory(nextStory), []);
+  const handleStoryStreamReady = useCallback(() => setLoading(false), []);
+  useStoryEvents<Story>(storyId, getToken, handleStoryEvent, handleStoryStreamReady);
 
   // Auto-play audio when page changes
   useEffect(() => {
@@ -434,4 +406,3 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
 }
 
 export default StoryViewer;
-

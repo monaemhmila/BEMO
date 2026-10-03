@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import axios from "axios";
+import { useStoryEvents } from "@/hooks/use-story-events";
 import {
   ChevronLeft,
   ChevronRight,
@@ -202,37 +203,9 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
 
-  // Fetch story with polling for the generating state
-  useEffect(() => {
-    let intervalId: ReturnType<typeof setInterval> | null = null;
-
-    const fetchStory = async () => {
-      try {
-        const token = await getToken?.();
-        if (!token) return;
-
-        const res = await axios.get(`${BACKEND_URL}/story/${storyId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        setStory(res.data.story);
-        setLoading(false);
-
-        if (res.data.story.status === "Completed" || res.data.story.status === "Failed") {
-          if (intervalId) clearInterval(intervalId);
-        }
-      } catch (error) {
-        console.error("Failed to fetch story", error);
-        setLoading(false);
-      }
-    };
-
-    fetchStory();
-    intervalId = setInterval(fetchStory, 3000);
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [storyId, getToken]);
+  const handleStoryEvent = useCallback((nextStory: FlipbookStory) => setStory(nextStory), []);
+  const handleStoryStreamReady = useCallback(() => setLoading(false), []);
+  useStoryEvents<FlipbookStory>(storyId, getToken, handleStoryEvent, handleStoryStreamReady);
 
   const pages = useMemo(
     () => (story ? [...story.pages].sort((a, b) => a.pageNumber - b.pageNumber) : []),
