@@ -199,22 +199,31 @@ export class ImageGenerationService {
     } catch (error) {
       const isPolicyViolation = this.isContentPolicyError(error);
 
-      // Content-policy flags never resolve on identical prompts, so rephrase
-      // the prompt to policy-safe wording before retrying instead of repeating
-      // the exact same failing request.
-      const retryRequest: ImageGenerationRequest = isPolicyViolation
-        ? { ...request, sanitizePolicy: true }
-        : request;
+      // A content checker rejection is deterministic for the supplied
+      // reference image/prompt. Retrying the same input only repeats the
+      // rejection, so stop immediately and let the caller request a new
+      // reference image or scene instead.
+      if (isPolicyViolation) {
+        logger.warn(
+          { error, hasReferenceImage: Boolean(request.imageUrl) },
+          "Image generation blocked by content policy; not retrying"
+        );
+        throw new Error(
+          request.imageUrl
+            ? "The child reference image was rejected by the image safety checker. Please upload a different clear, fully clothed child photo."
+            : "This scene was rejected by the image safety checker. Please try a different scene description."
+        );
+      }
 
       if (retryCount < this.maxRetries) {
         logger.warn(
-          { error, retryCount, policyViolation: isPolicyViolation },
+          { error, retryCount },
           "Image generation failed, retrying"
         );
 
         await this.delay(this.retryDelays[retryCount] || 4000);
 
-        return this.generateImageSync(retryRequest, retryCount + 1);
+        return this.generateImageSync(request, retryCount + 1);
       }
 
       logger.error(
@@ -234,10 +243,28 @@ export class ImageGenerationService {
     const details: unknown[] = Array.isArray(err?.body?.detail)
       ? err.body.detail
       : [];
-    return details.some(
+    const detailMatch = details.some(
       (d: any) =>
         typeof d?.type === "string" &&
         d.type.toLowerCase().includes("content_policy")
+    );
+
+    const message = [
+      err?.message,
+      err?.body,
+      err?.response?.data,
+      err?.cause,
+    ]
+      .map((value) => (typeof value === "string" ? value : JSON.stringify(value ?? "")))
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      detailMatch ||
+      message.includes("content checker") ||
+      message.includes("content policy") ||
+      message.includes("content_policy") ||
+      message.includes("image_urls.0")
     );
   }
 
