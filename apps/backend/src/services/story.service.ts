@@ -438,7 +438,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
   /**
    * Turn a parent's idea into a reusable custom template.
    *
-   * The returned document is validated to contain exactly 14 beats so the
+   * The returned document is validated to contain exactly 15 beats so the
    * custom path produces the same book shape as the predefined templates. The
    * model occasionally returns the wrong number of beats, so one repair pass is
    * attempted before giving up; the beat count itself is never fudged.
@@ -561,7 +561,12 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
         );
       }
 
-      if (beats.length !== pageCount) {
+      // Models occasionally append an extra closing beat despite the explicit
+      // count in the prompt. Keep the canonical page count deterministic while
+      // still rejecting responses that are too short.
+      const normalizedBeats = beats.slice(0, pageCount);
+
+      if (normalizedBeats.length !== pageCount) {
         throw new Error(
           `The generated template must contain exactly ${pageCount} beats, received ${beats.length}`
         );
@@ -580,7 +585,7 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
           worldContext: String(
             rawPrompts.worldContext ?? input.setting ?? ""
           ).trim(),
-          beats: beats.map((beat) => beat.trim()),
+          beats: normalizedBeats.map((beat) => beat.trim()),
         },
       };
     };

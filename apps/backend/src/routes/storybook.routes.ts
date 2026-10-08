@@ -52,7 +52,12 @@ const CustomTemplateSchema = z.object({
   setting: z.string().trim().max(200).optional(),
   extras: z.string().trim().max(200).optional(),
   message: z.string().trim().max(200).optional(),
-  ageRange: z.enum(["0-6", "6-9", "9-12"]),
+  // Accept old client bundles during deployment, then normalize them to the
+  // current age bands used by the generator.
+  ageRange: z.preprocess(
+    (value) => ({ "3-5": "0-6", "6-8": "6-9" }[String(value)] ?? value),
+    z.enum(["0-6", "6-9", "9-12"]),
+  ),
 });
 
 /** Explicit profanity / hateful-content screen for parent-supplied text. */
