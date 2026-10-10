@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TemplateBookCover } from "@/components/template-book-cover";
 import { LocalizedStoryText } from "@/components/localized-story-text";
 import type { StoryTemplate } from "@/data/story-templates";
+import { MotionReveal } from "@/components/motion-reveal";
 
 const PRICE_FROM = "";
 const PRICE = "70 DT";
@@ -136,8 +137,10 @@ export function TemplateBookCard({ template }: { template: StoryTemplate }) {
 export function TemplateBookGrid({ templates }: { templates: StoryTemplate[] }) {
   return (
     <div className="mt-10 grid w-full grid-cols-1 gap-y-7 md:grid-cols-2 md:gap-[21px] lg:grid-cols-3 lg:gap-[21px] xl:grid-cols-[repeat(3,390px)] xl:justify-between xl:gap-x-0">
-      {templates.map((template) => (
-        <TemplateBookCard key={template.slug} template={template} />
+      {templates.map((template, index) => (
+        <MotionReveal key={template.slug} amount={0.08} transition={{ delay: Math.min(index * 0.04, 0.2) }}>
+          <TemplateBookCard template={template} />
+        </MotionReveal>
       ))}
     </div>
   );

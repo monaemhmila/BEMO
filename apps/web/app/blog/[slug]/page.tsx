@@ -11,6 +11,7 @@ import {
 } from "@/data/blog-posts";
 import { SITE_URL } from "@/lib/site";
 import { Button } from "@/components/ui/button";
+import { MotionReveal } from "@/components/motion-reveal";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -191,7 +192,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         </nav>
 
         <article className="shell max-w-3xl pb-20">
-          <header className="mt-6 text-center">
+          <MotionReveal className="mt-6 text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
               {post.emoji} {post.category}
             </span>
@@ -212,13 +213,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </span>
               <span>By {post.author}</span>
             </div>
-          </header>
+          </MotionReveal>
 
-          <div className="mt-10 rounded-[2rem] bg-white p-8 shadow-[0_2px_0_0_rgba(31,22,54,.06)] sm:p-10">
+          <MotionReveal className="mt-10 rounded-[2rem] bg-white p-8 shadow-[0_2px_0_0_rgba(31,22,54,.06)] sm:p-10" amount={0.1}>
             {post.body.map((block, i) => renderBlock(block, i))}
-          </div>
+          </MotionReveal>
 
-          <section className="mt-12 rounded-[2rem] bg-violet-deep p-10 text-center text-white sm:p-12">
+          <MotionReveal className="mt-12 rounded-[2rem] bg-violet-deep p-10 text-center text-white sm:p-12" amount={0.1}>
             <h2 className="font-display text-2xl font-bold sm:text-3xl">
               Turn your child into the hero today
             </h2>
@@ -239,9 +240,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 <Link href="/storybook/create">Use a Template</Link>
               </Button>
             </div>
-          </section>
+          </MotionReveal>
 
-          <section className="mt-12">
+          <MotionReveal className="mt-12">
             <h2 className="font-display text-xl font-bold text-violet-deep">
               Continue reading
             </h2>
@@ -265,7 +266,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                   </Link>
                 ))}
             </div>
-          </section>
+          </MotionReveal>
         </article>
 
         <script

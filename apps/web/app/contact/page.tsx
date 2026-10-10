@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MotionReveal } from "@/components/motion-reveal";
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -22,7 +23,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-paper">
       <main className="pt-[7rem] pb-20">
         <div className="shell">
-          <div className="pt-14 text-center">
+          <MotionReveal className="pt-14 text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
               We&apos;d love to hear from you
             </span>
@@ -33,9 +34,9 @@ export default function ContactPage() {
               Questions about an order, a personalisation, or the perfect book
               for your child? Send us a message.
             </p>
-          </div>
+          </MotionReveal>
 
-          <div className="mx-auto mt-12 grid max-w-4xl gap-8 lg:grid-cols-[1fr_1.4fr]">
+          <MotionReveal className="mx-auto mt-12 grid max-w-4xl gap-8 lg:grid-cols-[1fr_1.4fr]" amount={0.1}>
             {/* Contact info */}
             <div className="space-y-4">
               <div className="rounded-3xl border border-border bg-white p-6 shadow-sm">
@@ -141,7 +142,7 @@ export default function ContactPage() {
                 </form>
               )}
             </div>
-          </div>
+          </MotionReveal>
         </div>
       </main>
       <SiteFooter />

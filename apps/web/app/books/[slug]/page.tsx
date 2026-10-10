@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getBook, allBooks, bestsellers, newReleases, girlsBooks, boysBooks } from "@/lib/data";
 import { getStoreTemplates } from "@/lib/story-templates";
+import { MotionReveal } from "@/components/motion-reveal";
 
 /**
  * The legacy hard-coded books are still pre-rendered. Story templates are read
@@ -83,17 +84,17 @@ export default async function BookDetailPage({
             </Link>
           </nav>
 
-          <div className="mt-8 grid items-start gap-12 lg:grid-cols-2">
-            <div>
+          <MotionReveal className="mt-8 grid items-start gap-12 lg:grid-cols-2">
+            <MotionReveal amount={0.12}>
               <div className="relative">
                 <div className="absolute inset-4 -rotate-3 rounded-[2.5rem] bg-buttercup/20" />
                 <div className="relative aspect-square overflow-hidden rounded-[2rem] shadow-2xl shadow-primary/20 ring-1 ring-border">
                   <FillerImage label={book.title} />
                 </div>
               </div>
-            </div>
+            </MotionReveal>
 
-            <div className="lg:py-4">
+            <MotionReveal amount={0.12} className="lg:py-4">
               <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
                 Personalised book
               </span>
@@ -146,11 +147,11 @@ export default async function BookDetailPage({
                   <Link href="/support">Talk to support</Link>
                 </Button>
               </div>
-            </div>
-          </div>
+            </MotionReveal>
+          </MotionReveal>
 
           {/* Highlights */}
-          <div className="mt-20 grid gap-6 md:grid-cols-3">
+          <MotionReveal className="mt-20 grid gap-6 md:grid-cols-3">
             {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
               <div
                 key={title}
@@ -167,11 +168,11 @@ export default async function BookDetailPage({
                 </p>
               </div>
             ))}
-          </div>
+          </MotionReveal>
 
           {/* Related */}
           {related.length > 0 && (
-            <section className="mt-20">
+            <MotionReveal className="mt-20">
               <div className="mb-8 flex items-end justify-between">
                 <h2 className="font-display text-3xl font-bold text-violet-deep">
                   More stories to love
@@ -188,7 +189,7 @@ export default async function BookDetailPage({
                   <BookCard key={b.slug} book={b} />
                 ))}
               </div>
-            </section>
+            </MotionReveal>
           )}
         </div>
       </main>

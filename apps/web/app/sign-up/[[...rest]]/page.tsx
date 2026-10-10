@@ -15,7 +15,7 @@ export default function SignUpPage() {
       className="grid min-h-screen place-items-center bg-paper px-4 py-10 pt-[7rem]"
     >
       <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
+        <div className="animate-reveal-up mb-6 text-center">
           <h1 className="font-display text-3xl font-bold text-violet-deep">
             Create your account
           </h1>
@@ -27,7 +27,7 @@ export default function SignUpPage() {
           <AuthLoading />
         </ClerkLoading>
         <ClerkLoaded>
-          <div className="flex justify-center overflow-hidden rounded-3xl border border-border bg-white p-1 shadow-[0_18px_40px_-22px_rgba(31,22,54,.45)]">
+          <div className="animate-auth-card flex justify-center overflow-hidden rounded-3xl border border-border bg-white p-1 shadow-[0_18px_40px_-22px_rgba(31,22,54,.45)]">
             <SignUp
               fallbackRedirectUrl="/welcome"
               signInUrl="/login"

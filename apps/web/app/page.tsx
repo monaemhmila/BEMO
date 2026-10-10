@@ -15,6 +15,7 @@ import {
   type StoryTemplate,
 } from "@/data/story-templates";
 import { getStoreTemplates } from "@/lib/story-templates";
+import { MotionReveal } from "@/components/motion-reveal";
 
 // The shelves are read from the database through the backend.
 export const revalidate = 60;
@@ -49,38 +50,44 @@ export default async function HomePage() {
       <Hero />
 
       {bestsellersShelf && (
-        <StoryRail
-          eyebrow="Bestsellers"
-          title="Personalise a bestseller"
-          templates={bestsellersShelf}
-        />
+        <MotionReveal>
+          <StoryRail
+            eyebrow="Bestsellers"
+            title="Personalise a bestseller"
+            templates={bestsellersShelf}
+          />
+        </MotionReveal>
       )}
 
       {newReleasesShelf && (
-        <StoryRail
-          eyebrow="New releases"
-          title="Discover what's new"
-          templates={newReleasesShelf}
-          className="bg-paper"
-        />
+        <MotionReveal>
+          <StoryRail
+            eyebrow="New releases"
+            title="Discover what's new"
+            templates={newReleasesShelf}
+            className="bg-paper"
+          />
+        </MotionReveal>
       )}
 
-      <HowItWorks />
-      <BeforeAfter />
-      <FamilyMoments />
-      <MagicPromise />
+      <MotionReveal><HowItWorks /></MotionReveal>
+      <MotionReveal><BeforeAfter /></MotionReveal>
+      <MotionReveal><FamilyMoments /></MotionReveal>
+      <MotionReveal><MagicPromise /></MotionReveal>
 
       {forGirls && (
-        <StoryRail
-          eyebrow="Our books"
-          title="Stories for every little hero"
-          templates={forGirls}
-          className="bg-paper"
-        />
+        <MotionReveal>
+          <StoryRail
+            eyebrow="Our books"
+            title="Stories for every little hero"
+            templates={forGirls}
+            className="bg-paper"
+          />
+        </MotionReveal>
       )}
-      <CustomStoryBanner />
-      <Faq />
-      <FinalCta />
+      <MotionReveal><CustomStoryBanner /></MotionReveal>
+      <MotionReveal><Faq /></MotionReveal>
+      <MotionReveal><FinalCta /></MotionReveal>
 
       <SiteFooter />
     </div>
