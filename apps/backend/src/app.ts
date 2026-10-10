@@ -20,6 +20,7 @@ import { falAiWebhookRouter } from "./routes/fal-ai-webhook.routes";
 import { adminRouter } from "./routes/admin.routes";
 import { orderRouter } from "./routes/order.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
+import { printerRouter } from "./routes/printer.routes";
 
 initSentry();
 
@@ -134,6 +135,7 @@ export function createApp() {
   app.use("/story", storyRouter);
   app.use("/storybook", storybookRouter);
   app.use("/admin", adminRouter);
+  app.use("/printer", printerRouter);
     app.use("/orders", orderRouter);
 
   app.use("/analytics", analyticsRouter);

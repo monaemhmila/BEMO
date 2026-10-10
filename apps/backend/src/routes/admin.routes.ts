@@ -1234,6 +1234,84 @@ router.delete("/templates/:id", async (req, res) => {
 
 const ORDER_STATUS_VALUES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 const PAYMENT_STATUS_VALUES = ["PENDING", "PAID", "FAILED", "REFUNDED"] as const;
+const PRINTABLE_ORDER_STATUSES = ["PROCESSING", "SHIPPED", "DELIVERED"] as const;
+
+const PrinterAccountSchema = z.object({
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
+  name: z.string().trim().min(1).max(120),
+});
+
+const UpdatePrinterAccountSchema = PrinterAccountSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
+router.get("/printers", async (_req, res) => {
+  try {
+    const printers = await prismaClient.printerAccount.findMany({ orderBy: { createdAt: "desc" } });
+    res.json({ printers });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch printer accounts");
+    res.status(500).json({ message: "Failed to fetch printer accounts" });
+  }
+});
+
+router.post("/printers", async (req, res) => {
+  const parsed = PrinterAccountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Enter a valid printer name and email." });
+    return;
+  }
+  try {
+    const printer = await prismaClient.printerAccount.create({ data: parsed.data });
+    res.status(201).json({ printer });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unique constraint")) {
+      res.status(409).json({ message: "A printer account with this email already exists." });
+      return;
+    }
+    logger.error({ error }, "Failed to create printer account");
+    res.status(500).json({ message: "Failed to create printer account" });
+  }
+});
+
+router.patch("/printers/:id", async (req, res) => {
+  const parsed = UpdatePrinterAccountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid printer account update." });
+    return;
+  }
+  try {
+    const printer = await prismaClient.printerAccount.update({ where: { id: req.params.id }, data: parsed.data });
+    res.json({ printer });
+  } catch (error) {
+    logger.error({ error, printerId: req.params.id }, "Failed to update printer account");
+    res.status(500).json({ message: "Failed to update printer account" });
+  }
+});
+
+router.delete("/printers/:id", async (req, res) => {
+  try {
+    await prismaClient.printerAccount.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error) {
+    logger.error({ error, printerId: req.params.id }, "Failed to delete printer account");
+    res.status(500).json({ message: "Failed to delete printer account" });
+  }
+});
+
+router.get("/print-audit", async (_req, res) => {
+  try {
+    const logs = await prismaClient.printAuditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 300,
+      include: { order: { select: { orderNumber: true, story: { select: { title: true } } } } },
+    });
+    res.json({ logs });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch print audit");
+    res.status(500).json({ message: "Failed to fetch print audit" });
+  }
+});
 
 const UpdateOrderSchema = z.object({
   status: z.enum(ORDER_STATUS_VALUES).optional(),
@@ -1292,6 +1370,8 @@ router.get("/orders", async (req, res) => {
         postalCode: o.postalCode,
         createdAt: o.createdAt,
         updatedAt: o.updatedAt,
+        printedAt: o.printedAt,
+        printedBy: o.printedBy,
         user: o.user,
         story: o.story,
       })),
@@ -1300,6 +1380,98 @@ router.get("/orders", async (req, res) => {
   } catch (error) {
     logger.error({ error }, "Failed to fetch admin orders");
     res.status(500).json({ message: "Failed to fetch orders" });
+  }
+});
+
+/**
+ * GET /admin/print-queue
+ * Confirmed orders are orders moved out of PENDING and not CANCELLED. The
+ * printer sees the ready queue first, while completed prints remain available
+ * for audit and re-download.
+ */
+router.get("/print-queue", async (req, res) => {
+  try {
+    const view = req.query.view === "printed" || req.query.view === "all" ? req.query.view : "ready";
+    const where = {
+      status: { in: [...PRINTABLE_ORDER_STATUSES] },
+      ...(view === "printed" ? { printedAt: { not: null } } : {}),
+      ...(view === "ready" ? { printedAt: null } : {}),
+    };
+    const orders = await prismaClient.order.findMany({
+      where,
+      orderBy: [{ printedAt: "asc" }, { createdAt: "asc" }],
+      take: 300,
+      include: {
+        story: { select: { id: true, title: true } },
+      },
+    });
+
+    res.json({
+      view,
+      orders: orders.map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        printedAt: order.printedAt,
+        // Deliberately return only printer-safe fields. Customer details stay
+        // behind the normal admin orders endpoint.
+        story: order.story,
+      })),
+    });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch print queue");
+    res.status(500).json({ message: "Failed to fetch print queue" });
+  }
+});
+
+const PrintOrderSchema = z.object({ printed: z.boolean() });
+
+/**
+ * PATCH /admin/order/:id/print
+ * Mark a confirmed order as printed, or undo that action if the printer needs
+ * to reprint it. Printing is tracked separately from shipping and delivery.
+ */
+router.patch("/order/:id/print", async (req, res) => {
+  const parsed = PrintOrderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "printed must be a boolean" });
+    return;
+  }
+
+  try {
+    const existing = await prismaClient.order.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, orderNumber: true, status: true, story: { select: { status: true } } },
+    });
+    if (!existing) {
+      res.status(404).json({ message: "Order not found" });
+      return;
+    }
+    if (parsed.data.printed && !(PRINTABLE_ORDER_STATUSES as readonly string[]).includes(existing.status)) {
+      res.status(409).json({ message: "Only confirmed, non-cancelled orders can be marked printed." });
+      return;
+    }
+    if (parsed.data.printed && existing.story.status !== "Completed") {
+      res.status(409).json({ message: "The story PDF is not ready yet." });
+      return;
+    }
+
+    const updated = await prismaClient.order.update({
+      where: { id: existing.id },
+      data: {
+        printedAt: parsed.data.printed ? new Date() : null,
+        printedBy: parsed.data.printed ? (req.userId ?? null) : null,
+      },
+      select: { id: true, orderNumber: true, printedAt: true, printedBy: true },
+    });
+
+    logger.info(
+      { orderId: updated.id, printed: parsed.data.printed, printedBy: req.userId },
+      parsed.data.printed ? "Order marked printed" : "Order print mark cleared"
+    );
+    res.json({ success: true, order: updated });
+  } catch (error) {
+    logger.error({ error, orderId: req.params.id }, "Failed to update print status");
+    res.status(500).json({ message: "Failed to update print status" });
   }
 });
 

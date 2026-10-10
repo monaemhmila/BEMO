@@ -30,6 +30,17 @@ model User {
   @@index([email])
 }
 
+model PrinterAccount {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
 enum OutputImageStatusEnum {
   Pending
   Generated
@@ -263,6 +274,9 @@ model Order {
 
   // Fulfillment
   status        OrderStatusEnum    @default(PENDING)
+  printedAt     DateTime?
+  printedBy     String?
+  printAuditLogs PrintAuditLog[]
 
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -270,7 +284,21 @@ model Order {
   @@index([userId])
   @@index([storyId])
   @@index([status])
+  @@index([printedAt])
   @@index([orderNumber])
+}
+
+model PrintAuditLog {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  action     String
+  reason     String?
+  actorEmail String
+  createdAt  DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([createdAt])
 }
 
 // Page visit & click tracking. Used for the admin analytics dashboard and

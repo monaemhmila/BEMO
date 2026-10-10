@@ -17,7 +17,7 @@ import {
   Languages,
   MousePointerClick,
   Plus, BookCopy, Power, Copy, ExternalLink, AlertTriangle,
-  Loader2, ChevronLeft, ChevronRight,
+  Loader2, ChevronLeft, ChevronRight, Printer,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { handleImageError } from "../../components/ui/image-fallback";
@@ -95,8 +95,25 @@ interface AdminOrder {
   postalCode?: string | null;
   createdAt: string;
   updatedAt: string;
+  printedAt?: string | null;
+  printedBy?: string | null;
   user: { id: string; email: string; name?: string | null };
   story: { id: string; title: string; childName?: string | null; pdfUrl?: string | null };
+}
+
+interface PrinterQueueOrder {
+  id: string;
+  orderNumber: string;
+  printedAt?: string | null;
+  story: { id: string; title: string };
+}
+
+interface PrinterAccount {
+  id: string;
+  email: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 interface OrdersSummary {
@@ -107,7 +124,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "activity" | "analytics";
+type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "printer" | "printer-accounts" | "activity" | "analytics";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -1184,6 +1201,238 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PrinterQueueTab({ orders, authHeaders, onChanged, onDownloadPdf }: {
+  orders: PrinterQueueOrder[];
+  authHeaders: () => Promise<Record<string, string>>;
+  onChanged: () => void;
+  onDownloadPdf: (id: string, title: string) => void;
+}) {
+  const [view, setView] = useState<"ready" | "printed">("ready");
+  const [search, setSearch] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const queue = orders
+    .filter((order) => (view === "printed" ? Boolean(order.printedAt) : !order.printedAt))
+    .filter((order) => {
+      const query = search.trim().toLowerCase();
+      if (!query) return true;
+      return [order.orderNumber, order.story.title].some((value) => value.toLowerCase().includes(query));
+    });
+
+  const setPrinted = async (order: PrinterQueueOrder, printed: boolean) => {
+    if (printed && !confirm(`Mark order ${order.orderNumber} as printed?`)) return;
+    setUpdatingId(order.id);
+    try {
+      const headers = await authHeaders();
+      await axios.patch(`${BACKEND_URL}/admin/order/${order.id}/print`, { printed }, { headers });
+      toast.success(printed ? "Order marked as printed" : "Order returned to the print queue");
+      onChanged();
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      toast.error(message || "Failed to update print status");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const readyCount = orders.filter((order) => !order.printedAt).length;
+  const printedCount = orders.filter((order) => order.printedAt).length;
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/10 to-blue-500/10 p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-purple-300" />
+              <h2 className="text-lg font-bold text-white">Printer queue</h2>
+            </div>
+            <p className="mt-1 max-w-2xl text-sm text-white/50">
+              Download each confirmed book, print it, then mark it complete.
+              No customer or delivery information is shown here.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <div className="rounded-xl bg-white/10 px-4 py-2">
+              <p className="text-xl font-bold text-white">{readyCount}</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/50">Ready</p>
+            </div>
+            <div className="rounded-xl bg-emerald-500/10 px-4 py-2">
+              <p className="text-xl font-bold text-emerald-300">{printedCount}</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/50">Printed</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-2">
+          {(["ready", "printed"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setView(option)}
+              className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${view === option ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
+            >
+              {option === "ready" ? `Ready to print (${readyCount})` : `Printed history (${printedCount})`}
+            </button>
+          ))}
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search order number or book"
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+      </div>
+
+      {queue.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 py-16 text-center">
+          <Printer className="mx-auto h-8 w-8 text-white/20" />
+          <p className="mt-3 text-sm text-white/40">{view === "ready" ? "No confirmed orders are waiting to print." : "No printed orders yet."}</p>
+          {view === "ready" && <p className="mt-1 text-xs text-white/25">Move an order to Processing from the Orders tab first.</p>}
+        </div>
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-2">
+          {queue.map((order) => (
+            <article key={order.id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-mono text-xs font-bold text-purple-300">{order.orderNumber}</p>
+                  <h3 className="mt-1 truncate text-base font-bold text-white">{order.story.title}</h3>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                <button
+                  type="button"
+                  onClick={() => onDownloadPdf(order.story.id, order.story.title)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-bold text-emerald-300 transition-colors hover:bg-emerald-500/30"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download PDF
+                </button>
+                {view === "ready" ? (
+                  <button
+                    type="button"
+                    onClick={() => setPrinted(order, true)}
+                    disabled={updatingId === order.id}
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-purple-500 disabled:opacity-40"
+                  >
+                    {updatingId === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    Mark printed
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPrinted(order, false)}
+                    disabled={updatingId === order.id}
+                    className="rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition-colors hover:bg-white/15 disabled:opacity-40"
+                  >
+                    Undo printed
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PrinterAccountsTab({ printers, authHeaders, onChanged }: {
+  printers: PrinterAccount[];
+  authHeaders: () => Promise<Record<string, string>>;
+  onChanged: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const addPrinter = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const headers = await authHeaders();
+      await axios.post(`${BACKEND_URL}/admin/printers`, { name, email }, { headers });
+      toast.success("Printer account added");
+      setName("");
+      setEmail("");
+      onChanged();
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      toast.error(message || "Could not add printer account");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updatePrinter = async (printer: PrinterAccount, isActive: boolean) => {
+    try {
+      const headers = await authHeaders();
+      await axios.patch(`${BACKEND_URL}/admin/printers/${printer.id}`, { isActive }, { headers });
+      onChanged();
+    } catch {
+      toast.error("Could not update printer account");
+    }
+  };
+
+  const removePrinter = async (printer: PrinterAccount) => {
+    if (!confirm(`Remove printer access for ${printer.email}?`)) return;
+    try {
+      const headers = await authHeaders();
+      await axios.delete(`${BACKEND_URL}/admin/printers/${printer.id}`, { headers });
+      toast.success("Printer account removed");
+      onChanged();
+    } catch {
+      toast.error("Could not remove printer account");
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Printer className="h-5 w-5 text-purple-300" />
+          <div>
+            <h2 className="font-bold text-white">Printer accounts</h2>
+            <p className="text-xs text-white/40">Printers sign in with this exact email through Clerk and only see the printer portal.</p>
+          </div>
+        </div>
+        <form onSubmit={addPrinter} className="grid gap-3 md:grid-cols-[1fr_1.4fr_auto]">
+          <input value={name} onChange={(event) => setName(event.target.value)} required placeholder="Printer name" className={adminInputCls} />
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required placeholder="printer@example.com" className={adminInputCls} />
+          <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-40">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add printer
+          </button>
+        </form>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+        {printers.length === 0 ? (
+          <p className="py-12 text-center text-sm text-white/35">No printer accounts configured.</p>
+        ) : (
+          <div className="divide-y divide-white/10">
+            {printers.map((printer) => (
+              <div key={printer.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${printer.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white/30"}`}><Printer className="h-4 w-4" /></div>
+                  <div><p className="text-sm font-semibold text-white">{printer.name}</p><p className="text-xs text-white/40">{printer.email}</p></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => updatePrinter(printer, !printer.isActive)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${printer.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white/50"}`}>{printer.isActive ? "Active" : "Disabled"}</button>
+                  <button onClick={() => removePrinter(printer)} className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/20">Remove</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2507,6 +2756,8 @@ export default function AdminPage() {
   const [editingTemplate, setEditingTemplate] = useState<AdminTemplate | null>(null);
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [printerQueue, setPrinterQueue] = useState<PrinterQueueOrder[]>([]);
+  const [printerAccounts, setPrinterAccounts] = useState<PrinterAccount[]>([]);
   const [orderSummary, setOrderSummary] = useState<OrdersSummary | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -2561,7 +2812,7 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const headers = await authHeaders();
-      const [statsRes, usersRes, storiesRes, activityRes, ordersRes, templatesRes] =
+      const [statsRes, usersRes, storiesRes, activityRes, ordersRes, templatesRes, printerQueueRes, printersRes] =
         await Promise.allSettled([
           axios.get(`${BACKEND_URL}/admin/stats`, { headers }),
           axios.get(`${BACKEND_URL}/admin/users`, { headers }),
@@ -2569,6 +2820,8 @@ export default function AdminPage() {
           axios.get(`${BACKEND_URL}/admin/activity`, { headers }),
           axios.get(`${BACKEND_URL}/admin/orders`, { headers }),
           axios.get(`${BACKEND_URL}/admin/templates`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/print-queue?view=all`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/printers`, { headers }),
         ]);
 
       // Tolerate individual endpoint failures so one bad request can't blank
@@ -2587,6 +2840,14 @@ export default function AdminPage() {
         setTemplates(templatesRes.value.data.templates || []);
       } else {
         console.warn("Admin templates endpoint failed", templatesRes.reason);
+      }
+      if (printerQueueRes.status === "fulfilled") {
+        setPrinterQueue(printerQueueRes.value.data.orders || []);
+      } else {
+        console.warn("Printer queue endpoint failed", printerQueueRes.reason);
+      }
+      if (printersRes.status === "fulfilled") {
+        setPrinterAccounts(printersRes.value.data.printers || []);
       }
     } catch (err) {
       toast.error("Failed to load admin data");
@@ -2693,6 +2954,8 @@ export default function AdminPage() {
     { id: "stories", label: "Stories", icon: <BookOpen className="w-4 h-4" />, count: stories.length },
     { id: "templates", label: "Templates", icon: <BookCopy className="w-4 h-4" />, count: templates.length },
     { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" />, count: orders.length },
+    { id: "printer", label: "Printer Queue", icon: <Printer className="w-4 h-4" />, count: printerQueue.filter((order) => !order.printedAt).length },
+    { id: "printer-accounts", label: "Printers", icon: <UserCheck className="w-4 h-4" />, count: printerAccounts.filter((printer) => printer.isActive).length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
     { id: "analytics", label: "Analytics", icon: <MousePointerClick className="w-4 h-4" /> },
   ];
@@ -2875,6 +3138,10 @@ export default function AdminPage() {
                     ? "Dashboard Overview"
                     : activeTab === "orders"
                         ? "Order Management"
+                        : activeTab === "printer"
+                          ? "Printer Queue"
+                          : activeTab === "printer-accounts"
+                            ? "Printer Accounts"
                         : activeTab === "templates"
                           ? "Story Templates"
                           : activeTab === "analytics"
@@ -3203,6 +3470,23 @@ export default function AdminPage() {
                 authHeaders={authHeaders}
                 onChanged={fetchAll}
                 onDownloadPdf={handleDownloadStoryPdf}
+              />
+            )}
+
+            {activeTab === "printer" && (
+              <PrinterQueueTab
+                orders={printerQueue}
+                authHeaders={authHeaders}
+                onChanged={fetchAll}
+                onDownloadPdf={handleDownloadStoryPdf}
+              />
+            )}
+
+            {activeTab === "printer-accounts" && (
+              <PrinterAccountsTab
+                printers={printerAccounts}
+                authHeaders={authHeaders}
+                onChanged={fetchAll}
               />
             )}
 
