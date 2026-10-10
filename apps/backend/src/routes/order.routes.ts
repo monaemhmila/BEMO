@@ -4,6 +4,7 @@ import { authMiddleware } from "../middleware/auth";
 import { authOrGuestMiddleware } from "../middleware/guestAuth";
 import { guestOrderIpLimiter } from "../middleware/rateLimiter";
 import { env } from "../config/env";
+import { prismaClient } from "../lib/prisma";
 import { createOrder, listOrders, getOrder, getPendingOrderForStory, ORDER_DISCOUNTS } from "../services/order.service";
 
 const router = Router();
@@ -24,13 +25,18 @@ const CreateOrderSchema = z.object({
  * GET /orders/config
  * Order configuration for the frontend (price, currency, payment method)
  */
-router.get("/config", authOrGuestMiddleware, (_req, res) => {
+router.get("/config", authOrGuestMiddleware, async (req, res) => {
+  const user = await prismaClient.user.findUnique({
+    where: { id: req.userId! },
+    select: { gameRewardClaimedAt: true, gameRewardUsedAt: true },
+  });
   res.json({
     price: env.BOOK_PRICE_TND,
     currency: env.BOOK_CURRENCY,
     paymentMethod: "CASH_ON_DELIVERY",
     discounts: ORDER_DISCOUNTS,
     maxQuantity: 4,
+    gameDiscountPercent: user?.gameRewardClaimedAt && !user.gameRewardUsedAt ? 10 : 0,
   });
 });
 

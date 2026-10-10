@@ -1365,6 +1365,7 @@ router.get("/orders", async (req, res) => {
         subtotalAmount: Number(o.subtotalAmount),
         quantity: o.quantity,
         discountPercent: o.discountPercent,
+        gameDiscountPercent: o.gameDiscountPercent,
         currency: o.currency,
         customerName: o.customerName,
         phone: o.phone,

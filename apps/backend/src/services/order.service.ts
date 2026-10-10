@@ -23,8 +23,9 @@ export const ORDER_DISCOUNTS: Record<number, number> = {
   4: 30,
 };
 
-export function calculateOrderPricing(quantity: number, unitPrice: number) {
-  const discountPercent = ORDER_DISCOUNTS[quantity] ?? 0;
+export function calculateOrderPricing(quantity: number, unitPrice: number, gameDiscountPercent = 0) {
+  const quantityDiscountPercent = ORDER_DISCOUNTS[quantity] ?? 0;
+  const discountPercent = quantityDiscountPercent + gameDiscountPercent;
   const subtotalAmount = Math.round(unitPrice * quantity * 100) / 100;
   const totalAmount = Math.round(subtotalAmount * (1 - discountPercent / 100) * 100) / 100;
   return { subtotalAmount, totalAmount, discountPercent };
@@ -44,6 +45,7 @@ export interface OrderWithStory {
   subtotalAmount: number;
   quantity: number;
   discountPercent: number;
+  gameDiscountPercent: number;
   currency: string;
   paymentMethod: string;
   paymentStatus: string;
@@ -81,6 +83,7 @@ function serializeOrder(order: OrderWithStoryRecord): OrderWithStory {
     subtotalAmount: Number(order.subtotalAmount),
     quantity: order.quantity,
     discountPercent: order.discountPercent,
+    gameDiscountPercent: order.gameDiscountPercent,
     currency: order.currency,
     paymentMethod: order.paymentMethod,
     paymentStatus: order.paymentStatus,
@@ -137,7 +140,12 @@ export async function createOrder(
   }
 
   let created: OrderWithStoryRecord | null = null;
-  const pricing = calculateOrderPricing(input.quantity, env.BOOK_PRICE_TND);
+  const user = await prismaClient.user.findUnique({
+    where: { id: userId },
+    select: { gameRewardClaimedAt: true, gameRewardUsedAt: true },
+  });
+  const gameDiscountPercent = user?.gameRewardClaimedAt && !user.gameRewardUsedAt ? 10 : 0;
+  const pricing = calculateOrderPricing(input.quantity, env.BOOK_PRICE_TND, gameDiscountPercent);
 
   // Retry order-number generation on the rare collision
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -156,6 +164,7 @@ export async function createOrder(
           totalAmount: pricing.totalAmount,
           quantity: input.quantity,
           discountPercent: pricing.discountPercent,
+          gameDiscountPercent,
           currency: env.BOOK_CURRENCY,
           paymentMethod: "CASH_ON_DELIVERY",
           paymentStatus: "PENDING",
@@ -184,6 +193,13 @@ export async function createOrder(
   }
 
   logger.info({ orderId: created.id, orderNumber: created.orderNumber }, "Order created");
+
+  if (gameDiscountPercent > 0) {
+    await prismaClient.user.updateMany({
+      where: { id: userId, gameRewardClaimedAt: { not: null }, gameRewardUsedAt: null },
+      data: { gameRewardUsedAt: new Date() },
+    });
+  }
 
   // Signed-in customers receive the normal post-order generation credit.
   // Guests are intentionally limited to their single anonymous generation.

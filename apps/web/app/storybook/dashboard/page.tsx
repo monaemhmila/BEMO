@@ -41,6 +41,7 @@ interface CustomerOrder {
   subtotalAmount: number;
   quantity: number;
   discountPercent: number;
+  gameDiscountPercent?: number;
   currency: string;
   city: string;
   createdAt: string;

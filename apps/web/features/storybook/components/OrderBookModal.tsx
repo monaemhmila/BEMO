@@ -41,6 +41,7 @@ interface OrderSummary {
   subtotalAmount: number;
   quantity: number;
   discountPercent: number;
+  gameDiscountPercent?: number;
   currency: string;
   paymentMethod: string;
   paymentStatus: string;
@@ -116,6 +117,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
   const [price, setPrice] = useState<number | null>(null);
   const [currency, setCurrency] = useState("USD");
   const [priceLoading, setPriceLoading] = useState(false);
+  const [gameDiscountPercent, setGameDiscountPercent] = useState(0);
 
   const [submitting, setSubmitting] = useState(false);
   const [order, setOrder] = useState<OrderSummary | null>(null);
@@ -129,6 +131,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
     setErrors({});
     setServerError(null);
     setOrder(null);
+    setGameDiscountPercent(0);
 
     let cancelled = false;
 
@@ -145,6 +148,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
         if (!cancelled) {
           setPrice(configRes.data.price);
           setCurrency(configRes.data.currency || "USD");
+          setGameDiscountPercent(Number(configRes.data.gameDiscountPercent) || 0);
         }
       } catch {
         // Non-fatal – backend remains authoritative for the price
@@ -249,7 +253,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
     }).format(amount);
 
   const discountForQuantity = (quantity: number) => ({ 1: 0, 2: 10, 3: 20, 4: 30 }[quantity] ?? 0);
-  const discountPercent = discountForQuantity(form.quantity);
+  const discountPercent = discountForQuantity(form.quantity) + gameDiscountPercent;
   const subtotal = price === null ? null : price * form.quantity;
   const total = subtotal === null ? null : Math.round(subtotal * (1 - discountPercent / 100) * 100) / 100;
 
@@ -435,7 +439,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
                   <div className="flex items-center justify-between"><span className="text-muted-foreground">Copies</span><span className="font-semibold text-violet-deep">{form.quantity}</span></div>
                   <div className="flex items-center justify-between"><span className="text-muted-foreground">Subtotal</span><span>{subtotal !== null ? formatMoney(subtotal) : "—"}</span></div>
-                  {discountPercent > 0 && <div className="flex items-center justify-between text-emerald-700"><span>Bundle discount</span><span>−{formatMoney((subtotal ?? 0) - (total ?? 0))}</span></div>}
+                  {discountPercent > 0 && <div className="flex items-center justify-between text-emerald-700"><span>{gameDiscountPercent > 0 ? "Bundle + game discount" : "Bundle discount"}</span><span>−{formatMoney((subtotal ?? 0) - (total ?? 0))}</span></div>}
                   <div className="flex items-center justify-between font-semibold"><span>Total</span><span className="text-violet-deep">{total !== null ? formatMoney(total) : "—"}</span></div>
                 </div>
               </div>
@@ -579,6 +583,10 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                   <span>Discount</span>
                   <span className="font-medium">{order.discountPercent}%</span>
                 </div>}
+                {order.gameDiscountPercent ? <div className="mt-1.5 flex items-center justify-between text-emerald-700">
+                  <span>Game reward</span>
+                  <span className="font-medium">{order.gameDiscountPercent}%</span>
+                </div> : null}
                 <div className="mt-1.5 flex items-center justify-between">
                   <span className="text-muted-foreground">Deliver to</span>
                   <span className="font-medium text-violet-deep">
