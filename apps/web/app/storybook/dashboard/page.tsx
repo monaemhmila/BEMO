@@ -38,6 +38,9 @@ interface CustomerOrder {
   status: string;
   paymentStatus: string;
   totalAmount: number;
+  subtotalAmount: number;
+  quantity: number;
+  discountPercent: number;
   currency: string;
   city: string;
   createdAt: string;
@@ -290,7 +293,7 @@ export default function StorybookDashboardPage() {
                     <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
                       <Clock className="w-3 h-3" />
                       {new Date(order.createdAt).toLocaleDateString()}
-                      {` • ${order.currency} ${order.totalAmount.toFixed(2)}`}
+                      {` • ${order.quantity} ${order.quantity === 1 ? "copy" : "copies"} • ${order.currency} ${order.totalAmount.toFixed(2)}`}
                       {order.city ? ` • ${order.city}` : ""}
                     </p>
                   </div>

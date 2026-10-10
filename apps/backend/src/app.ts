@@ -27,6 +27,10 @@ initSentry();
 export function createApp() {
   const app = express();
 
+  // The app is behind the VPS reverse proxy. This lets express-rate-limit see
+  // the real visitor IP instead of treating every visitor as 127.0.0.1.
+  app.set("trust proxy", 1);
+
   // Concise, clean request logger middleware (silences repetitive background polling)
   app.use((req, res, next) => {
         const isPolling =

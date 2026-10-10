@@ -4,6 +4,7 @@ import { prismaClient } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { env } from "../config/env";
 import { trialService, TRIAL_GENERATIONS_PER_ORDER } from "./trial.service";
+import { isGuestUser } from "../middleware/guestAuth";
 
 export interface CreateOrderInput {
   storyId: string;
@@ -12,6 +13,21 @@ export interface CreateOrderInput {
   address: string;
   city: string;
   postalCode?: string;
+  quantity: number;
+}
+
+export const ORDER_DISCOUNTS: Record<number, number> = {
+  1: 0,
+  2: 10,
+  3: 20,
+  4: 30,
+};
+
+export function calculateOrderPricing(quantity: number, unitPrice: number) {
+  const discountPercent = ORDER_DISCOUNTS[quantity] ?? 0;
+  const subtotalAmount = Math.round(unitPrice * quantity * 100) / 100;
+  const totalAmount = Math.round(subtotalAmount * (1 - discountPercent / 100) * 100) / 100;
+  return { subtotalAmount, totalAmount, discountPercent };
 }
 
 export interface OrderWithStory {
@@ -25,6 +41,9 @@ export interface OrderWithStory {
   city: string;
   postalCode: string | null;
   totalAmount: number;
+  subtotalAmount: number;
+  quantity: number;
+  discountPercent: number;
   currency: string;
   paymentMethod: string;
   paymentStatus: string;
@@ -59,6 +78,9 @@ function serializeOrder(order: OrderWithStoryRecord): OrderWithStory {
     city: order.city,
     postalCode: order.postalCode,
     totalAmount: Number(order.totalAmount),
+    subtotalAmount: Number(order.subtotalAmount),
+    quantity: order.quantity,
+    discountPercent: order.discountPercent,
     currency: order.currency,
     paymentMethod: order.paymentMethod,
     paymentStatus: order.paymentStatus,
@@ -115,6 +137,7 @@ export async function createOrder(
   }
 
   let created: OrderWithStoryRecord | null = null;
+  const pricing = calculateOrderPricing(input.quantity, env.BOOK_PRICE_TND);
 
   // Retry order-number generation on the rare collision
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -129,7 +152,10 @@ export async function createOrder(
           address: input.address,
           city: input.city,
           postalCode: input.postalCode || null,
-          totalAmount: env.BOOK_PRICE_TND,
+          subtotalAmount: pricing.subtotalAmount,
+          totalAmount: pricing.totalAmount,
+          quantity: input.quantity,
+          discountPercent: pricing.discountPercent,
           currency: env.BOOK_CURRENCY,
           paymentMethod: "CASH_ON_DELIVERY",
           paymentStatus: "PENDING",
@@ -159,12 +185,15 @@ export async function createOrder(
 
   logger.info({ orderId: created.id, orderNumber: created.orderNumber }, "Order created");
 
-  // Every printed book order unlocks one extra free story generation.
-  await trialService.grantGenerations(
-    userId,
-    TRIAL_GENERATIONS_PER_ORDER,
-    `book_order:${created.orderNumber}`
-  );
+  // Signed-in customers receive the normal post-order generation credit.
+  // Guests are intentionally limited to their single anonymous generation.
+  if (!(await isGuestUser(userId))) {
+    await trialService.grantGenerations(
+      userId,
+      TRIAL_GENERATIONS_PER_ORDER,
+      `book_order:${created.orderNumber}`
+    );
+  }
 
   return { order: serializeOrder(created), alreadyExists: false };
 }

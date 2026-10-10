@@ -87,6 +87,9 @@ interface AdminOrder {
   paymentStatus: string;
   paymentMethod: string;
   totalAmount: number;
+  subtotalAmount: number;
+  quantity: number;
+  discountPercent: number;
   currency: string;
   customerName: string;
   phone: string;
@@ -1122,7 +1125,8 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
                     <p className="text-white/30 text-xs mt-0.5">{o.user?.email}</p>
                   </td>
                   <td className="py-3.5 px-4 text-white font-semibold text-xs">
-                    {o.currency} {o.totalAmount.toFixed(2)}
+                    <div>{o.currency} {o.totalAmount.toFixed(2)}</div>
+                    <div className="text-white/40 font-normal">{o.quantity} {o.quantity === 1 ? "copy" : "copies"}{o.discountPercent > 0 ? ` · ${o.discountPercent}% off` : ""}</div>
                   </td>
                   <td className="py-3.5 px-4">
                     <PaymentBadge status={o.paymentStatus} />

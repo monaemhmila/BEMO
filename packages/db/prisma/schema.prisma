@@ -25,9 +25,25 @@ model User {
   stories           Story[]
   orders            Order[]
   storyTemplates    StoryTemplate[]
+  guestSession       GuestSession?
   
   @@index([clerkId])
   @@index([email])
+}
+
+// Anonymous browser sessions are deliberately separate from Clerk accounts.
+// The raw token is only held by the browser; the database stores its hash.
+model GuestSession {
+  id                String   @id @default(uuid())
+  tokenHash         String   @unique
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generationUsedAt  DateTime?
+  createdAt         DateTime @default(now())
+  lastSeenAt        DateTime @updatedAt
+  expiresAt         DateTime
+
+  @@index([expiresAt])
 }
 
 model PrinterAccount {
@@ -266,6 +282,9 @@ model Order {
 
   // Price
   totalAmount   Decimal            @db.Decimal(10, 2)
+  subtotalAmount Decimal           @db.Decimal(10, 2)
+  quantity      Int                @default(1)
+  discountPercent Int              @default(0)
   currency      String             @default("USD")
 
   // Payment

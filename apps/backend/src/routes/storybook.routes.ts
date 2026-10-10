@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { authOrGuestMiddleware } from "../middleware/guestAuth";
 import { StoryService } from "../services/story.service";
 import { AudioService } from "../services/audio.service";
 import { trialService } from "../services/trial.service";
 import { ImageGenerationService } from "../services/image-generation.service";
 import { PDFService } from "../services/pdf.service";
-import { storyGenerationLimiter } from "../middleware/rateLimiter";
+import { guestGenerationIpLimiter, storyGenerationLimiter } from "../middleware/rateLimiter";
 import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT, toStorefrontTemplate } from "../contracts/storybook";
 import { logger } from "../lib/logger";
 import { z } from "zod";
@@ -453,7 +454,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
  * GET /storybook/:id/pdf
  * Create a print-ready export for a completed saved story instead of rebuilding it in the browser.
  */
-router.get("/:id/pdf", authMiddleware, async (req, res) => {
+router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
   try {
     const story = await prismaClient.story.findFirst({
       where: { id: req.params.id, userId: req.userId! },
@@ -768,7 +769,7 @@ router.get("/voices", (_req, res) => {
  * Generate a storybook PDF on the fly (no model training required).
  * Generates story script via LLM, then generates images via Fal AI, returns PDF.
  */
-router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req, res) => {
+router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, storyGenerationLimiter, async (req, res) => {
   const validation = SimplePDFSchema.safeParse(req.body);
   if (!validation.success) {
     const formattedErrors = validation.error.flatten();
