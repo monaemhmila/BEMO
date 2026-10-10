@@ -9,7 +9,7 @@ import { Story2048 } from "./Story2048";
 import { MagicMath } from "./MagicMath";
 import { ColorLab } from "./ColorLab";
 import { useAuth } from "@/hooks/useAuth";
-import { BACKEND_URL } from "@/app/config";
+import { BACKEND_URL } from "../../../app/config";
 
 const games = [
   { id: "snake", label: "Hero Snake", description: "Collect glowing stars", icon: Rabbit, color: "bg-[#eee9ff] text-violet-ink" },

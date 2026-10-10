@@ -34,7 +34,8 @@ export function HeroSnake({ onWin }: { onWin?: () => void }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const map: Record<string, Direction> = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right", w: "up", s: "down", a: "left", d: "right" };
-      if (map[event.key]) { event.preventDefault(); changeDirection(map[event.key]); }
+      const next = map[event.key];
+      if (next) { event.preventDefault(); changeDirection(next); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -46,7 +47,7 @@ export function HeroSnake({ onWin }: { onWin?: () => void }) {
       setSnake((current) => {
         const nextDirection = queued;
         setDirection(nextDirection);
-        const head = current[0];
+        const head = current[0]!;
         const delta: Record<Direction, Point> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
         const next = { x: head.x + delta[nextDirection].x, y: head.y + delta[nextDirection].y };
         const hitWall = next.x < 0 || next.x >= COLS || next.y < 0 || next.y >= ROWS;

@@ -11,17 +11,19 @@ const tileColors: Record<number, string> = { 0: "bg-[#f2edff] text-transparent",
 function addTile(board: Board): Board {
   const empty = board.map((value, index) => value === 0 ? index : -1).filter((index) => index >= 0);
   if (!empty.length) return board;
-  const next = [...board]; next[empty[Math.floor(Math.random() * empty.length)]] = Math.random() > 0.85 ? 4 : 2; return next;
+  const target = empty[Math.floor(Math.random() * empty.length)];
+  if (target === undefined) return board;
+  const next = [...board]; next[target] = Math.random() > 0.85 ? 4 : 2; return next;
 }
 function moveLine(line: number[]): { line: number[]; gained: number } {
   const compact = line.filter(Boolean); const result: number[] = []; let gained = 0;
-  for (let i = 0; i < compact.length; i += 1) { if (compact[i] === compact[i + 1]) { const merged = compact[i] * 2; result.push(merged); gained += merged; i += 1; } else result.push(compact[i]); }
+  for (let i = 0; i < compact.length; i += 1) { const value = compact[i]; const nextValue = compact[i + 1]; if (value === undefined) continue; if (value === nextValue) { const merged = value * 2; result.push(merged); gained += merged; i += 1; } else result.push(value); }
   while (result.length < 4) result.push(0); return { line: result, gained };
 }
 function moveBoard(board: Board, direction: "left" | "right" | "up" | "down") {
   const next = Array(16).fill(0) as Board; let gained = 0;
   for (let row = 0; row < 4; row += 1) for (let col = 0; col < 4; col += 1) {
-    const line = direction === "left" || direction === "right" ? [0, 1, 2, 3].map((offset) => board[row * 4 + (direction === "left" ? offset : 3 - offset)]) : [0, 1, 2, 3].map((offset) => board[(direction === "up" ? offset : 3 - offset) * 4 + col]);
+    const line = direction === "left" || direction === "right" ? [0, 1, 2, 3].map((offset) => board[row * 4 + (direction === "left" ? offset : 3 - offset)] ?? 0) : [0, 1, 2, 3].map((offset) => board[(direction === "up" ? offset : 3 - offset) * 4 + col] ?? 0);
     const moved = moveLine(line); gained += moved.gained;
     moved.line.forEach((value, offset) => { if (direction === "left" || direction === "right") next[row * 4 + (direction === "left" ? offset : 3 - offset)] = value; else next[(direction === "up" ? offset : 3 - offset) * 4 + col] = value; });
   }
@@ -39,12 +41,12 @@ export function Story2048({ onWin }: { onWin?: () => void }) {
     const result = moveBoard(board, direction); if (!result.changed) { if (!hasMove(board)) setOver(true); return; }
     const next = addTile(result.board); setBoard(next); setScore((value) => value + result.gained); if (next.includes(2048)) { setWon(true); onWin?.(); } if (!hasMove(next)) setOver(true);
   }, [board, onWin, over]);
-  useEffect(() => { const onKey = (event: KeyboardEvent) => { const map: Record<string, "left" | "right" | "up" | "down"> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" }; if (map[event.key]) { event.preventDefault(); move(map[event.key]); } }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [move]);
+  useEffect(() => { const onKey = (event: KeyboardEvent) => { const map: Record<string, "left" | "right" | "up" | "down"> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" }; const next = map[event.key]; if (next) { event.preventDefault(); move(next); } }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [move]);
   const restart = () => { setBoard(addTile(addTile(Array(16).fill(0)))); setScore(0); setWon(false); setOver(false); };
   return <GameShell title="Storybook 2048" description="Slide matching storybook numbers together. Can you build the legendary 2048 tile?" score={score} color="orange" onRestart={restart}>
     <div className="mx-auto max-w-[420px]">
       <div className="grid grid-cols-4 gap-2 rounded-3xl bg-[#eadfca] p-2 sm:gap-3 sm:p-3">
-        {board.map((value, index) => <motion.div key={index} layout className={`grid aspect-square place-items-center rounded-xl font-display text-xl font-bold shadow-sm sm:text-2xl ${tileColors[value] ?? "bg-violet-deep text-white"}`} initial={{ scale: 0.8 }} animate={{ scale: value ? 1 : 0.98 }} transition={{ duration: 0.16 }}>{value || "·"}</motion.div>)}
+        {board.map((rawValue, index) => { const value = rawValue ?? 0; return <motion.div key={index} layout className={`grid aspect-square place-items-center rounded-xl font-display text-xl font-bold shadow-sm sm:text-2xl ${tileColors[value] ?? "bg-violet-deep text-white"}`} initial={{ scale: 0.8 }} animate={{ scale: value ? 1 : 0.98 }} transition={{ duration: 0.16 }}>{value || "·"}</motion.div>; })}
       </div>
       {(won || over) && <div className="mt-4 rounded-2xl bg-[#fff0d2] p-4 text-center text-violet-deep"><p className="font-display text-xl font-bold">{won ? "You found the hero tile!" : "The board is full."}</p><p className="mt-1 text-sm">{won ? "Keep playing or start a fresh adventure." : "Start over and try a new path."}</p></div>}
       <div className="mx-auto mt-4 grid w-36 grid-cols-3 gap-2"><button type="button" onClick={() => move("up")} className="col-start-2 grid size-10 place-items-center rounded-xl bg-[#fff0d2] text-[#a86d00] hover:bg-buttercup" aria-label="Move up">↑</button><button type="button" onClick={() => move("left")} className="grid size-10 place-items-center rounded-xl bg-[#fff0d2] text-[#a86d00] hover:bg-buttercup" aria-label="Move left">←</button><button type="button" onClick={() => move("down")} className="grid size-10 place-items-center rounded-xl bg-[#fff0d2] text-[#a86d00] hover:bg-buttercup" aria-label="Move down">↓</button><button type="button" onClick={() => move("right")} className="col-start-3 row-start-2 grid size-10 place-items-center rounded-xl bg-[#fff0d2] text-[#a86d00] hover:bg-buttercup" aria-label="Move right">→</button></div>
