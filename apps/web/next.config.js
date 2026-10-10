@@ -3,7 +3,7 @@
 // Allow next/image to optimise images served by the backend (generated pages,
 // cover art) without hard-coding a deployment host: derive it from the public
 // backend URL when available.
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+const backendUrl = globalThis.process?.env.NEXT_PUBLIC_BACKEND_URL;
 const backendPattern = (() => {
   const patterns = [
     { protocol: "http", hostname: "localhost", port: "8080", pathname: "/**" },
