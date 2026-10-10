@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  Download,
   Loader2,
   Volume2,
   VolumeX,
@@ -61,7 +60,6 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
   const [story, setStory] = useState<Story | null>(null);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -155,29 +153,6 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
   }
 
   const isFirstPage = currentPageIndex === 0;
-
-  const handleExportPdf = async () => {
-    if (!story) return;
-    setExporting(true);
-
-    try {
-      const token = await getToken?.();
-      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: "blob",
-      });
-      const pdfUrl = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
-      const download = document.createElement("a");
-      download.href = pdfUrl;
-      download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}.pdf`;
-      download.click();
-      URL.revokeObjectURL(pdfUrl);
-    } catch (error) {
-      console.error("PDF export failed", error);
-    } finally {
-      setExporting(false);
-    }
-  };
 
   const togglePlay = () => {
     if (!audioRef.current) return;

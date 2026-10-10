@@ -43,7 +43,7 @@ const nextConfig = {
   compiler: {
     // Strip noisy client console output from production bundles.
     removeConsole:
-      process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+      globalThis.process?.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
   images: {
     minimumCacheTTL: 31536000,

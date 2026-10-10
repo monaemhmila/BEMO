@@ -130,10 +130,6 @@ export function getCategoryMeta(raw: string) {
   return CATEGORY_META[toStoryCategory(raw)];
 }
 
-function toAudience(raw: string): StoryAudience {
-  return raw === "girl" || raw === "boy" ? raw : "any";
-}
-
 /**
  * Where a catalogue card sends the visitor: straight into the create wizard
  * with this story already selected, so the shelf and the wizard never disagree

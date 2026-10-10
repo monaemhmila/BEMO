@@ -44,7 +44,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const router = useRouter();
   const { getToken } = useAuth();
 
-  const flipBookRef = useRef<{ pageFlip: () => any } | null>(null);
+  const flipBookRef = useRef<{
+    pageFlip: () => { flipPrev: () => void; flipNext: () => void };
+  } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
