@@ -208,7 +208,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
     try {
       const token = await getToken?.();
-      const ageRange = childAge <= 5 ? "3-5" : childAge <= 8 ? "6-8" : "9-12";
+      const ageRange = childAge <= 6 ? "0-6" : childAge <= 9 ? "6-9" : "9-12";
 
       const response = await axios.post(
         `${BACKEND_URL}/storybook/templates/custom`,
@@ -645,7 +645,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                   <Label>Age</Label>
                   <Input
                     type="number"
-                    min={3}
+                    min={0}
                     max={12}
                     value={childAge}
                     onChange={(e) => setChildAge(Number(e.target.value))}

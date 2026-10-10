@@ -771,6 +771,17 @@ function nullable(value: string | null | undefined): string | null {
   return trimmed === "" ? null : trimmed;
 }
 
+function previewImageSources(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((preview) =>
+      preview && typeof preview === "object" && "src" in preview
+        ? (preview as { src?: unknown }).src
+        : undefined
+    )
+    .filter((src): src is string => typeof src === "string" && src.length > 0);
+}
+
 /**
  * POST /admin/templates/images/upload?folder=covers&filename=my-cover.png
  * Store one catalogue image - a cover or a gallery preview - and return the URL
@@ -1036,7 +1047,7 @@ router.put("/templates/:id", async (req, res) => {
   try {
     const existing = await prismaClient.storyTemplate.findUnique({
       where: { id: req.params.id },
-      select: { id: true },
+      select: { id: true, coverImage: true, sampleImage: true, previews: true },
     });
     if (!existing) {
       res.status(404).json({ message: "Template not found" });
@@ -1074,8 +1085,37 @@ router.put("/templates/:id", async (req, res) => {
       },
     });
 
-    logger.info({ templateId: updated.id }, "Admin updated story template");
-    res.json({ template: updated });
+    // Removing an image in the editor removes it from the database and from
+    // local catalogue storage when the template is saved. External URLs are
+    // harmless here because deleteTemplateImage only deletes known local paths.
+    const removedImages = new Set<string>();
+    if (
+      data.coverImage !== undefined &&
+      existing.coverImage &&
+      existing.coverImage !== nullable(data.coverImage)
+    ) {
+      removedImages.add(existing.coverImage);
+    }
+    if (
+      data.sampleImage !== undefined &&
+      existing.sampleImage &&
+      existing.sampleImage !== nullable(data.sampleImage)
+    ) {
+      removedImages.add(existing.sampleImage);
+    }
+    if (data.previews !== undefined) {
+      const retained = new Set(data.previews.map((preview) => preview.src));
+      for (const src of previewImageSources(existing.previews)) {
+        if (!retained.has(src)) removedImages.add(src);
+      }
+    }
+    for (const src of removedImages) deleteTemplateImage(src);
+
+    logger.info(
+      { templateId: updated.id, imagesRemoved: removedImages.size },
+      "Admin updated story template"
+    );
+    res.json({ template: updated, imagesRemoved: removedImages.size });
   } catch (error) {
     logger.error({ error, templateId: req.params.id }, "Failed to update story template");
     res.status(500).json({ message: "Failed to update template" });

@@ -1862,7 +1862,7 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
                           onClick={() => set("coverImage", "")}
                           className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 transition-all text-xs font-semibold"
                         >
-                          Clear
+                          Delete image
                         </button>
                       )}
                     </div>
@@ -1889,7 +1889,8 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
 
             <p className="text-xs text-white/40">
               These fill the carousel on the book detail page. Leave empty and the page
-              shows neutral &ldquo;Preview N&rdquo; placeholders instead.
+              shows neutral &ldquo;Preview N&rdquo; placeholders instead. Removed images are
+              deleted from storage when you save the template.
             </p>
 
             <input
@@ -1973,7 +1974,8 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
                       <button
                         type="button"
                         onClick={() => removePreview(index)}
-                        aria-label={`Remove preview ${index + 1}`}
+                        aria-label={`Delete preview ${index + 1}`}
+                        title="Delete this image when the template is saved"
                         className="ml-auto p-1 rounded bg-white/5 hover:bg-red-500/30 transition-all"
                       >
                         <Trash2 className="w-4 h-4" />

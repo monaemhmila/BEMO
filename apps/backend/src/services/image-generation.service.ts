@@ -15,8 +15,10 @@ interface ImageGenerationRequest {
   imageUrl?: string;
   childName?: string;
   artStyle?: string;
-  /** Internal: keep set after fal content-policy rejections. */
+  /** Internal: request a safer wording variant after a policy rejection. */
   sanitizePolicy?: boolean;
+  /** Internal: make each retry a distinct generation attempt. */
+  retryAttempt?: number;
   /** Anchor the child to the far edge (left/right) in the final image
    *  (middle pages only). */
   edgePlacementSide?: "left" | "right";
@@ -50,7 +52,8 @@ const STORY_PAGE_WEBHOOK = env.WEBHOOK_BASE_URL
 export class ImageGenerationService {
   private static instance: ImageGenerationService;
 
-  private maxRetries = 3;
+  // Three total attempts: the initial request plus two retries.
+  private maxRetries = 2;
   private retryDelays = [1000, 2000, 4000];
 
   static getInstance(): ImageGenerationService {
@@ -199,12 +202,11 @@ export class ImageGenerationService {
     } catch (error) {
       const isPolicyViolation = this.isContentPolicyError(error);
 
-      // Content-policy flags never resolve on identical prompts, so rephrase
-      // the prompt to policy-safe wording before retrying instead of repeating
-      // the exact same failing request.
-      const retryRequest: ImageGenerationRequest = isPolicyViolation
-        ? { ...request, sanitizePolicy: true }
-        : request;
+      const retryRequest: ImageGenerationRequest = {
+        ...request,
+        sanitizePolicy: isPolicyViolation || request.sanitizePolicy,
+        retryAttempt: retryCount + 1,
+      };
 
       if (retryCount < this.maxRetries) {
         logger.warn(
@@ -234,10 +236,28 @@ export class ImageGenerationService {
     const details: unknown[] = Array.isArray(err?.body?.detail)
       ? err.body.detail
       : [];
-    return details.some(
+    const detailMatch = details.some(
       (d: any) =>
         typeof d?.type === "string" &&
         d.type.toLowerCase().includes("content_policy")
+    );
+
+    const message = [
+      err?.message,
+      err?.body,
+      err?.response?.data,
+      err?.cause,
+    ]
+      .map((value) => (typeof value === "string" ? value : JSON.stringify(value ?? "")))
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      detailMatch ||
+      message.includes("content checker") ||
+      message.includes("content policy") ||
+      message.includes("content_policy") ||
+      message.includes("image_urls.0")
     );
   }
 
@@ -297,15 +317,25 @@ export class ImageGenerationService {
   /**
    * Assemble the final prompt string for the Grok Imagine API from the single
    * storybook template. The template is already policy-safe (it never refers
-   * to a "real child photograph"), so content-policy retries reuse it as-is.
+   * to a "real child photograph"), while retries add a small variation so
+   * transient or over-sensitive content checks do not receive an identical
+   * request.
    */
   private buildGrokPrompt(request: ImageGenerationRequest): string {
-    return buildStorybookImagePrompt({
+    const prompt = buildStorybookImagePrompt({
       sceneDescription: request.prompt.trim(),
       artStyle: request.artStyle,
       aspectRatio: request.aspectRatio,
       edgePlacementSide: request.edgePlacementSide,
     });
+
+    if (!request.retryAttempt) return prompt;
+
+    const retryGuidance = request.sanitizePolicy
+      ? "Use especially neutral, family-friendly wording. Avoid any ambiguous phrasing that could be mistaken for unsafe content while preserving the same safe scene, characters, and composition."
+      : "Create a fresh visual variation of the same safe scene with different natural poses, expressions, and environmental details."
+
+    return `${prompt}\n\nRETRY VARIATION ${request.retryAttempt}: ${retryGuidance}`;
   }
 
   private delay(ms: number): Promise<void> {

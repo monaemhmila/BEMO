@@ -17,7 +17,7 @@ const GenerateStorySchema = z.object({
   templateId: z.string().min(1, "Template is required"),
   artStyle: z.string().optional(),
   childName: z.string().optional(),
-  childAge: z.number().min(1).max(20).optional(),
+  childAge: z.number().min(0).max(20).optional(),
   gender: z.enum(["boy", "girl"]).optional(),
   dedication: z.string().optional(),
   childImage: z.string().optional(),

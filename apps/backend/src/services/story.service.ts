@@ -73,7 +73,7 @@ interface CharacterProfile {
 }
 
 const AGE_GUIDANCE = {
-  "2-8": {
+  "0-6": {
     language:
       "very simple words, short sentences, basic concepts",
     themes: "friendship, sharing, bedtime, animals, fun",
@@ -81,12 +81,19 @@ const AGE_GUIDANCE = {
     minPageWords: 15,
     targetPageWords: "15-20",
   },
-  "8-12": {
+  "6-9": {
     language: "simple and clear vocabulary, short complete sentences",
     themes: "adventure, problem-solving, friendship, family, nature",
     textLength: "2 short sentences per page",
     minPageWords: 20,
     targetPageWords: "20-25",
+  },
+  "9-12": {
+    language: "clear and engaging vocabulary, short sentence structures",
+    themes: "bravery, teamwork, moral lessons, discovery, mystery",
+    textLength: "3 sentences per page",
+    minPageWords: 25,
+    targetPageWords: "25-30",
   },
   "12-15": {
     language: "clear and engaging vocabulary, short sentence structures",
@@ -431,7 +438,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
   /**
    * Turn a parent's idea into a reusable custom template.
    *
-   * The returned document is validated to contain exactly 14 beats so the
+   * The returned document is validated to contain exactly 15 beats so the
    * custom path produces the same book shape as the predefined templates. The
    * model occasionally returns the wrong number of beats, so one repair pass is
    * attempted before giving up; the beat count itself is never fudged.
@@ -441,7 +448,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
     setting?: string;
     extras?: string;
     message?: string;
-    ageRange: "3-5" | "6-8" | "9-12";
+    ageRange: "0-6" | "6-9" | "9-12";
   }): Promise<{
     name: string;
     description: string;
@@ -554,7 +561,12 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
         );
       }
 
-      if (beats.length !== pageCount) {
+      // Models occasionally append an extra closing beat despite the explicit
+      // count in the prompt. Keep the canonical page count deterministic while
+      // still rejecting responses that are too short.
+      const normalizedBeats = beats.slice(0, pageCount);
+
+      if (normalizedBeats.length !== pageCount) {
         throw new Error(
           `The generated template must contain exactly ${pageCount} beats, received ${beats.length}`
         );
@@ -573,7 +585,7 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
           worldContext: String(
             rawPrompts.worldContext ?? input.setting ?? ""
           ).trim(),
-          beats: beats.map((beat) => beat.trim()),
+          beats: normalizedBeats.map((beat) => beat.trim()),
         },
       };
     };
@@ -1099,8 +1111,9 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
   private getAgeRange(
     age: number
   ): keyof typeof AGE_GUIDANCE {
-    if (age <= 8) return "2-8";
-    if (age <= 12) return "8-12";
+    if (age <= 6) return "0-6";
+    if (age <= 9) return "6-9";
+    if (age <= 12) return "9-12";
 
     return "12-15";
   }

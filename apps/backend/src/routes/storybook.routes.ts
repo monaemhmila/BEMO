@@ -21,7 +21,7 @@ const imageService = ImageGenerationService.getInstance();
 // Validation schemas
 const GenerateStorybookSchema = z.object({
   childName: z.string().min(1),
-  childAge: z.number().min(1).max(20),
+  childAge: z.number().min(0).max(20),
   gender: z.enum(["boy", "girl"]).optional(),
   templateId: z.string().min(1, "Template is required"),
   dedication: z.string().optional(),
@@ -34,7 +34,7 @@ const GenerateStorybookSchema = z.object({
 // Simple PDF generation schema (no model training)
 const SimplePDFSchema = z.object({
   childName: z.string().trim().min(1, "Child name is required"),
-  childAge: z.coerce.number().min(1).max(100).default(5),
+  childAge: z.coerce.number().min(0).max(100).default(5),
   gender: z.enum(["boy", "girl"]).optional().nullable().or(z.literal("")),
   hairColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   eyeColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
@@ -52,7 +52,12 @@ const CustomTemplateSchema = z.object({
   setting: z.string().trim().max(200).optional(),
   extras: z.string().trim().max(200).optional(),
   message: z.string().trim().max(200).optional(),
-  ageRange: z.enum(["3-5", "6-8", "9-12"]),
+  // Accept old client bundles during deployment, then normalize them to the
+  // current age bands used by the generator.
+  ageRange: z.preprocess(
+    (value) => ({ "3-5": "0-6", "6-8": "6-9" }[String(value)] ?? value),
+    z.enum(["0-6", "6-9", "9-12"]),
+  ),
 });
 
 /** Explicit profanity / hateful-content screen for parent-supplied text. */

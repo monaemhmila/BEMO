@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  Download,
   Loader2,
   Volume2,
   VolumeX,
@@ -198,7 +197,6 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
   const [loading, setLoading] = useState(true);
   const [spreadIndex, setSpreadIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [exporting, setExporting] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -266,30 +264,6 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
         () => setAudioPlaying(true),
         () => setAudioPlaying(false)
       );
-    }
-  };
-
-  const handleExportPdf = async () => {
-    if (!story) return;
-    setExporting(true);
-    try {
-      const token = await getToken?.();
-      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: "blob",
-      });
-      const pdfUrl = URL.createObjectURL(
-        new Blob([response.data], { type: "application/pdf" })
-      );
-      const download = document.createElement("a");
-      download.href = pdfUrl;
-      download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}.pdf`;
-      download.click();
-      URL.revokeObjectURL(pdfUrl);
-    } catch (error) {
-      console.error("PDF export failed", error);
-    } finally {
-      setExporting(false);
     }
   };
 
