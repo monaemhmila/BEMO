@@ -20,6 +20,12 @@ export const metadata: Metadata = {
     description: "Play, learn, and explore with colorful games inspired by the Mon Petit Hero storybook world.",
     url: `${SITE_URL}/games`,
     type: "website",
+    images: [{
+      url: "/brand/social-card.svg",
+      width: 1200,
+      height: 630,
+      alt: "Mon Petit Hero kids games",
+    }],
   },
 };
 

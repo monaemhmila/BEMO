@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen, Facebook, Instagram, Music2 } from "lucide-react";
+import { Facebook, Instagram, Music2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { footerColumns } from "@/lib/data";
+import { BrandLogo } from "@/components/brand-logo";
 
 const socials = [
   { label: "Facebook", href: "https://www.facebook.com/MonPetitHero", Icon: Facebook },
@@ -24,14 +25,7 @@ export function SiteFooter() {
     <footer className="bg-violet-deep pt-16 pb-10 text-white/85">
       <div className="shell grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1.6fr]">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="grid size-9 place-items-center rounded-xl bg-white/15">
-              <BookOpen className="size-5" aria-hidden />
-            </span>
-            <span className="font-display text-xl font-semibold text-white">
-              Mon Petit Hero
-            </span>
-          </div>
+          <BrandLogo className="[&_span:last-child]:text-white" />
           <p className="mt-4 max-w-[38ch] text-sm leading-relaxed">
             Create hyper-personalised storybooks that make your child the hero,
             with quick customisation and speedy delivery.

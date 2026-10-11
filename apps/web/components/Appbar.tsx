@@ -3,13 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Menu, ShoppingBag, User } from "lucide-react";
+import { Menu, ShoppingBag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import { navLinks } from "@/lib/data";
 import { LanguageSelector } from "@/components/language-selector";
 import { motion } from "framer-motion";
+import { BrandLogo } from "@/components/brand-logo";
 import {
   Sheet,
   SheetContent,
@@ -116,14 +117,7 @@ export function Appbar() {
         )}
       >
         <div className="shell flex h-[72px] items-center justify-between gap-2 sm:gap-4">
-          <Link href="/" className="group flex min-w-0 items-center gap-2" aria-label="Mon Petit Hero home">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-105">
-              <BookOpen className="size-5" aria-hidden />
-            </span>
-            <span className="truncate font-display text-lg font-semibold text-violet-deep sm:text-xl">
-              Mon Petit Hero
-            </span>
-          </Link>
+          <BrandLogo priority className="min-w-0 truncate" />
 
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
             <SignedOut>

@@ -45,11 +45,18 @@ export function generateMetadata({
         modifiedTime: post.updatedAt ?? post.date,
         authors: [post.author],
         tags: post.keywords,
+        images: [{
+          url: "/brand/social-card.svg",
+          width: 1200,
+          height: 630,
+          alt: `${post.title} | Mon Petit Hero`,
+        }],
       },
       twitter: {
         card: "summary_large_image",
         title: post.title,
         description: post.description,
+        images: ["/brand/social-card.svg"],
       },
     };
   });

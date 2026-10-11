@@ -28,7 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const templates = await getStoreTemplates();
 
   const templateRoutes: MetadataRoute.Sitemap = templates.map((template) => ({
-    url: `${SITE_URL}/stories/templates/${template.slug}`,
+    url: `${SITE_URL}/books/${template.slug}`,
     lastModified: now,
     changeFrequency: "monthly" as const,
     priority: 0.7,

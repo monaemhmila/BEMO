@@ -47,12 +47,19 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/blog`,
     siteName: "Mon Petit Hero",
     type: "website",
+    images: [{
+      url: "/brand/social-card.svg",
+      width: 1200,
+      height: 630,
+      alt: "Mon Petit Hero personalised storybooks",
+    }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Personalized Storybook Ideas & Guides | Mon Petit Hero Blog",
     description:
       "Everything parents need to know about creating personalized children's books.",
+    images: ["/brand/social-card.svg"],
   },
 };
 

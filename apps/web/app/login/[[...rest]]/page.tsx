@@ -2,6 +2,7 @@ import { ClerkLoaded, ClerkLoading, SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
 
 import { AuthLoading } from "@/components/auth-loading";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -16,6 +17,7 @@ export default function LoginPage() {
     >
       <div className="w-full max-w-md">
         <div className="animate-reveal-up mb-6 text-center">
+          <BrandLogo className="mb-5 justify-center" />
           <h1 className="font-display text-3xl font-bold text-violet-deep">
             Welcome back
           </h1>

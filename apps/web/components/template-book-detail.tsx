@@ -293,5 +293,16 @@ export function TemplateBookDetailMetadata({
   return {
     title: template.title,
     description: `${template.tagline} Personalise this storybook so your child becomes the hero.`,
+    alternates: {
+      canonical: `/books/${template.slug}`,
+    },
+    openGraph: {
+      title: template.title,
+      description: `${template.tagline} Personalise this storybook so your child becomes the hero.`,
+      type: "website",
+      images: template.coverImage
+        ? [{ url: template.coverImage, alt: `${template.title} book cover` }]
+        : [{ url: "/brand/social-card.svg", width: 1200, height: 630 }],
+    },
   };
 }
