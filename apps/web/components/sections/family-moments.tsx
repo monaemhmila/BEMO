@@ -132,7 +132,7 @@ export function FamilyMoments() {
 
         <div className="mt-10 text-center">
           <Button asChild size="lg" className="rounded-full px-8 font-bold shadow-lg shadow-primary/20">
-            <Link href="/personalise">Make their story <ArrowRight className="size-4" /></Link>
+            <Link href="/storybook/create">Make their story <ArrowRight className="size-4" /></Link>
           </Button>
         </div>
       </div>
