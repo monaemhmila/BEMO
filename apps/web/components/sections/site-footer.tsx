@@ -15,8 +15,6 @@ const socials = [
   { label: "TikTok", href: "https://www.tiktok.com/@monpetithero.shop", Icon: Music2 },
 ];
 
-const payments = ["Visa", "Mastercard", "Amex", "PayPal", "Apple Pay"];
-
 export function SiteFooter() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -95,17 +93,7 @@ export function SiteFooter() {
         </div>
       </div>
 
-      <div className="shell mt-12 flex flex-col items-center gap-4 border-t border-white/15 pt-6 sm:flex-row sm:justify-between">
-        <ul className="flex flex-wrap items-center gap-2">
-          {payments.map((p) => (
-            <li
-              key={p}
-              className="rounded-md bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80"
-            >
-              {p}
-            </li>
-          ))}
-        </ul>
+      <div className="shell mt-12 flex flex-col items-center gap-4 border-t border-white/15 pt-6 sm:flex-row sm:justify-end">
         <p className="text-sm">Mon Petit Hero © {new Date().getFullYear()} All rights reserved</p>
       </div>
     </footer>
