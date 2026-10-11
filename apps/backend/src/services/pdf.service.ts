@@ -4,6 +4,8 @@ import fs, { existsSync } from "fs";
 import {
   getPageType,
   getPageTextLayout,
+  STORYBOOK_PAGE_WIDTH_PT,
+  STORYBOOK_PAGE_HEIGHT_PT,
 } from "../contracts/storybook";
 import {
   splitForBookPage,
@@ -42,13 +44,13 @@ const STORY_TEXT_SHADOW = "#000000";
 const STORY_TEXT_OUTLINE = "#1A2235";
 
 
-// Exact A4 landscape page size in points (297 x 210 mm), shared with the
+// Exact square printed page size in points (148.5 x 148.5 mm), shared with the
 // contracts so the image pipeline and PDF layout stay in lockstep. Every
 // story ships as exactly 15 pages - page 1 is the full-bleed cover with a
 // PDF-rendered title, pages 2-13 carry the story, page 14 the emotional
 // ending and page 15 the closing.
-const PAGE_WIDTH = 595.28; // 210mm square
-const PAGE_HEIGHT = 595.28; // 210mm square
+const PAGE_WIDTH = STORYBOOK_PAGE_WIDTH_PT; // 148.5mm square
+const PAGE_HEIGHT = STORYBOOK_PAGE_HEIGHT_PT; // 148.5mm square
 
 // --- Web reader parity ------------------------------------------------------
 // `reader.css` and StoryBookCover.tsx express the cover in container query
@@ -59,14 +61,6 @@ const PAGE_HEIGHT = 595.28; // 210mm square
 // blurs, so the soft edges are fanned out as thin low-opacity passes.
 const WEB_CQW = PAGE_WIDTH / 100; // 5.9528pt
 const WEB_PX = 0.75; // 1 CSS px, in points
-
-/** `.is-cover::after` - the white hairline border inset on the cover leaf. */
-const COVER_FRAME = {
-  inset: 0.02 * PAGE_WIDTH, // inset: 2% -> 11.9pt
-  lineWidth: Math.max(2 * WEB_PX, 0.4 * WEB_CQW), // max(2px, 0.4cqw) -> 2.38pt
-  opacity: 0.6, // rgba(255, 255, 255, 0.6)
-  radius: 3 * WEB_PX, // border-radius: 3px
-};
 
 /**
  * `StoryBookCover.tsx` - the outside-cover overlay. The generated artwork
@@ -305,7 +299,7 @@ export class PDFService {
 
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
-        size: [PAGE_WIDTH, PAGE_HEIGHT], // 210mm square page
+        size: [PAGE_WIDTH, PAGE_HEIGHT], // 148.5mm square page
         margin: 0,
         bufferPages: true,
         info: {
@@ -343,11 +337,6 @@ export class PDFService {
             break;
           default:
             this.renderStoryPage(doc, leaf);
-        }
-        // The cover's hairline frame sits above the artwork, matching the
-        // reader's z-index. Nothing else is drawn over the interior pages.
-        if (pageType === "cover") {
-          this.drawCoverFrame(doc, PAGE_WIDTH, PAGE_HEIGHT);
         }
       });
       doc.end();
@@ -461,24 +450,9 @@ export class PDFService {
   }
 
   /**
-   * The cover's hairline frame, mirroring the `border` half of
-   * `.is-cover::after`: a white border inset 2% of the page.
-   */
-  private drawCoverFrame(doc: PDFKit.PDFDocument, width: number, height: number) {
-    const { inset, radius } = COVER_FRAME;
-    doc
-      .roundedRect(inset, inset, width - inset * 2, height - inset * 2, radius)
-      .lineWidth(COVER_FRAME.lineWidth)
-      .strokeColor("#FFFFFF")
-      .strokeOpacity(COVER_FRAME.opacity)
-      .stroke("#FFFFFF");
-    doc.strokeOpacity(0);
-  }
-
-  /**
    * Place the cover-cropped image so it fills every pixel of the page.
-   * The buffer is already cover-cropped to the exact A4 landscape aspect,
-   * so drawing it at 0,0 stretched to the page size never distorts it.
+   * The buffer is already cover-cropped to the exact square page aspect, so
+   * drawing it at 0,0 stretched to the 14.85 cm page never distorts it.
    */
   private drawPageImage(
     doc: PDFKit.PDFDocument,

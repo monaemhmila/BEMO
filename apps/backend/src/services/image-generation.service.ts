@@ -272,7 +272,7 @@ export class ImageGenerationService {
 
       num_images: 1,
 
-      // Square 16:9 frame (210x210 mm page); rendered directly by the PDF service.
+      // Square 16:9 frame for the 148.5 x 148.5 mm printed page; rendered directly by the PDF service.
       aspect_ratio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
 
       resolution: STORYBOOK_IMAGE_CONFIG.resolution,

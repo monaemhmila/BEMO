@@ -39,9 +39,10 @@ export const STORYBOOK_SQUARE_ASPECT_RATIO = "1:1";
 export const A4_LANDSCAPE_WIDTH_PT = 841.89;
 export const A4_LANDSCAPE_HEIGHT_PT = 595.28;
 
-// Exact square page in PDF points (210 x 210 mm).
-export const STORYBOOK_PAGE_WIDTH_PT = 595.28;
-export const STORYBOOK_PAGE_HEIGHT_PT = 595.28;
+// Exact square printed page: 14.85 x 14.85 cm (148.5 x 148.5 mm).
+// PDF points use 72 points per inch: 148.5 / 25.4 * 72 = 420.94 pt.
+export const STORYBOOK_PAGE_WIDTH_PT = 420.94;
+export const STORYBOOK_PAGE_HEIGHT_PT = 420.94;
 
 // Approximate print resolution: A4 landscape at 300 DPI.
 export const A4_LANDSCAPE_WIDTH_PX = 3508;
@@ -155,7 +156,7 @@ export function getPageComposition(
 }
 
 /**
- * Numeric text layout in PDF points for the 210x210 mm square page, driven
+ * Numeric text layout in PDF points for the 148.5x148.5 mm square page, driven
  * only by the page number so PDF and image generation stay perfectly in sync.
  */
 export function getPageTextLayout(
