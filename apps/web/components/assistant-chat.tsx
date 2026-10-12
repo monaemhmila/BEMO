@@ -241,23 +241,23 @@ export function AssistantChat({ mode }: AssistantChatProps) {
       <div className="max-h-[min(68vh,680px)] space-y-5 overflow-y-auto px-5 py-6 sm:px-8">
         <AnimatePresence initial={false} mode="popLayout">
         {messages.map((message) => (
-          <motion.div key={message.id} layout initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div className={message.role === "user" ? "max-w-[88%] rounded-2xl rounded-br-md bg-violet-deep px-5 py-4 text-base leading-relaxed text-white" : "max-w-[92%] rounded-2xl rounded-bl-md bg-[#f4f0ff] px-5 py-4 text-base leading-relaxed text-violet-deep"}>
+          <motion.div key={message.id} layout initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} whileHover={{ y: -2 }} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
+            <div className={message.role === "user" ? "max-w-[88%] rounded-2xl rounded-br-md border border-blue-400/30 bg-gradient-to-br from-[#2563eb] via-[#3b82f6] to-[#5b3bd4] px-5 py-4 text-base leading-relaxed text-white shadow-[0_12px_28px_-14px_rgba(37,99,235,.8)]" : "max-w-[92%] rounded-2xl rounded-bl-md border border-amber-300/70 bg-gradient-to-br from-[#fff8c9] via-white to-[#e6f4ff] px-5 py-4 text-base leading-relaxed text-[#24305e] shadow-[0_14px_30px_-16px_rgba(245,183,45,.75)]"}>
               {message.content}
               {message.templates && message.templates.length > 0 && (
                 <div className="mt-4 grid gap-2">
                   {message.templates.map((template, index) => (
-                    <motion.div key={template.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.08, type: "spring", stiffness: 350, damping: 24 }} whileHover={{ y: -3, scale: 1.01 }} className="flex gap-3 rounded-2xl bg-white p-2.5 text-left shadow-sm ring-1 ring-violet-100">
-                      <div className="size-14 shrink-0 overflow-hidden rounded-xl bg-[#eee9ff]">
+                    <motion.div key={template.id} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.08, type: "spring", stiffness: 350, damping: 24 }} whileHover={{ y: -4, scale: 1.02, rotate: index % 2 === 0 ? -0.4 : 0.4 }} className="group flex gap-3 rounded-2xl border border-blue-100 bg-white p-2.5 text-left shadow-[0_10px_22px_-16px_rgba(37,99,235,.65)] ring-1 ring-amber-100 transition-shadow hover:border-amber-300 hover:shadow-[0_18px_30px_-16px_rgba(245,183,45,.8)]">
+                      <div className="size-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[#fff1a8] to-[#cfe7ff]">
                         {template.coverImage ? <img src={template.coverImage} alt="" className="size-full object-cover" /> : <Sparkles className="m-4 size-6 text-primary" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-display font-bold text-violet-deep">{template.title}</p>
                         <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">{template.description}</p>
-                        <Link href={`/storybook/create?templateId=${encodeURIComponent(template.id)}`} className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+                        <Link href={`/storybook/create?templateId=${encodeURIComponent(template.id)}`} className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-600 transition-colors group-hover:text-amber-600 hover:underline">
                           {copy.choose} <ArrowRight className="size-3" />
                         </Link>
-                        <Link href={`/books/${encodeURIComponent(template.id)}`} className="ml-3 mt-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-violet-deep hover:underline">
+                        <Link href={`/books/${encodeURIComponent(template.id)}`} className="ml-3 mt-1 inline-flex items-center gap-1 text-xs font-semibold text-slate-500 transition-colors hover:text-blue-600 hover:underline">
                           {copy.details}
                         </Link>
                       </div>
@@ -273,22 +273,22 @@ export function AssistantChat({ mode }: AssistantChatProps) {
             </div>
           </motion.div>
         ))}
-        {sending && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start"><div className="rounded-2xl rounded-bl-md bg-[#f4f0ff] px-4 py-3 text-sm text-violet-deep"><span className="inline-flex gap-1"><i className="size-1.5 animate-bounce rounded-full bg-primary" /><i className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:120ms]" /><i className="size-1.5 animate-bounce rounded-full bg-primary [animation-delay:240ms]" /></span></div></motion.div>}
+        {sending && <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start"><div className="rounded-2xl rounded-bl-md border border-amber-300/70 bg-gradient-to-r from-[#fff8c9] to-[#e6f4ff] px-5 py-4 text-sm text-blue-700 shadow-[0_12px_24px_-16px_rgba(37,99,235,.7)]"><span className="inline-flex gap-1.5"><i className="size-2 animate-bounce rounded-full bg-amber-400" /><i className="size-2 animate-bounce rounded-full bg-blue-500 [animation-delay:120ms]" /><i className="size-2 animate-bounce rounded-full bg-violet-500 [animation-delay:240ms]" /></span></div></motion.div>}
         </AnimatePresence>
       </div>
 
       <div className="border-t border-violet-100 px-5 py-4 sm:px-8">
         {messages.length === 1 && (
           <div className="mb-3 grid gap-2 sm:grid-cols-3">
-            {welcomePrompts.map(({ label, prompt, icon: Icon }, index) => <motion.button key={label} type="button" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }} whileHover={{ y: -3 }} whileTap={{ scale: 0.97 }} onClick={() => void sendMessage(prompt)} className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-violet-50/60 px-3 py-2 text-left text-xs font-bold text-violet-deep transition hover:border-primary/40 hover:bg-white"><Icon className="size-4 shrink-0 text-primary" />{label}</motion.button>)}
+            {welcomePrompts.map(({ label, prompt, icon: Icon }, index) => <motion.button key={label} type="button" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }} whileHover={{ y: -4, scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => void sendMessage(prompt)} className="flex items-center gap-2 rounded-2xl border border-blue-100 bg-gradient-to-r from-[#fff8c9] to-[#e6f4ff] px-3 py-3 text-left text-xs font-bold text-[#24305e] shadow-[0_8px_18px_-14px_rgba(37,99,235,.8)] transition hover:border-amber-300 hover:shadow-[0_14px_24px_-14px_rgba(245,183,45,.9)]"><Icon className="size-4 shrink-0 text-blue-600" />{label}</motion.button>)}
           </div>
         )}
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-          {copy.starters.map((starter) => <motion.button key={starter} type="button" whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => void sendMessage(starter)} className="shrink-0 rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-deep transition hover:border-primary hover:bg-violet-50">{starter}</motion.button>)}
+          {copy.starters.map((starter, index) => <motion.button key={starter} type="button" whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={() => void sendMessage(starter)} className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition ${index % 2 === 0 ? "border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100" : "border-blue-200 bg-blue-50 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}>{starter}</motion.button>)}
         </div>
         <form onSubmit={(event) => { event.preventDefault(); void sendMessage(); }} className="flex items-center gap-3 rounded-2xl bg-[#f7f5fc] p-3 ring-1 ring-violet-100 focus-within:ring-primary/40">
           <input value={input} onChange={(event) => setInput(event.target.value)} maxLength={1200} placeholder={copy.placeholder} className="min-w-0 flex-1 bg-transparent px-3 text-base text-violet-deep outline-none placeholder:text-muted-foreground" aria-label={copy.placeholder} />
-          <button type="submit" disabled={!input.trim() || sending || blocked} aria-label={sendLabel} className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-white transition hover:bg-violet-deep disabled:cursor-not-allowed disabled:opacity-40"><Send className="size-5" /></button>
+          <motion.button whileHover={{ scale: 1.08, rotate: -4 }} whileTap={{ scale: 0.92 }} type="submit" disabled={!input.trim() || sending || blocked} aria-label={sendLabel} className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,.9)] transition hover:from-amber-400 hover:to-orange-500 disabled:cursor-not-allowed disabled:opacity-40"><Send className="size-5" /></motion.button>
         </form>
       </div>
     </motion.div>
