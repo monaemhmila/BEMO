@@ -526,10 +526,10 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 </motion.div>
               </div>
               <DialogTitle className="text-center">
-                Order Confirmed!
+                Order Submitted!
               </DialogTitle>
               <DialogDescription className="text-center">
-                Your book is on its way to you. Pay cash when it arrives.
+                Your preview is approved for production. We&apos;ll prepare the full book after our team confirms the order. Pay cash when it arrives.
                 You also unlocked 1 extra free story generation!
               </DialogDescription>
             </DialogHeader>

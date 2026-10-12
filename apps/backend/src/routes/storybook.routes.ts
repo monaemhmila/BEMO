@@ -920,6 +920,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
         category: template.category,
         dedication,
         templateId: template.id,
+        referenceImageUrl: storyRef,
       },
     });
 
@@ -974,121 +975,8 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       ],
     });
 
-    // Step 4: Background task to generate remaining pages and compile final PDF for Admin Dashboard
-    if (remainingPages.length > 0) {
-      (async () => {
-        try {
-          await Promise.all(
-            remainingPages.map(async (page) => {
-              const scenePrompt = heroScene(childName, childAge, gender, page.imageDescription);
-              const referenceUrl = storyRef
-                ? storyRef
-                : childImage;
-
-              const imageUrl = await imageService.generateImageSync({
-                prompt: scenePrompt,
-                aspectRatio: getPageAspectRatio(page.pageNumber, script.pages.length),
-                imageUrl: referenceUrl,
-                childName,
-                artStyle,
-                edgePlacementSide: isSquareBookPage(
-                  page.pageNumber,
-                  script.pages.length
-                )
-                  ? undefined
-                  : getPageComposition(page.pageNumber, script.pages.length).characterSide,
-              }).catch((err) => {
-                logger.error({ err, pageNumber: page.pageNumber }, "Failed background image generation for page");
-                return null;
-              });
-
-              await prismaClient.storyPage.updateMany({
-                where: { storyId: story.id, pageNumber: page.pageNumber },
-                data: {
-                  imageUrl: imageUrl || null,
-                  status: imageUrl ? "Generated" : "Failed",
-                },
-              });
-            })
-          );
-
-          const allStoryPages = await prismaClient.storyPage.findMany({
-            where: { storyId: story.id },
-            orderBy: { pageNumber: "asc" },
-          });
-
-          const incompletePages = allStoryPages.filter(
-            (page) => page.status !== "Generated" || !page.imageUrl
-          );
-          if (incompletePages.length > 0) {
-            await prismaClient.story.update({
-              where: { id: story.id },
-              data: { status: "Failed" },
-            });
-            logger.error(
-              {
-                storyId: story.id,
-                pages: incompletePages.map((page) => page.pageNumber),
-              },
-              "Story generation finished with missing page artwork"
-            );
-            return;
-          }
-
-          const allPagesFormatted = allStoryPages.map((p) => ({
-            pageNumber: p.pageNumber,
-            content: p.content,
-            imagePrompt: p.imagePrompt,
-            imageUrl: p.imageUrl,
-          }));
-
-          const pdfService = new PDFService();
-          const pdfBuffer = await pdfService.generateStorybookPdf(
-            { title: script.title, dedication, childName },
-            allPagesFormatted
-          );
-
-          const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
-
-          await prismaClient.story.update({
-            where: { id: story.id },
-            data: {
-              status: "Completed",
-              completedAt: new Date(),
-              pdfUrl,
-            },
-          });
-
-          logger.info({ storyId: story.id }, "Full story generation & PDF compilation complete in background");
-        } catch (bgError) {
-          logger.error({ bgError, storyId: story.id }, "Background page generation/PDF creation error");
-          await prismaClient.story.update({
-            where: { id: story.id },
-            data: { status: "Failed" },
-          }).catch(() => undefined);
-        }
-      })();
-    } else {
-      // If story only has 2 pages total, build PDF immediately
-      if (previewPages.some((page) => !page.imageUrl)) {
-        await prismaClient.story.update({
-          where: { id: story.id },
-          data: { status: "Failed" },
-        });
-        res.status(500).json({ message: "Some story illustrations could not be generated." });
-        return;
-      }
-      const pdfService = new PDFService();
-      const pdfBuffer = await pdfService.generateStorybookPdf(
-        { title: script.title, dedication, childName },
-        previewPages
-      );
-      const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
-      await prismaClient.story.update({
-        where: { id: story.id },
-        data: { status: "Completed", completedAt: new Date(), pdfUrl },
-      });
-    }
+    // Remaining illustrations and the PDF stay pending until an admin confirms
+    // the physical-book order.
 
     // Immediately trigger & return first 2 preview images to the user
     res.json({

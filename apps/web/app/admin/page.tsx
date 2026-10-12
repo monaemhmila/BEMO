@@ -1153,7 +1153,7 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
                             disabled={updatingId === o.id}
                             className="px-2.5 py-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
                           >
-                            Process
+                            Confirm &amp; generate
                           </button>
                           <button
                             onClick={() => setOrderState(o.id, { status: "CANCELLED" })}

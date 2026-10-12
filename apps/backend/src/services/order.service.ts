@@ -111,7 +111,8 @@ function generateOrderNumber(): string {
 }
 
 /**
- * Create a physical book order (Cash on Delivery) for a completed story.
+ * Create a physical book order (Cash on Delivery) once the story text and
+ * preview pages exist. Full artwork and the PDF wait for admin confirmation.
  * Prevents duplicate submissions by only allowing one PENDING order per story.
  */
 export async function createOrder(
@@ -126,7 +127,10 @@ export async function createOrder(
     throw new Error("STORY_NOT_FOUND");
   }
 
-  if (story.status !== "Completed") {
+  const previewPages = await prismaClient.storyPage.count({
+    where: { storyId: story.id, pageNumber: { lte: 2 }, status: "Generated", imageUrl: { not: null } },
+  });
+  if (story.status !== "Completed" && previewPages === 0) {
     throw new Error("STORY_NOT_COMPLETED");
   }
 

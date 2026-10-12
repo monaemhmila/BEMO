@@ -16,6 +16,7 @@ import {
   MAX_TEMPLATE_IMAGE_BYTES,
   saveTemplateImage,
 } from "../lib/template-images";
+import { generateOrderedStory } from "../services/ordered-story-generation.service";
 
 const router = Router();
 
@@ -1495,6 +1496,9 @@ router.put("/order/:id", async (req, res) => {
       where: { id: req.params.id },
       data: parsed.data,
     });
+    if (parsed.data.status === "PROCESSING") {
+      void generateOrderedStory(order.id);
+    }
     logger.info(
       { orderId: order.id, status: order.status, paymentStatus: order.paymentStatus },
       "Order updated from admin dashboard"
