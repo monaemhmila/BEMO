@@ -18,6 +18,18 @@ const BLOCK_COPY = {
   ar: "لم يعد هذا المساعد متاحًا من هذه الشبكة بسبب مخالفة قواعد الاستخدام أو المحادثة.",
 } as const;
 
+const UNAVAILABLE_COPY = {
+  en: "The assistant is temporarily unavailable. You can still browse the books and FAQs.",
+  fr: "L’assistant est temporairement indisponible. Vous pouvez tout de même consulter les livres et la FAQ.",
+  ar: "\u0627\u0644\u0645\u0633\u0627\u0639\u062f \u063a\u064a\u0631 \u0645\u062a\u0627\u062d \u0645\u0624\u0642\u062a\u064b\u0627. \u064a\u0645\u0643\u0646\u0643 \u0645\u0648\u0627\u0635\u0644\u0629 \u062a\u0635\u0641\u062d \u0627\u0644\u0643\u062a\u0628 \u0648\u0627\u0644\u0623\u0633\u0626\u0644\u0629 \u0627\u0644\u0634\u0627\u0626\u0639\u0629.",
+} as const;
+
+const TEMPLATE_FALLBACK_COPY = {
+  en: "Here are story ideas that match your request. Choose one to start creating your personalized book.",
+  fr: "Voici des histoires qui correspondent à votre demande. Choisissez-en une pour commencer votre livre personnalisé.",
+  ar: "إليك قصصًا تناسب طلبك. اختر واحدة لبدء إنشاء كتابك المخصص.",
+} as const;
+
 function normalizeText(value: string): string {
   return value
     .toLowerCase()
@@ -120,6 +132,23 @@ function matchesAge(ageRange: string, requested: string | null): boolean {
   return ageRange === requested;
 }
 
+function requestedAgeRange(message: string): "0-6" | "6-9" | "9-12" | "12-15" | null {
+  const match = message.match(/\b(\d{1,2})\s*(?:[- ]?year(?:s)?[- ]?old|ans?|años?|\u0633\u0646\u0629|\u0633\u0646\u0648\u0627\u062a)\b/i);
+  if (!match) return null;
+  const age = Number(match[1]);
+  if (age <= 6) return "0-6";
+  if (age <= 9) return "6-9";
+  if (age <= 12) return "9-12";
+  if (age <= 15) return "12-15";
+  return null;
+}
+
+function explicitlyRequestsStory(message: string): boolean {
+  return /\b(story|stories|book|books|choose|recommend|recommendation|age|child|kid|year[- ]old)\b/i.test(message) ||
+    /\b(قصة|قصص|كتاب|كتب|اختار|اختيار|طفل|أطفال|سنة|سنوات)\b/u.test(message) ||
+    /\b(histoire|histoires|livre|livres|choisir|recommand|enfant|ans?)\b/i.test(message);
+}
+
 function sortTemplates(templates: AssistantTemplate[], sortBy: string, tag: string | null): AssistantTemplate[] {
   const filtered = tag
     ? templates.filter((template) => template.tags.some((item) => item.toLowerCase().includes(tag.toLowerCase())))
@@ -153,7 +182,6 @@ function actionsForIntent(intent: string, destination: string | null) {
   if (intent === "pricing" || intent === "delivery") {
     return [
       { label: "See FAQs", href: "/faqs" },
-      { label: "Browse stories", href: "/books" },
     ];
   }
   if (intent === "creation") {
@@ -162,10 +190,7 @@ function actionsForIntent(intent: string, destination: string | null) {
       { label: "How it works", href: "/#how-it-works" },
     ];
   }
-  return [
-    { label: "Explore stories", href: "/books" },
-    { label: "Open FAQs", href: "/faqs" },
-  ];
+  return [];
 }
 
 async function askAssistant(input: z.infer<typeof AssistantSchema>, templates: AssistantTemplate[]) {
@@ -193,7 +218,8 @@ Only use these confirmed facts:
 - ${DELIVERY_FACTS}
 - ${NAVIGATION_RULES}
 For any request outside these topics, politely say what you can help with and direct the user to support when appropriate.
-For a template request, choose filters only when the user's wording supports them. Use null for unknown filters.
+For a template request, always use the supplied catalogue and recommend matching templates; never say that you do not know what stories are available. A request such as "a story for a 5-year-old" is a template_search request with ageRange "0-6". Choose filters only when the user's wording supports them. Use null for unknown filters.
+Do not recommend or list stories for pricing, delivery, creation, navigation, or general questions unless the user explicitly asks to choose, find, browse, recommend, or see stories.
 Return JSON only with this exact shape:
 {"reply":"...","intent":"navigation|template_search|pricing|delivery|creation|general","destination":null,"filters":{"category":null,"audience":null,"ageRange":null,"tag":null,"sortBy":"relevance"}}
 For navigation questions, set destination to exactly one of books, create, faqs, support, how_it_works when the user clearly asks where to go. Otherwise use null.`;
@@ -247,33 +273,54 @@ router.post("/chat", assistantLimiter, authOrGuestMiddleware, async (req, res) =
   }
   ipUsage.set(ip, usage);
 
+  const templateRequest = explicitlyRequestsStory(parsed.data.message);
+  let templates: AssistantTemplate[] = [];
   try {
     const rows = await prismaClient.storyTemplate.findMany({
       where: { isActive: true, source: "PREDEFINED" },
       orderBy: [{ difficulty: "asc" }, { name: "asc" }],
     });
-    const templates = rows.map(templateForAssistant);
+    templates = rows.map(templateForAssistant);
     const result = await askAssistant(parsed.data, templates);
-    const filters = result.filters;
+    const inferredAgeRange = requestedAgeRange(parsed.data.message);
+    const intent = templateRequest ? "template_search" : result.intent;
+    const filters = templateRequest
+      ? { ...result.filters, ageRange: inferredAgeRange ?? result.filters.ageRange }
+      : result.filters;
     const recommendations = sortTemplates(
-      templates.filter((template) =>
+      templateRequest ? templates.filter((template) =>
         (!filters.category || template.category === filters.category) &&
         (!filters.audience || template.audience === filters.audience || template.audience === "any") &&
         matchesAge(template.ageRange, filters.ageRange)
-      ),
+      ) : [],
       filters.sortBy,
       filters.tag,
     ).slice(0, 4);
 
     res.json({
       reply: result.reply,
-      intent: result.intent,
+      intent,
       templates: recommendations,
-      actions: actionsForIntent(result.intent, result.destination),
+      actions: actionsForIntent(intent, intent === "navigation" ? result.destination : null),
     });
   } catch (error) {
+    if (templateRequest && templates.length > 0) {
+      const ageRange = requestedAgeRange(parsed.data.message);
+      const recommendations = sortTemplates(
+        templates.filter((template) => matchesAge(template.ageRange, ageRange)),
+        "popular",
+        null,
+      ).slice(0, 4);
+      res.json({
+        reply: TEMPLATE_FALLBACK_COPY[language],
+        intent: "template_search",
+        templates: recommendations,
+        actions: actionsForIntent("template_search", null),
+      });
+      return;
+    }
     res.status(503).json({
-      message: "The assistant is temporarily unavailable. You can still browse the books and FAQs.",
+      message: UNAVAILABLE_COPY[language],
       code: "ASSISTANT_UNAVAILABLE",
     });
   }

@@ -154,6 +154,13 @@ export function AssistantChat({ mode }: AssistantChatProps) {
     const message = value.trim();
     if (!message || sending || blocked) return;
 
+    const responseLanguage = detectLanguageSafe(message, siteLanguage);
+    const unavailableMessage = responseLanguage === "ar"
+      ? "المساعد غير متاح مؤقتًا. يمكنك مواصلة تصفح الكتب والأسئلة الشائعة."
+      : responseLanguage === "fr"
+        ? "L’assistant est temporairement indisponible. Vous pouvez tout de même consulter les livres et la FAQ."
+        : "The assistant is temporarily unavailable. You can still browse the books and FAQs.";
+
     setInput("");
     setOpen(true);
     setSending(true);
@@ -165,12 +172,12 @@ export function AssistantChat({ mode }: AssistantChatProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-      body: JSON.stringify({ message, language: detectLanguageSafe(message, siteLanguage), history }),
+      body: JSON.stringify({ message, language: responseLanguage, history }),
       });
       const payload = await response.json() as { reply?: string; message?: string; templates?: AssistantTemplate[]; actions?: { label: string; href: string }[] };
       if (!response.ok) {
         if (response.status === 403) setBlocked(true);
-        throw new Error(payload.message || "Assistant unavailable");
+        throw new Error(response.status === 403 ? payload.message || unavailableMessage : unavailableMessage);
       }
       setMessages((current) => [
         ...current,
@@ -188,7 +195,9 @@ export function AssistantChat({ mode }: AssistantChatProps) {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: error instanceof Error ? error.message : "I couldn't connect right now. You can browse all stories or open the FAQ while I reconnect.",
+          content: error instanceof Error && responseLanguage === siteLanguage && error.message !== "Assistant unavailable"
+            ? error.message
+            : unavailableMessage,
         },
       ]);
     } finally {
