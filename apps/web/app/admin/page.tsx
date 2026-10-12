@@ -2813,6 +2813,29 @@ export default function AdminPage() {
     }
   };
 
+  const handleDownloadColoringBook = async (storyId: string, title: string) => {
+    try {
+      const headers = await authHeaders();
+      const response = await axios.post(`${BACKEND_URL}/admin/testing/coloring-book`, { storyId, pageCount: 6 }, {
+        headers,
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${title.replace(/[\\/:*?"<>|]+/g, "-").trim() || "coloring-book"}-coloring-book.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Coloring book generated");
+    } catch (error) {
+      toast.error("Failed to generate coloring book");
+      console.error(error);
+    }
+  };
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
@@ -3426,6 +3449,14 @@ export default function AdminPage() {
                                 >
                                   <Download className="w-3.5 h-3.5" />
                                   PDF
+                                </button>
+                                <button
+                                  onClick={() => handleDownloadColoringBook(s.id, s.title)}
+                                  className="px-2.5 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                                  title="Admin testing: generate coloring book"
+                                >
+                                  <BookCopy className="w-3.5 h-3.5" />
+                                  Coloring test
                                 </button>
                                 <button onClick={() => setEditingStoryId(s.id)} className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors" title="Edit Story">
                                   <PencilLine className="w-3.5 h-3.5" />

@@ -17,6 +17,7 @@ import {
   saveTemplateImage,
 } from "../lib/template-images";
 import { generateOrderedStory } from "../services/ordered-story-generation.service";
+import { generateAdminColoringBook } from "../services/coloring-book-generation.service";
 
 const router = Router();
 
@@ -650,6 +651,32 @@ const TranslateTemplateSchema = z.object({
   description: z.string().trim().min(1).max(2000),
   tagline: z.string().trim().max(300).default(""),
   excerpt: z.string().trim().max(2000).default(""),
+});
+
+/**
+ * POST /admin/testing/coloring-book
+ * Admin-only experiment. Generates a standalone coloring-book PDF from a
+ * story's stored child reference; it does not modify the story or its pages.
+ */
+router.post("/testing/coloring-book", async (req, res) => {
+  const storyId = typeof req.body?.storyId === "string" ? req.body.storyId : "";
+  const pageCount = Number.isFinite(Number(req.body?.pageCount)) ? Number(req.body.pageCount) : 6;
+  if (!storyId) {
+    res.status(400).json({ message: "storyId is required" });
+    return;
+  }
+
+  try {
+    const pdf = await generateAdminColoringBook({ storyId, pageCount });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="coloring-book-${storyId}.pdf"`);
+    res.send(pdf);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "COLORING_BOOK_FAILED";
+    const status = message === "STORY_NOT_FOUND" ? 404 : message.startsWith("STORY_") ? 409 : 500;
+    logger.error({ error, storyId }, "Failed to generate admin coloring book");
+    res.status(status).json({ message: status === 500 ? "Failed to generate coloring book" : message });
+  }
 });
 
 const GeneratedTranslationsSchema = z.object({
