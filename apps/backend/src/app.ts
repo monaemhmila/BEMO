@@ -22,6 +22,7 @@ import { orderRouter } from "./routes/order.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
 import { printerRouter } from "./routes/printer.routes";
 import { gamesRouter } from "./routes/games.routes";
+import { assistantRouter } from "./routes/assistant.routes";
 
 initSentry();
 
@@ -142,6 +143,7 @@ export function createApp() {
   app.use("/admin", adminRouter);
   app.use("/printer", printerRouter);
   app.use("/games", gamesRouter);
+  app.use("/assistant", assistantRouter);
     app.use("/orders", orderRouter);
 
   app.use("/analytics", analyticsRouter);

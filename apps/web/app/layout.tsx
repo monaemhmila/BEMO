@@ -6,6 +6,7 @@ import { Providers } from "../app/providers/Providers";
 
 import { ClerkProvider } from '@clerk/nextjs'
 import { SITE_URL } from "@/lib/site";
+import { AssistantChat } from "@/components/assistant-chat";
 
 const organizationStructuredData = {
   "@context": "https://schema.org",
@@ -132,6 +133,7 @@ export default function RootLayout({
             <main className="min-h-full">
               {children}
             </main>
+            <AssistantChat mode="bubble" />
           </Providers>
         </body>
       </html>

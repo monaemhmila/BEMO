@@ -71,6 +71,16 @@ export const imageGenerationLimiter = rateLimit({
   ),
 });
 
+export const assistantLimiter = rateLimit({
+  ...baseConfig,
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: buildMessage(
+    "The assistant has reached its short-term limit. Please try again in a few minutes.",
+    15
+  ),
+});
+
 export const authLimiter = rateLimit({
   ...baseConfig,
   windowMs: 15 * 60 * 1000,
