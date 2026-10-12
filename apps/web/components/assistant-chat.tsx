@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Bot, ChevronDown, Compass, ExternalLink, RotateCcw, Send, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { BACKEND_URL } from "@/app/config";
+import { BACKEND_URL } from "../app/config";
 
 type AssistantTemplate = {
   id: string;
