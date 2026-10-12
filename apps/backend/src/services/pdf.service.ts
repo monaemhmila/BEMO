@@ -478,9 +478,9 @@ export class PDFService {
     const titleSize = width * 0.075;
     const bodySize = width * 0.027;
     this.font(doc, "Title", "Helvetica-Bold").fontSize(titleSize);
-    const titleHeight = doc.heightOfString(copy.title, { width: boxWidth, align: "center", fontSize: titleSize, lineGap: 2 });
+    const titleHeight = doc.heightOfString(copy.title, { width: boxWidth, align: "center", lineGap: 2 });
     this.font(doc, "BodyRegular", "Helvetica").fontSize(bodySize);
-    const bodyHeight = doc.heightOfString(copy.body, { width: boxWidth, align: "center", fontSize: bodySize, lineGap: 2 });
+    const bodyHeight = doc.heightOfString(copy.body, { width: boxWidth, align: "center", lineGap: 2 });
     const gap = height * 0.035;
     const top = (height - titleHeight - gap - bodyHeight) / 2;
 
