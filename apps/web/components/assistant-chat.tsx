@@ -47,6 +47,31 @@ const COPY = {
   },
 } as const;
 
+// The localized copy was previously saved with a legacy encoding in some
+// deployments. Decode those values at runtime so every language renders
+// correctly even when an older bundle is still cached.
+function repairMojibake(value: string): string {
+  if (!/[ÃÂØÙ]/.test(value)) return value;
+  try {
+    const bytes = Uint8Array.from(value, (character) => character.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return value;
+  }
+}
+
+const TRANSLATED_COPY = Object.fromEntries(
+  Object.entries(COPY).map(([language, values]) => [
+    language,
+    Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [
+        key,
+        Array.isArray(value) ? value.map(repairMojibake) : typeof value === "string" ? repairMojibake(value) : value,
+      ]),
+    ),
+  ]),
+) as typeof COPY;
+
 const SEND_LABELS: Record<ChatLanguage, string> = {
   en: "Send message",
   fr: "Envoyer le message",
@@ -85,7 +110,7 @@ export function AssistantChat({ mode }: AssistantChatProps) {
     {
       id: "welcome",
       role: "assistant",
-      content: COPY.en.welcome,
+    content: TRANSLATED_COPY.en.welcome,
     },
   ]);
 
@@ -99,11 +124,11 @@ export function AssistantChat({ mode }: AssistantChatProps) {
   useEffect(() => {
     setMessages((current) => {
       if (current.length !== 1 || !current[0]?.id.startsWith("welcome")) return current;
-      return [{ ...current[0], content: COPY[siteLanguage].welcome }];
+      return [{ ...current[0], content: TRANSLATED_COPY[siteLanguage].welcome }];
     });
   }, [siteLanguage]);
 
-  const copy = COPY[siteLanguage];
+  const copy = TRANSLATED_COPY[siteLanguage];
   const sendLabel = SEND_LABELS[siteLanguage];
   const welcomePrompts = [
     { label: copy.find, prompt: copy.starters[0], icon: Sparkles },
@@ -187,7 +212,8 @@ export function AssistantChat({ mode }: AssistantChatProps) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 12, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 330, damping: 26 }}
-      className="w-full overflow-hidden rounded-[2rem] border-2 border-white/80 bg-white/95 shadow-[0_25px_70px_-30px_rgba(45,25,90,.55)] backdrop-blur-xl"
+      dir={siteLanguage === "ar" ? "rtl" : "ltr"}
+      className="w-full overflow-hidden rounded-[2rem] border-2 border-white/80 bg-white/95 text-base shadow-[0_25px_70px_-30px_rgba(45,25,90,.55)] backdrop-blur-xl"
     >
       <div className="flex items-center justify-between bg-[linear-gradient(135deg,#5b3bd4,#7c5ce5)] px-5 py-4 text-white">
         <div className="flex items-center gap-3">
@@ -203,11 +229,11 @@ export function AssistantChat({ mode }: AssistantChatProps) {
         </div>
       </div>
 
-      <div className="max-h-[min(62vh,520px)] space-y-4 overflow-y-auto px-4 py-5 sm:px-5">
+      <div className="max-h-[min(68vh,680px)] space-y-5 overflow-y-auto px-5 py-6 sm:px-8">
         <AnimatePresence initial={false} mode="popLayout">
         {messages.map((message) => (
           <motion.div key={message.id} layout initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div className={message.role === "user" ? "max-w-[88%] rounded-2xl rounded-br-md bg-violet-deep px-4 py-3 text-sm leading-relaxed text-white" : "max-w-[92%] rounded-2xl rounded-bl-md bg-[#f4f0ff] px-4 py-3 text-sm leading-relaxed text-violet-deep"}>
+            <div className={message.role === "user" ? "max-w-[88%] rounded-2xl rounded-br-md bg-violet-deep px-5 py-4 text-base leading-relaxed text-white" : "max-w-[92%] rounded-2xl rounded-bl-md bg-[#f4f0ff] px-5 py-4 text-base leading-relaxed text-violet-deep"}>
               {message.content}
               {message.templates && message.templates.length > 0 && (
                 <div className="mt-4 grid gap-2">
@@ -242,7 +268,7 @@ export function AssistantChat({ mode }: AssistantChatProps) {
         </AnimatePresence>
       </div>
 
-      <div className="border-t border-violet-100 px-4 py-3 sm:px-5">
+      <div className="border-t border-violet-100 px-5 py-4 sm:px-8">
         {messages.length === 1 && (
           <div className="mb-3 grid gap-2 sm:grid-cols-3">
             {welcomePrompts.map(({ label, prompt, icon: Icon }, index) => <motion.button key={label} type="button" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }} whileHover={{ y: -3 }} whileTap={{ scale: 0.97 }} onClick={() => void sendMessage(prompt)} className="flex items-center gap-2 rounded-2xl border border-violet-100 bg-violet-50/60 px-3 py-2 text-left text-xs font-bold text-violet-deep transition hover:border-primary/40 hover:bg-white"><Icon className="size-4 shrink-0 text-primary" />{label}</motion.button>)}
@@ -251,9 +277,9 @@ export function AssistantChat({ mode }: AssistantChatProps) {
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
           {copy.starters.map((starter) => <motion.button key={starter} type="button" whileHover={{ y: -2 }} whileTap={{ scale: 0.96 }} onClick={() => void sendMessage(starter)} className="shrink-0 rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs font-semibold text-violet-deep transition hover:border-primary hover:bg-violet-50">{starter}</motion.button>)}
         </div>
-        <form onSubmit={(event) => { event.preventDefault(); void sendMessage(); }} className="flex items-center gap-2 rounded-2xl bg-[#f7f5fc] p-2 ring-1 ring-violet-100 focus-within:ring-primary/40">
-          <input value={input} onChange={(event) => setInput(event.target.value)} maxLength={1200} placeholder={copy.placeholder} className="min-w-0 flex-1 bg-transparent px-2 text-sm text-violet-deep outline-none placeholder:text-muted-foreground" aria-label={copy.placeholder} />
-          <button type="submit" disabled={!input.trim() || sending || blocked} aria-label={sendLabel} className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-white transition hover:bg-violet-deep disabled:cursor-not-allowed disabled:opacity-40"><Send className="size-4" /></button>
+        <form onSubmit={(event) => { event.preventDefault(); void sendMessage(); }} className="flex items-center gap-3 rounded-2xl bg-[#f7f5fc] p-3 ring-1 ring-violet-100 focus-within:ring-primary/40">
+          <input value={input} onChange={(event) => setInput(event.target.value)} maxLength={1200} placeholder={copy.placeholder} className="min-w-0 flex-1 bg-transparent px-3 text-base text-violet-deep outline-none placeholder:text-muted-foreground" aria-label={copy.placeholder} />
+          <button type="submit" disabled={!input.trim() || sending || blocked} aria-label={sendLabel} className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-white transition hover:bg-violet-deep disabled:cursor-not-allowed disabled:opacity-40"><Send className="size-5" /></button>
         </form>
       </div>
     </motion.div>
@@ -262,13 +288,8 @@ export function AssistantChat({ mode }: AssistantChatProps) {
   if (mode === "section") {
     return (
       <section className="relative overflow-hidden bg-[#f3efff] py-12 lg:py-16">
-        <div className="shell relative grid items-center gap-8 lg:grid-cols-[.78fr_1.22fr]">
-          <div className="max-w-lg">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-[.14em] text-primary shadow-sm"><Compass className="size-3.5" /> {copy.guide}</div>
-            <h2 className="font-display text-3xl font-bold leading-tight text-violet-deep sm:text-4xl">{copy.introTitle}</h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">{copy.intro}</p>
-          </div>
-          <div className="mx-auto w-full max-w-2xl">{panel}</div>
+        <div className="shell relative w-full">
+          <div className="mx-auto w-full max-w-6xl">{panel}</div>
         </div>
       </section>
     );
