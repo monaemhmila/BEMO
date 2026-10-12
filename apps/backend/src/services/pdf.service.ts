@@ -35,6 +35,29 @@ interface StoryPayload {
   title: string;
   dedication?: string | null;
   childName?: string | null;
+  language?: string | null;
+}
+
+const FINAL_COVER_COPY = {
+  english: {
+    title: "A Little Adventure to Remember Forever",
+    body: "Childhood goes by so quickly, but the happy moments can stay with us forever.\n\nThat's why I'm here. To turn your child's dreams into a beautiful story they can call their own.\n\nWith their name, their favorite things, and a little magic, every Mon Petit Héros book takes them somewhere new and exciting.\n\nEvery page brings a new surprise, with your little one as the star of the adventure.\n\nI'm more than just a book. I'm a special part of their childhood, made to be loved today and remembered for years to come.",
+  },
+  french: {
+    title: "Une petite aventure, un souvenir pour toujours",
+    body: "L'enfance passe si vite, mais les plus beaux moments restent gravés dans nos cœurs.\n\nC'est pour cela que j'existe. Pour transformer les rêves de votre enfant en une belle histoire qui lui ressemble.\n\nAvec son prénom, ce qu'il aime et une touche de magie, chaque livre Mon Petit Héros l'emmène dans un nouvel univers plein de surprises.\n\nÀ chaque page, une nouvelle découverte, avec votre petit héros au cœur de l'aventure.\n\nJe suis bien plus qu'un simple livre. Je suis un petit morceau de son enfance, à aimer aujourd'hui et à garder précieusement pour les années à venir.",
+  },
+  arabic: {
+    title: "مغامرة صغيرة، وذكرى تبقى للأبد",
+    body: "تمرّ أيام الطفولة بسرعة، لكن أجمل اللحظات تبقى محفورة في قلوبنا إلى الأبد.\n\nلهذا وُجدتُ، لأحوّل أحلام طفلك إلى قصة جميلة تشبهه وتخصّه وحده.\n\nباسمه، وأشيائه المفضّلة، ولمسة من السحر، يأخذه كل كتاب من Mon Petit Héros إلى عالم جديد مليء بالمغامرات والمفاجآت.\n\nمع كل صفحة، يكتشف طفلك شيئًا جديدًا، ويكون هو بطل الحكاية.\n\nأنا أكثر من مجرد كتاب. أنا ذكرى جميلة من طفولته، يحبّها اليوم ويحتفظ بها في قلبه لسنوات طويلة.",
+  },
+} as const;
+
+function getFinalCoverCopy(language?: string | null) {
+  const normalized = (language || "english").toLowerCase();
+  if (normalized.startsWith("fr")) return FINAL_COVER_COPY.french;
+  if (normalized.startsWith("ar")) return FINAL_COVER_COPY.arabic;
+  return FINAL_COVER_COPY.english;
 }
 
 // --- Kid-friendly palette -------------------------------------------------
@@ -333,7 +356,7 @@ export class PDFService {
             this.renderEndingPage(doc, leaf, totalBookPages);
             break;
           case "closing":
-            this.renderClosingPage(doc, leaf, totalBookPages);
+            this.renderClosingPage(doc, leaf, story);
             break;
           default:
             this.renderStoryPage(doc, leaf);
@@ -441,12 +464,51 @@ export class PDFService {
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    totalPages: number
+    story: StoryPayload
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
+    this.drawFinalCoverMessage(doc, story, width, height);
+  }
+
+  private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
+    const copy = getFinalCoverCopy(story.language);
+    const boxWidth = width * 0.78;
+    const titleSize = width * 0.075;
+    const bodySize = width * 0.027;
+    this.font(doc, "Title", "Helvetica-Bold").fontSize(titleSize);
+    const titleHeight = doc.heightOfString(copy.title, { width: boxWidth, align: "center", fontSize: titleSize, lineGap: 2 });
+    this.font(doc, "BodyRegular", "Helvetica").fontSize(bodySize);
+    const bodyHeight = doc.heightOfString(copy.body, { width: boxWidth, align: "center", fontSize: bodySize, lineGap: 2 });
+    const gap = height * 0.035;
+    const top = (height - titleHeight - gap - bodyHeight) / 2;
+
+    this.drawCoverLine(doc, copy.title, {
+      x: (width - boxWidth) / 2,
+      y: top,
+      width: boxWidth,
+      align: "center",
+      fontSize: titleSize,
+      color: STORY_TEXT_COLOR,
+      lineHeight: titleSize * 1.15,
+      shadowOpacity: 0.75,
+      shadowOffsetY: 1.5,
+      shadowBlur: 5,
+    });
+
+    this.drawCoverLine(doc, copy.body, {
+      x: (width - boxWidth) / 2,
+      y: top + titleHeight + gap,
+      width: boxWidth,
+      align: "center",
+      fontSize: bodySize,
+      color: STORY_TEXT_COLOR,
+      lineHeight: bodySize * 1.35,
+      shadowOpacity: 0.7,
+      shadowOffsetY: 1,
+      shadowBlur: 4,
+    });
   }
 
   /**

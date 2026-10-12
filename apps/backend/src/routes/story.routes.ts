@@ -111,7 +111,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
       userId,
       script,
       artStyle || "",
-      { childName, childAge, template, dedication, includeAudio, voiceId, gender, childImage }
+      { childName, childAge, template, dedication, language, includeAudio, voiceId, gender, childImage }
     );
 
     // Trigger image generation for each page using Fal image edit API with childImage reference

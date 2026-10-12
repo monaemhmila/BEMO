@@ -17,6 +17,7 @@ interface StoryBookPageProps {
   title: string;
   childName?: string | null;
   dedication?: string | null;
+  language?: string | null;
   side: PageSide;
   isCover: boolean;
   /** When set, this leaf renders a square crop of that half of the 16:9 image instead of the full image. */
@@ -27,6 +28,7 @@ interface StoryBookPageProps {
   leafNumber?: number;
   /** When false the story text overlay is hidden (right halves carry only the artwork, like the print). */
   renderText?: boolean;
+  isClosing?: boolean;
 }
 
 type ImageState = "loading" | "loaded" | "error";
@@ -42,7 +44,7 @@ type ImageState = "loading" | "loaded" | "error";
  */
 export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
   function StoryBookPage(
-    { page, title, childName, dedication, side, isCover, squareHalf, squareFill, leafNumber, renderText = true },
+    { page, title, childName, dedication, language, side, isCover, squareHalf, squareFill, leafNumber, renderText = true, isClosing = false },
     ref
   ) {
     const imageUrl = page.imageUrl ?? "";
@@ -140,11 +142,13 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
         </div>
 
         {/* Cover typography sits on top of the cover artwork */}
-        {isCover ? (
+        {isCover || isClosing ? (
           <StoryBookCover
             title={title}
             childName={childName}
             dedication={dedication}
+            language={language}
+            isClosing={isClosing}
           />
         ) : null}
 

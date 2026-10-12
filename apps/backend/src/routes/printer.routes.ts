@@ -165,7 +165,7 @@ router.get("/orders/:id/pdf", async (req, res) => {
     }
 
     const pdfBuffer = await new PDFService().generateStorybookPdf(
-      { title: story.title, dedication: story.dedication, childName: story.childName },
+      { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
       story.pages.map((page) => ({ pageNumber: page.pageNumber, content: page.content, imageUrl: page.imageUrl }))
     );
     const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";

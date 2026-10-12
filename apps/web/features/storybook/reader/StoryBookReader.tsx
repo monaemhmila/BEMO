@@ -171,9 +171,13 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
  *  square page. */
   const leafCount = useMemo(() => {
     if (!story) return 0;
+    // New personalized books persist every printed page as an already-square
+    // asset. Legacy stories persist one 16:9 source row per spread and still
+    // need the historical two-leaf calculation.
+    if (pages.length === 30 || sortedPages.length === 30) return pages.length;
     if (pages.length <= 1) return pages.length;
     return (pages.length - 2) * 2 + 2;
-  }, [story, pages]);
+  }, [story, pages, sortedPages.length]);
 
   /**
    * True once the reader has flipped onto the last free page in teaser mode.
@@ -187,11 +191,14 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     (leafIndex: number): number => {
       const n = pages.length;
       if (n <= 1) return 0;
+      if (pages.length === 30 || sortedPages.length === 30) {
+        return Math.max(0, Math.min(leafIndex, n - 1));
+      }
       if (leafIndex <= 0) return 0;
       if (leafIndex >= leafCount - 1) return n - 1;
       return 1 + Math.floor((leafIndex - 1) / 2);
     },
-    [pages.length, leafCount]
+    [pages.length, sortedPages.length, leafCount]
   );
 
   const showControls = useCallback(() => {
@@ -326,8 +333,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     if (!story) return [];
     const leaves: ReactNode[] = [];
     const n = pages.length;
+    const materializedSquareLayout = sortedPages.length === 30;
     pages.forEach((page, sourceIndex) => {
-      const isSingleSquare = sourceIndex === 0 || sourceIndex === n - 1;
+      const isSingleSquare = materializedSquareLayout || sourceIndex === 0 || sourceIndex === n - 1;
       const leafIndex = leaves.length;
       if (isSingleSquare) {
         leaves.push(
@@ -337,10 +345,12 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
             title={story.title}
             childName={story.childName}
             dedication={story.dedication}
+            language={story.language}
             squareFill
             side={leafSide(leafIndex)}
             isCover={sourceIndex === 0}
-            renderText={sourceIndex !== 0}
+            isClosing={sourceIndex === n - 1}
+            renderText={sourceIndex !== 0 && sourceIndex !== n - 1}
             leafNumber={leafIndex + 1}
           />
         );
@@ -353,7 +363,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           title={story.title}
           childName={story.childName}
           dedication={story.dedication}
-          squareHalf="left"
+          language={story.language}
+          squareHalf={materializedSquareLayout ? undefined : "left"}
+          squareFill={materializedSquareLayout}
           side={leafSide(leafIndex)}
           isCover={false}
           renderText
@@ -367,7 +379,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           title={story.title}
           childName={story.childName}
           dedication={story.dedication}
-          squareHalf="right"
+          language={story.language}
+          squareHalf={materializedSquareLayout ? undefined : "right"}
+          squareFill={materializedSquareLayout}
           side={leafSide(leafIndex + 1)}
           isCover={false}
           renderText={false}
@@ -376,7 +390,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       );
     });
     return leaves;
-  }, [pages, story]);
+  }, [pages, sortedPages.length, story]);
 
   useEffect(() => {
     return () => resetPreloadCache();

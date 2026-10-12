@@ -130,7 +130,7 @@ export async function createOrder(
   const previewPages = await prismaClient.storyPage.count({
     where: { storyId: story.id, pageNumber: { lte: 2 }, status: "Generated", imageUrl: { not: null } },
   });
-  if (story.status !== "Completed" && previewPages === 0) {
+  if (story.status !== "Completed" && previewPages < 2) {
     throw new Error("STORY_NOT_COMPLETED");
   }
 

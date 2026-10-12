@@ -1,0 +1,61 @@
+import sharp from "sharp";
+import { saveBufferAsset, saveRemoteImageLocally } from "../lib/storage";
+import { safeFetchAndValidateImage } from "../lib/safe-image-fetcher";
+import { splitForBookPage } from "../utils/split16x9IntoTwoSquares";
+import { ImageGenerationService } from "./image-generation.service";
+
+const imageService = ImageGenerationService.getInstance();
+
+/** Image operations for the new personalized 30-page layout only. */
+export class PersonalizedBookImageService {
+  async generateChildSquare(input: {
+    childName: string;
+    childAge?: number | null;
+    referenceImageUrl: string;
+    prompt: string;
+    artStyle?: string | null;
+  }): Promise<string> {
+    const imageUrl = await imageService.generateImageSync({
+      prompt: `${input.childName}, ${input.childAge ?? "young"} years old: ${input.prompt}. The child is the only human hero and is clearly visible.`,
+      aspectRatio: "1:1",
+      imageUrl: input.referenceImageUrl,
+      childName: input.childName,
+      artStyle: input.artStyle || undefined,
+    });
+    return saveRemoteImageLocally(imageUrl, "generated", `personalized_child_${Date.now()}`);
+  }
+
+  async generateSceneSpread(input: {
+    prompt: string;
+    artStyle?: string | null;
+  }): Promise<{ leftUrl: string; rightUrl: string }> {
+    // Deliberately omit imageUrl and childName. This must stay text-to-image.
+    const sourceUrl = await imageService.generateImageSync({
+      prompt: `${input.prompt}. Environment only: no child, no people, no faces, no human figures, no portraits.`,
+      aspectRatio: "16:9",
+      artStyle: input.artStyle || undefined,
+    });
+    const source = await safeFetchAndValidateImage(sourceUrl);
+    // Providers can occasionally return a different size than requested. Crop
+    // to a true 16:9 canvas before splitting so each printed page is reliable.
+    const targetRatio = 16 / 9;
+    const actualRatio = source.width / source.height;
+    const normalized = Math.abs(actualRatio - targetRatio) > 0.02
+      ? await sharp(source.buffer)
+          .resize({ width: source.width, height: Math.max(1, Math.round(source.width / targetRatio)), fit: "cover" })
+          .jpeg({ quality: 92, mozjpeg: true })
+          .toBuffer()
+      : source.buffer;
+    const split = await splitForBookPage(normalized);
+    if (!split.left || !split.right) throw new Error("SCENE_IMAGE_DID_NOT_SPLIT");
+
+    const stamp = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const [leftUrl, rightUrl] = await Promise.all([
+      saveBufferAsset(split.left, "generated", `personalized_scene_${stamp}_left.jpg`, "image/jpeg"),
+      saveBufferAsset(split.right, "generated", `personalized_scene_${stamp}_right.jpg`, "image/jpeg"),
+    ]);
+    return { leftUrl, rightUrl };
+  }
+}
+
+export const personalizedBookImageService = new PersonalizedBookImageService();

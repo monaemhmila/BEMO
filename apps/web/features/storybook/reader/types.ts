@@ -19,6 +19,7 @@ export interface ReaderStory {
   status: "Pending" | "Generating" | "Completed" | "Failed" | string;
   childName?: string | null;
   dedication?: string | null;
+  language?: string | null;
   pages: ReaderPage[];
 }
 

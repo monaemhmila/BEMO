@@ -332,6 +332,69 @@ Return ONLY valid JSON:
   }
 
   /**
+   * Generate the text for the new printed layout. There are 29 story pages:
+   * nine child pages and twenty scene-spread pages, followed by the existing
+   * reusable closing cover. The image pipeline decides which pages show the
+   * child; this prompt keeps every imageDescription environment-focused so
+   * scene spreads can safely use text-to-image without a child reference.
+   */
+  async generatePersonalizedPrintStoryScript(
+    characterName: string,
+    input: PersonalizedStoryInput,
+    characterProfile?: CharacterProfile,
+  ): Promise<StoryScript> {
+    const pageCount = 29;
+    const templateBeats = Array.isArray(input.template.prompts.beats)
+      ? input.template.prompts.beats
+      : [];
+    const beatPlan = Array.from({ length: pageCount }, (_, index) => {
+      const beatIndex = Math.min(templateBeats.length - 1, Math.floor((index * templateBeats.length) / pageCount));
+      return `  - Page ${index + 1}: ${templateBeats[beatIndex] || "Continue the warm adventure naturally."}`;
+    }).join("\n");
+    const appearance = characterProfile?.appearance || "The uploaded reference image defines the child's appearance.";
+
+    const prompt = `
+Create a personalized children's story for a ${input.childAge}-year-old child named "${characterName}".
+
+Return exactly ${pageCount} pages as valid JSON only. Keep one continuous story with a clear beginning,
+adventure, challenge, resolution, and gentle ending. Page 1 is a short cover hook. Page ${pageCount} is a
+short closing story page before the reusable final cover image.
+
+The story text may mention and feature the child on every page, but imageDescription must describe only
+the scene content and environment. Never put image style instructions, text, signs, logos, or story text
+inside imageDescription. The image pipeline will add the child only on selected 1:1 pages.
+
+Child identity for the prose: ${appearance}
+${input.language ? `Write the title and story text in ${input.language}.` : "Write the title and story text in English."}
+${input.dedication ? `Dedication: "${input.dedication}"` : ""}
+
+Template beat plan:
+${beatPlan}
+
+For every page return 15-35 words of warm story text and an English environment-only imageDescription.
+Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "imageDescription": "...", "emotion": "..." }] }
+`;
+
+    const parsed = await this.invokeJsonLLM(
+      prompt,
+      "You are a professional children's story writer. Return valid JSON only, with no markdown.",
+      { maxTokens: 6500, temperature: 0.7 },
+    ) as unknown as StoryScript;
+    if (!parsed || !Array.isArray(parsed.pages) || parsed.pages.length !== pageCount) {
+      throw new Error(`Personalized print story must contain exactly ${pageCount} pages`);
+    }
+    return {
+      title: parsed.title,
+      pages: parsed.pages.map((page, index) => ({
+        ...page,
+        pageNumber: index + 1,
+        text: page.text?.trim() || "",
+        imageDescription: page.imageDescription?.trim() || page.text?.trim() || "",
+      })),
+    };
+  }
+
+  /**
    * The model tends to write thin picture-book pages even when the prompt asks
    * for 45-60 words, which leaves a printed book feeling sparse. When a story
    * page comes back under the age-appropriate minimum, one repair call rewrites
@@ -653,8 +716,9 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         category: normalizeStoryCategory(
           personalization?.template?.category
         ),
-        dedication: personalization?.dedication,
-        templateId: personalization?.template?.id,
+      dedication: personalization?.dedication,
+      language: personalization?.language || "en",
+      templateId: personalization?.template?.id,
         includeAudio: personalization?.includeAudio || false,
         voiceId: personalization?.voiceId || "sarah",
       },

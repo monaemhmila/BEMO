@@ -13,6 +13,10 @@ import { logger } from "../lib/logger";
 import { z } from "zod";
 import { chooseStoryCover } from "../services/story-cover.service";
 import { saveBufferAsset } from "../lib/storage";
+import {
+  PERSONALIZED_PRINT_PAGE_COUNT,
+} from "../contracts/personalized-book-layout";
+import { personalizedBookImageService } from "../services/personalized-book-image.service";
 
 const router = Router();
 const storyService = StoryService.getInstance();
@@ -479,7 +483,7 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
     }
 
     const pdfBuffer = await new PDFService().generateStorybookPdf(
-      { title: story.title, dedication: story.dedication, childName: story.childName },
+      { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
       story.pages.map((page) => ({
         pageNumber: page.pageNumber,
         content: page.content,
@@ -829,6 +833,10 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
     // The image service creates and uploads a face-focused crop before Fal sees
     // the reference, so the original client upload is never sent directly.
     const storyRef = childImage || null;
+    if (!storyRef) {
+      res.status(400).json({ message: "A child reference photo is required for this personalized book." });
+      return;
+    }
 
     // Parent-confirmed identity facts are optional; the uploaded portrait is always the authority.
     const identityFacts = [
@@ -846,7 +854,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       : undefined;
 
     // Step 1: Generate story script via LLM
-    const script = await storyService.generatePersonalizedStoryScript(
+    const script = await storyService.generatePersonalizedPrintStoryScript(
       childName,
       {
         childName,
@@ -863,7 +871,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       }
     );
 
-    // Step 2: Generate first 2 images (pages 1 & 2) synchronously for instant preview trigger
+    // Generate the reusable final cover without an AI image-generation call.
     const closingCover = chooseStoryCover({
       category: template.category,
       title: script.title,
@@ -873,52 +881,40 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       pagePrompts: script.pages.map((page) => page.imageDescription),
       gender,
     });
-    const firstTwoPages = script.pages.slice(0, 2);
-    const remainingPages = script.pages.slice(2);
-
-    const previewPages = await Promise.all(
-      firstTwoPages.map(async (page) => {
-        const scenePrompt = heroScene(childName, childAge, gender, page.imageDescription);
-
-        const referenceUrl = storyRef
-          ? storyRef
-          : childImage;
-
-        const imageUrl = await imageService.generateImageSync({
-          prompt: scenePrompt,
-          aspectRatio: getPageAspectRatio(page.pageNumber, script.pages.length),
-          imageUrl: referenceUrl,
-          childName,
-          artStyle,
-          edgePlacementSide: isSquareBookPage(page.pageNumber, script.pages.length)
-            ? undefined
-            : getPageComposition(page.pageNumber, script.pages.length).characterSide,
-        }).catch((err) => {
-          logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for preview page");
-          return null;
-        });
-
-        return {
-          pageNumber: page.pageNumber,
-          content: page.text,
-          imagePrompt: page.imageDescription || page.text,
-          imageUrl: imageUrl || null,
-        };
-      })
-    );
+    // Only the first two child-focused square images are generated for the preview.
+    const previewPages = await Promise.all([1, 2].map(async (pageNumber) => {
+      const page = script.pages[pageNumber - 1];
+      const imageUrl = await personalizedBookImageService.generateChildSquare({
+        childName,
+        childAge,
+        referenceImageUrl: storyRef || childImage || "",
+        prompt: page.imageDescription || page.text,
+        artStyle,
+      }).catch((err) => {
+        logger.error({ err, pageNumber }, "Failed child image generation for preview page");
+        return null;
+      });
+      return {
+        pageNumber,
+        content: page.text,
+        imagePrompt: page.imageDescription || page.text,
+        imageUrl,
+      };
+    }));
 
     // Step 3: Save story in database (initially with pages 1 & 2 ready)
     const story = await prismaClient.story.create({
       data: {
         title: script.title,
         userId: req.userId!,
-        status: remainingPages.length === 0 ? "Completed" : "Generating",
+        status: "Generating",
         childName,
         childAge,
         // Every book is 14 pages, so the legacy storyLength column is left at
         // its default and the template row is the source of truth.
         category: template.category,
         dedication,
+        language,
         templateId: template.id,
         referenceImageUrl: storyRef,
       },
@@ -946,33 +942,22 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       return;
     }
 
+    const previewByPage = new Map(previewPages.map((page) => [page.pageNumber, page]));
     await prismaClient.storyPage.createMany({
-      data: [
-        ...previewPages.map((p) => ({
+      data: Array.from({ length: PERSONALIZED_PRINT_PAGE_COUNT }, (_, index) => {
+        const pageNumber = index + 1;
+        const scriptPage = script.pages[pageNumber - 1];
+        const preview = previewByPage.get(pageNumber);
+        const finalCover = pageNumber === PERSONALIZED_PRINT_PAGE_COUNT;
+        return {
           storyId: story.id,
-          pageNumber: p.pageNumber,
-          content: p.content,
-          imagePrompt: p.imagePrompt,
-          imageUrl: p.imageUrl,
-          status: (p.imageUrl ? "Generated" : "Failed") as "Generated" | "Failed",
-        })),
-        ...remainingPages.map((p) => ({
-          storyId: story.id,
-          pageNumber: p.pageNumber,
-          content: p.text,
-          imagePrompt: p.imageDescription || p.text,
-          imageUrl: null,
-          status: "Pending" as "Pending",
-        })),
-        {
-          storyId: story.id,
-          pageNumber: script.pages.length + 1,
-          content: "",
-          imagePrompt: "Printed closing cover",
-          imageUrl: closingCover.url,
-          status: "Generated" as "Generated",
-        },
-      ],
+          pageNumber,
+          content: finalCover ? "" : scriptPage?.text || "",
+          imagePrompt: finalCover ? "Printed closing cover" : scriptPage?.imageDescription || scriptPage?.text || "",
+          imageUrl: finalCover ? closingCover.url : preview?.imageUrl || null,
+          status: (finalCover || preview?.imageUrl ? "Generated" : "Pending") as "Generated" | "Pending",
+        };
+      }),
     });
 
     // Remaining illustrations and the PDF stay pending until an admin confirms

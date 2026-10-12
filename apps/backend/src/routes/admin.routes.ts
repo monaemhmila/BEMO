@@ -383,7 +383,7 @@ router.get("/story/:id/pdf", async (req, res) => {
 
     let missingArtWarning: string | undefined;
     const pdfBuffer = await new PDFService().generateStorybookPdf(
-      { title: story.title, dedication: story.dedication, childName: story.childName },
+      { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
       story.pages.map((page) => ({
         pageNumber: page.pageNumber,
         content: page.content,

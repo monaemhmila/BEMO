@@ -149,6 +149,14 @@ export function createApp() {
   // Serve generated PDFs saved to assets/pdfs (e.g. /assets/pdfs/{storyId}.pdf)
   app.use("/assets/pdfs", express.static(path.join(process.cwd(), "assets", "pdfs")));
 
+  // Generated child pages and split scene halves are persisted here by the
+  // personalized print pipeline and need to remain readable by the PDF and
+  // story readers when local filesystem storage is used.
+  app.use("/assets/generated", express.static(path.join(process.cwd(), "assets", "generated"), {
+    maxAge: "30d",
+    fallthrough: true,
+  }));
+
   // Catalogue images uploaded from /admin -> Templates: gallery previews and
   // cover art. Each folder is mounted separately so assets/ as a whole (which
   // also holds generated PDFs) is never exposed.
