@@ -2756,6 +2756,8 @@ export default function AdminPage() {
   const [grantAmount, setGrantAmount] = useState(3);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+  const [coloringStoryId, setColoringStoryId] = useState("");
+  const [coloringBookLoading, setColoringBookLoading] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [templates, setTemplates] = useState<AdminTemplate[]>([]);
   const [editingTemplate, setEditingTemplate] = useState<AdminTemplate | null>(null);
@@ -2814,6 +2816,7 @@ export default function AdminPage() {
   };
 
   const handleDownloadColoringBook = async (storyId: string, title: string) => {
+    setColoringBookLoading(true);
     try {
       const headers = await authHeaders();
       const response = await axios.post(`${BACKEND_URL}/admin/testing/coloring-book`, { storyId, pageCount: 6 }, {
@@ -2833,6 +2836,8 @@ export default function AdminPage() {
     } catch (error) {
       toast.error("Failed to generate coloring book");
       console.error(error);
+    } finally {
+      setColoringBookLoading(false);
     }
   };
 
@@ -3390,6 +3395,39 @@ export default function AdminPage() {
             {/* ── STORIES TAB ──────────────────────────────────────────────── */}
             {activeTab === "stories" && (
               <div className="space-y-4">
+                <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">Admin testing tool</p>
+                      <h2 className="mt-1 text-lg font-bold text-white">Generate a coloring book</h2>
+                      <p className="mt-1 text-sm text-white/55">Uses the selected story&apos;s child reference and creates a separate black-and-white PDF.</p>
+                    </div>
+                    <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+                      <select
+                        value={coloringStoryId}
+                        onChange={(event) => setColoringStoryId(event.target.value)}
+                        className="min-w-0 flex-1 rounded-xl border border-white/15 bg-[#171225] px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-amber-400 sm:min-w-[280px]"
+                      >
+                        <option value="">Choose a story…</option>
+                        {stories.map((story) => (
+                          <option key={story.id} value={story.id}>{story.title}{story.childName ? ` — ${story.childName}` : ""}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!coloringStoryId || coloringBookLoading}
+                        onClick={() => {
+                          const story = stories.find((item) => item.id === coloringStoryId);
+                          if (story) void handleDownloadColoringBook(story.id, story.title);
+                        }}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#241500] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {coloringBookLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookCopy className="h-4 w-4" />}
+                        {coloringBookLoading ? "Generating…" : "Generate coloring test"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
