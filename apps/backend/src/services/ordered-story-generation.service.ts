@@ -61,6 +61,7 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
 
       const spread = await personalizedBookImageService.generateSceneSpread({
         prompt: `${left.imagePrompt}. ${right.imagePrompt}`,
+        childName: order.story.childName,
       });
       await prismaClient.$transaction([
         prismaClient.storyPage.update({ where: { id: left.id, }, data: { imageUrl: spread.leftUrl, status: "Generated" } }),

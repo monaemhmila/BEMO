@@ -17,6 +17,7 @@ import {
 } from "../contracts/storybook";
 import { chooseStoryCover } from "./story-cover.service";
 import { GenerationQueue, PageGenerationJob } from "../lib/generation-queue";
+import { getPersonalizedPageSlot } from "../contracts/personalized-book-layout";
 
 /** The canonical 14-beat prompt document stored in `StoryTemplate.prompts`. */
 export interface StoryTemplatePrompts {
@@ -56,6 +57,8 @@ interface StoryPageInput {
   pageNumber: number;
   text: string;
   imageDescription: string;
+  childImageDescription?: string;
+  sceneImageDescription?: string;
   emotion?: string;
   pageType?: PageType;
   imageAspectRatio?: "16:9" | "1:1";
@@ -335,7 +338,7 @@ Return ONLY valid JSON:
    * Generate the text for the new printed layout. There are 29 story pages:
    * nine child pages and twenty scene-spread pages, followed by the existing
    * reusable closing cover. The image pipeline decides which pages show the
-   * child; this prompt keeps every imageDescription environment-focused so
+   * child; the prompt produces separate child and environment descriptions so
    * scene spreads can safely use text-to-image without a child reference.
    */
   async generatePersonalizedPrintStoryScript(
@@ -353,6 +356,12 @@ Return ONLY valid JSON:
     }).join("\n");
     const appearance = characterProfile?.appearance || "The uploaded reference image defines the child's appearance.";
 
+    const layoutPlan = Array.from({ length: pageCount }, (_, index) => {
+      const pageNumber = index + 1;
+      const slot = getPersonalizedPageSlot(pageNumber);
+      return `Page ${pageNumber}: ${slot.kind === "child" ? "child_page (1:1, child visible)" : `${slot.kind} (16:9 spread, no child or people)`}`;
+    }).join("\\n");
+
     const prompt = `
 Create a personalized children's story for a ${input.childAge}-year-old child named "${characterName}".
 
@@ -360,9 +369,13 @@ Return exactly ${pageCount} pages as valid JSON only. Keep one continuous story 
 adventure, challenge, resolution, and gentle ending. Page 1 is a short cover hook. Page ${pageCount} is a
 short closing story page before the reusable final cover image.
 
-The story text may mention and feature the child on every page, but imageDescription must describe only
-the scene content and environment. Never put image style instructions, text, signs, logos, or story text
-inside imageDescription. The image pipeline will add the child only on selected 1:1 pages.
+The story text may mention and feature the child on every page. Return TWO separate image prompts:
+- childImageDescription: for child_page pages only. Describe the child, their action, and the setting.
+- sceneImageDescription: for scene-left and scene-right pages only. Describe the environment, objects,
+lighting, weather, and atmosphere ONLY. It must contain no child, no person, no people, no human figure,
+no face, no portrait, no character, no hero, no name, and no pronoun referring to a person.
+Never reuse childImageDescription as sceneImageDescription. Never put image style instructions, text,
+signs, logos, or story text inside either image prompt.
 
 Child identity for the prose: ${appearance}
 ${input.language ? `Write the title and story text in ${input.language}.` : "Write the title and story text in English."}
@@ -371,8 +384,11 @@ ${input.dedication ? `Dedication: "${input.dedication}"` : ""}
 Template beat plan:
 ${beatPlan}
 
-For every page return 15-35 words of warm story text and an English environment-only imageDescription.
-Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "imageDescription": "...", "emotion": "..." }] }
+Physical image layout (follow this exactly):
+${layoutPlan}
+
+For every page return 15-35 words of warm story text and both English image descriptions.
+Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "childImageDescription": "...", "sceneImageDescription": "...", "emotion": "..." }] }
 `;
 
     const parsed = await this.invokeJsonLLM(
@@ -383,13 +399,20 @@ Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "i
     if (!parsed || !Array.isArray(parsed.pages) || parsed.pages.length !== pageCount) {
       throw new Error(`Personalized print story must contain exactly ${pageCount} pages`);
     }
+    const safeSceneFallback = "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
+    const forbiddenSceneWord = /\b(child|children|kid|kids|boy|girl|person|people|human|humans|face|faces|portrait|portraits|character|characters|hero|heroes|he|she|him|her|his|their|they|them)\b/i;
+
     return {
       title: parsed.title,
       pages: parsed.pages.map((page, index) => ({
         ...page,
         pageNumber: index + 1,
         text: page.text?.trim() || "",
-        imageDescription: page.imageDescription?.trim() || page.text?.trim() || "",
+        childImageDescription: page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "",
+        sceneImageDescription: forbiddenSceneWord.test(page.sceneImageDescription?.trim() || "")
+          ? safeSceneFallback
+          : page.sceneImageDescription?.trim() || safeSceneFallback,
+        imageDescription: page.imageDescription?.trim() || page.childImageDescription?.trim() || page.text?.trim() || "",
       })),
     };
   }

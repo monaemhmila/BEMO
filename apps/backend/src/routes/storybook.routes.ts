@@ -15,6 +15,7 @@ import { chooseStoryCover } from "../services/story-cover.service";
 import { saveBufferAsset } from "../lib/storage";
 import {
   PERSONALIZED_PRINT_PAGE_COUNT,
+  getPersonalizedPageSlot,
 } from "../contracts/personalized-book-layout";
 import { personalizedBookImageService } from "../services/personalized-book-image.service";
 
@@ -22,6 +23,19 @@ const router = Router();
 const storyService = StoryService.getInstance();
 const audioService = AudioService.getInstance();
 const imageService = ImageGenerationService.getInstance();
+
+function personalizedPagePrompt(pageNumber: number, page: {
+  text?: string;
+  imageDescription?: string;
+  childImageDescription?: string;
+  sceneImageDescription?: string;
+}): string {
+  const slot = getPersonalizedPageSlot(pageNumber);
+  if (slot.kind === "scene-left" || slot.kind === "scene-right") {
+    return page.sceneImageDescription?.trim() || "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
+  }
+  return page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "";
+}
 
 // Validation schemas
 const GenerateStorybookSchema = z.object({
@@ -888,7 +902,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
         childName,
         childAge,
         referenceImageUrl: storyRef || childImage || "",
-        prompt: page.imageDescription || page.text,
+        prompt: personalizedPagePrompt(pageNumber, page),
         artStyle,
       }).catch((err) => {
         logger.error({ err, pageNumber }, "Failed child image generation for preview page");
@@ -897,7 +911,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       return {
         pageNumber,
         content: page.text,
-        imagePrompt: page.imageDescription || page.text,
+        imagePrompt: personalizedPagePrompt(pageNumber, page),
         imageUrl,
       };
     }));
@@ -953,7 +967,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
           storyId: story.id,
           pageNumber,
           content: finalCover ? "" : scriptPage?.text || "",
-          imagePrompt: finalCover ? "Printed closing cover" : scriptPage?.imageDescription || scriptPage?.text || "",
+          imagePrompt: finalCover ? "Printed closing cover" : personalizedPagePrompt(pageNumber, scriptPage || {}),
           imageUrl: finalCover ? closingCover.url : preview?.imageUrl || null,
           status: (finalCover || preview?.imageUrl ? "Generated" : "Pending") as "Generated" | "Pending",
         };

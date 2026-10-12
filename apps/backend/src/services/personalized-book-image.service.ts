@@ -6,6 +6,9 @@ import { ImageGenerationService } from "./image-generation.service";
 
 const imageService = ImageGenerationService.getInstance();
 
+const SCENE_FORBIDDEN_WORDS = /\b(child|children|kid|kids|boy|girl|person|people|human|humans|face|faces|portrait|portraits|character|characters|hero|heroes|he|she|him|her|his|their|they|them)\b/i;
+const SAFE_ENVIRONMENT_FALLBACK = "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
+
 /** Image operations for the new personalized 30-page layout only. */
 export class PersonalizedBookImageService {
   async generateChildSquare(input: {
@@ -27,11 +30,21 @@ export class PersonalizedBookImageService {
 
   async generateSceneSpread(input: {
     prompt: string;
+    childName?: string | null;
     artStyle?: string | null;
   }): Promise<{ leftUrl: string; rightUrl: string }> {
-    // Deliberately omit imageUrl and childName. This must stay text-to-image.
+    // Deliberately omit imageUrl and never pass the child name to the model.
+    // The optional name is only used locally to reject prompt leakage.
+    const normalizedPrompt = ` ${input.prompt.toLocaleLowerCase().replace(/\s+/g, " ").trim()} `;
+    const normalizedChildName = input.childName
+      ? ` ${input.childName.toLocaleLowerCase().replace(/\s+/g, " ").trim()} `
+      : "";
+    const mentionsChildName = Boolean(normalizedChildName && normalizedPrompt.includes(normalizedChildName));
+    const environmentPrompt = SCENE_FORBIDDEN_WORDS.test(input.prompt) || mentionsChildName
+      ? SAFE_ENVIRONMENT_FALLBACK
+      : input.prompt;
     const sourceUrl = await imageService.generateImageSync({
-      prompt: `${input.prompt}. Environment only: no child, no people, no faces, no human figures, no portraits.`,
+      prompt: `${environmentPrompt}. Environment only: no child, no people, no faces, no human figures, no portraits.`,
       aspectRatio: "16:9",
       artStyle: input.artStyle || undefined,
     });
