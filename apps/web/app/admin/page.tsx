@@ -3143,7 +3143,7 @@ export default function AdminPage() {
 
           <div className="p-3 border-t border-white/5 space-y-2">
             <button
-              onClick={fetchAll}
+              onClick={() => void fetchAll()}
               className="w-full flex items-center gap-2 px-3 py-2 text-white/40 hover:text-white/70 hover:bg-white/5 rounded-xl text-xs font-medium transition-all"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
