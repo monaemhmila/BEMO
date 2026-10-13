@@ -1,9 +1,9 @@
-/** Printed personalized-book layout: 30 square pages, 19 AI generations. */
+/** Printed personalized-book layout: 30 pages, 21 AI generations. */
 export const PERSONALIZED_PRINT_PAGE_COUNT = 30;
 export const PERSONALIZED_GENERATED_PRINT_PAGE_COUNT = 29;
-export const PERSONALIZED_IMAGE_GENERATION_COUNT = 19;
-export const PERSONALIZED_CHILD_IMAGE_COUNT = 9;
-export const PERSONALIZED_SCENE_IMAGE_COUNT = 10;
+export const PERSONALIZED_IMAGE_GENERATION_COUNT = 21;
+export const PERSONALIZED_CHILD_IMAGE_COUNT = 13;
+export const PERSONALIZED_SCENE_IMAGE_COUNT = 8;
 
 export type PersonalizedPageKind = "child" | "scene-left" | "scene-right" | "final-cover";
 
@@ -14,12 +14,10 @@ export interface PersonalizedPageSlot {
 }
 
 /**
- * Page 1 is the child-focused front cover. The next child pages are grouped
- * into pairs before each landscape scene spread, so the reader sees a stable
- * rhythm instead of alternating child/scene pages. There are nine child
- * generations and ten two-page scene spreads in the existing 19-generation
- * budget; after the four complete child pairs, the remaining scene spreads
- * finish pages 18..29. Page 30 is always the existing reusable closing cover.
+ * Page 1 is the child-focused front cover. The physical order is four pages
+ * of child, child, scene-left, scene-right repeated six times, followed by
+ * two final scene spreads. This gives 13 generated square child pages and
+ * eight generated two-page scene spreads. Page 30 is the existing back cover.
  */
 export function getPersonalizedPageSlot(pageNumber: number): PersonalizedPageSlot {
   if (pageNumber === PERSONALIZED_PRINT_PAGE_COUNT) {
@@ -29,32 +27,32 @@ export function getPersonalizedPageSlot(pageNumber: number): PersonalizedPageSlo
     return { kind: "child", pageNumbers: [pageNumber], generationNumber: 1 };
   }
 
-  // The first four groups are: child, child, scene-left, scene-right.
-  // This gives the intended visual rhythm while retaining the nine child /
-  // ten scene generation counts.
+  // Child pages from the requested physical layout:
+  // 1 cover, then 12 inside child pages.
   const groupedChildPages = new Map<number, number>([
     [2, 2], [3, 3],
     [6, 4], [7, 5],
     [10, 6], [11, 7],
     [14, 8], [15, 9],
+    [18, 10], [19, 11],
+    [22, 12], [23, 13],
   ]);
   const childGeneration = groupedChildPages.get(pageNumber);
   if (childGeneration) {
     return { kind: "child", pageNumbers: [pageNumber], generationNumber: childGeneration };
   }
 
-  // All remaining non-cover pages are ordered scene spreads. Every landscape
-  // generation always owns two adjacent physical pages.
+  // Every landscape generation owns two adjacent physical pages.
   const spreadStart = pageNumber % 2 === 0 ? pageNumber : pageNumber - 1;
   const sceneNumber = new Map<number, number>([
-    [4, 1], [8, 2], [12, 3], [16, 4], [18, 5],
-    [20, 6], [22, 7], [24, 8], [26, 9], [28, 10],
+    [4, 1], [8, 2], [12, 3], [16, 4], [20, 5],
+    [24, 6], [26, 7], [28, 8],
   ]).get(spreadStart);
   if (!sceneNumber) throw new Error(`UNMAPPED_PERSONALIZED_PAGE_${pageNumber}`);
   return {
     kind: pageNumber % 2 === 0 ? "scene-left" : "scene-right",
     pageNumbers: [spreadStart, spreadStart + 1],
-    generationNumber: 9 + sceneNumber,
+    generationNumber: PERSONALIZED_CHILD_IMAGE_COUNT + sceneNumber,
   };
 }
 

@@ -14,12 +14,13 @@ export class PersonalizedBookImageService {
   async generateChildSquare(input: {
     childName: string;
     childAge?: number | null;
+    gender?: "boy" | "girl" | null;
     referenceImageUrl: string;
     prompt: string;
     artStyle?: string | null;
   }): Promise<string> {
     const imageUrl = await imageService.generateImageSync({
-      prompt: `${input.childName}, ${input.childAge ?? "young"} years old: ${input.prompt}. The child is the only human hero and is clearly visible.`,
+      prompt: `${input.childName}, ${input.childAge ?? "young"} years old ${input.gender || "child"}: ${input.prompt}. The child is the only human hero and is clearly visible.`,
       aspectRatio: "1:1",
       imageUrl: input.referenceImageUrl,
       childName: input.childName,

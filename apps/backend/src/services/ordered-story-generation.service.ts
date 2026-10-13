@@ -48,6 +48,7 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
         const imageUrl = await personalizedBookImageService.generateChildSquare({
           childName: order.story.childName || "the child",
           childAge: order.story.childAge,
+          gender: order.story.gender === "boy" || order.story.gender === "girl" ? order.story.gender : null,
           referenceImageUrl: order.story.referenceImageUrl,
           prompt: page.imagePrompt,
         });

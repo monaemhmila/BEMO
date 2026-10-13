@@ -95,6 +95,7 @@ model Story {
   // Enhanced personalization fields
   childName   String?
   childAge    Int?
+  gender      String? // "boy" or "girl" for consistent child-image generation
   // The photo the customer uploaded, kept so a retried page can be re-rendered
   // through the fal image-edit endpoint with the same face reference instead of
   // falling back to an unpersonalised image.

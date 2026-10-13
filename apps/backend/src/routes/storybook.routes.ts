@@ -901,6 +901,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       const imageUrl = await personalizedBookImageService.generateChildSquare({
         childName,
         childAge,
+        gender,
         referenceImageUrl: storyRef || childImage || "",
         prompt: personalizedPagePrompt(pageNumber, page),
         artStyle,
@@ -924,6 +925,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
         status: "Generating",
         childName,
         childAge,
+        gender,
         // Every book is 14 pages, so the legacy storyLength column is left at
         // its default and the template row is the source of truth.
         category: template.category,

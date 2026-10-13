@@ -336,10 +336,11 @@ Return ONLY valid JSON:
 
   /**
    * Generate the text for the new printed layout. There are 29 story pages:
-   * nine child pages and twenty scene-spread pages, followed by the existing
-   * reusable closing cover. The image pipeline decides which pages show the
-   * child; the prompt produces separate child and environment descriptions so
-   * scene spreads can safely use text-to-image without a child reference.
+   * thirteen child pages and sixteen scene-spread pages, followed by the
+   * existing reusable closing cover. The image pipeline decides which pages
+   * show the child; the prompt produces separate child and environment
+   * descriptions so scene spreads can safely use text-to-image without a
+   * child reference.
    */
   async generatePersonalizedPrintStoryScript(
     characterName: string,
