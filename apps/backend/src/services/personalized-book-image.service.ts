@@ -44,8 +44,12 @@ export class PersonalizedBookImageService {
     const environmentPrompt = SCENE_FORBIDDEN_WORDS.test(input.prompt) || mentionsChildName
       ? SAFE_ENVIRONMENT_FALLBACK
       : input.prompt;
+    const normalizedStyle = input.artStyle?.trim() || "";
+    const styleSuffix = normalizedStyle && !/^photo\s*realistic$/i.test(normalizedStyle)
+      ? `, ${normalizedStyle}`
+      : "";
     const sourceUrl = await imageService.generateImageSync({
-      prompt: `Create the following scene: ${environmentPrompt}`,
+      prompt: `Create the following scene: ${environmentPrompt}${styleSuffix}`,
       rawPrompt: true,
       aspectRatio: "16:9",
     });

@@ -926,6 +926,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
         childName,
         childAge,
         gender,
+        artStyle,
         // Every book is 14 pages, so the legacy storyLength column is left at
         // its default and the template row is the source of truth.
         category: template.category,

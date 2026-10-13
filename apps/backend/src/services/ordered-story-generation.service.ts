@@ -49,6 +49,7 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
           childName: order.story.childName || "the child",
           childAge: order.story.childAge,
           gender: order.story.gender === "boy" || order.story.gender === "girl" ? order.story.gender : null,
+          artStyle: order.story.artStyle,
           referenceImageUrl: order.story.referenceImageUrl,
           prompt: page.imagePrompt,
         });
@@ -63,6 +64,7 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
       const spread = await personalizedBookImageService.generateSceneSpread({
         prompt: `${left.imagePrompt}. ${right.imagePrompt}`,
         childName: order.story.childName,
+        artStyle: order.story.artStyle,
       });
       await prismaClient.$transaction([
         prismaClient.storyPage.update({ where: { id: left.id, }, data: { imageUrl: spread.leftUrl, status: "Generated" } }),

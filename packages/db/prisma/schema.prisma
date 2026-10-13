@@ -96,6 +96,7 @@ model Story {
   childName   String?
   childAge    Int?
   gender      String? // "boy" or "girl" for consistent child-image generation
+  artStyle    String? // selected illustration style for later image generations
   // The photo the customer uploaded, kept so a retried page can be re-rendered
   // through the fal image-edit endpoint with the same face reference instead of
   // falling back to an unpersonalised image.
