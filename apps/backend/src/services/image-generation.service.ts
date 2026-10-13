@@ -10,6 +10,8 @@ import { buildStorybookImagePrompt } from "./image-style.service";
 
 interface ImageGenerationRequest {
   prompt: string;
+  /** Send the prompt verbatim, without the shared storybook prompt template. */
+  rawPrompt?: boolean;
   aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "3:2" | "2:3";
   seed?: number;
   imageUrl?: string;
@@ -266,9 +268,7 @@ export class ImageGenerationService {
    */
   private buildInput(request: ImageGenerationRequest, referenceUrl?: string) {
     const input: Record<string, unknown> = {
-      prompt: this.buildGrokPrompt(request),
-
-      negative_prompt: STORYBOOK_NEGATIVE_PROMPT,
+      prompt: request.rawPrompt ? request.prompt.trim() : this.buildGrokPrompt(request),
 
       num_images: 1,
 
@@ -279,6 +279,8 @@ export class ImageGenerationService {
 
       output_format: STORYBOOK_IMAGE_CONFIG.outputFormat,
     };
+
+    if (!request.rawPrompt) input.negative_prompt = STORYBOOK_NEGATIVE_PROMPT;
 
     if (request.seed !== undefined) {
       input.seed = request.seed;

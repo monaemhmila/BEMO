@@ -18,7 +18,7 @@ export async function generateAdminColoringBook(input: ColoringBookGenerationInp
       title: true,
       childName: true,
       referenceImageUrl: true,
-      pages: { orderBy: { pageNumber: "asc" }, select: { pageNumber: true, imagePrompt: true } },
+      pages: { orderBy: { pageNumber: "asc" }, select: { pageNumber: true, imagePrompt: true, content: true } },
     },
   });
 
@@ -37,7 +37,7 @@ export async function generateAdminColoringBook(input: ColoringBookGenerationInp
       referenceImageUrl: story.referenceImageUrl,
       pageNumber: page.pageNumber,
     });
-    pages.push({ pageNumber: page.pageNumber, image });
+    pages.push({ pageNumber: page.pageNumber, image, caption: page.content });
   }
 
   logger.info({ storyId: story.id, pageCount: pages.length }, "Admin coloring book generated");

@@ -67,5 +67,8 @@ export function getPersonalizedGenerationSlots(): PersonalizedPageSlot[] {
       slots.push(slot);
     }
   }
-  return slots.sort((a, b) => (a.generationNumber ?? 0) - (b.generationNumber ?? 0));
+  // Generation order must follow the physical book order. Sorting by the
+  // generation number would create all child images first and all landscape
+  // spreads afterward, even though the saved page map is interleaved.
+  return slots.sort((a, b) => a.pageNumbers[0] - b.pageNumbers[0]);
 }

@@ -44,9 +44,9 @@ export class PersonalizedBookImageService {
       ? SAFE_ENVIRONMENT_FALLBACK
       : input.prompt;
     const sourceUrl = await imageService.generateImageSync({
-      prompt: `${environmentPrompt}. Environment only: no child, no people, no faces, no human figures, no portraits.`,
+      prompt: `Create the following scene: ${environmentPrompt}`,
+      rawPrompt: true,
       aspectRatio: "16:9",
-      artStyle: input.artStyle || undefined,
     });
     const source = await safeFetchAndValidateImage(sourceUrl);
     // Providers can occasionally return a different size than requested. Crop

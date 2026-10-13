@@ -12,11 +12,15 @@ export class ColoringBookImageService {
     pageNumber: number;
   }): Promise<Buffer> {
     const prompt = [
-      "Black and white printable children's coloring-book page.",
-      "Clean bold ink outlines, simple friendly shapes, large open areas for crayons, white background.",
-      "No shading, no gray fills, no color, no gradients, no text, no watermark, no border.",
-      `Keep the child in the reference photo recognizable as ${input.childName || "the child"}; preserve face shape, hair, facial structure, and age.`,
-      `Scene: ${input.scene}`,
+      "Professional black-and-white printable children's coloring-book illustration, designed by a children's book illustrator.",
+      "Create a polished full-page composition with the child as the clear central hero, a strong foreground, a detailed middle ground, and a charming background.",
+      "Use confident thick outer contour lines, varied clean interior line weights, closed shapes, expressive faces, natural anatomy, and large areas that are easy to color with crayons.",
+      "Add 5 to 8 story-relevant objects and playful decorative details such as stars, leaves, clouds, flowers, bubbles, or small patterns that support the scene without making it crowded.",
+      "Use a tasteful rounded ornamental coloring-page frame with small scene-related corner motifs, balanced margins, and generous white negative space.",
+      "Pure white paper with pure black ink only: no color, no gray, no shading, no gradients, no halftones, no watercolor, no realism, no text, no letters, no logos, no watermark.",
+      "Do not crop the child's head, hands, or feet. Keep every important object fully inside the page and make the composition feel finished, balanced, and ready to print.",
+      `Use the reference photo only for the identity of ${input.childName || "the child"}; preserve face shape, hair, facial structure, and age, but do not copy the photo background.`,
+      `Story scene and action: ${input.scene}`,
     ].join(" ");
 
     try {
