@@ -2841,8 +2841,9 @@ export default function AdminPage() {
     }
   };
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const fetchAll = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) setLoading(true);
     try {
       const headers = await authHeaders();
       const [statsRes, usersRes, storiesRes, activityRes, ordersRes, templatesRes, printerQueueRes, printersRes] =
@@ -2886,12 +2887,26 @@ export default function AdminPage() {
       toast.error("Failed to load admin data");
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [authHeaders]);
 
   useEffect(() => {
-    if (isAdmin) fetchAll();
+    if (!isAdmin) return;
+    void fetchAll();
+
+    // Keep orders, stories, generation progress, and printer status current
+    // without interrupting the admin's current tab or showing a full loader.
+    const refresh = () => {
+      if (document.visibilityState === "visible") void fetchAll({ silent: true });
+    };
+    const interval = window.setInterval(refresh, 5000);
+    document.addEventListener("visibilitychange", refresh);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [isAdmin, fetchAll]);
 
   const handleUpdateTrials = async (userId: string, amount: number, action: string) => {

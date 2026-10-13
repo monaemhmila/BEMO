@@ -63,6 +63,8 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [slowGenerating, setSlowGenerating] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const [currentLeaf, setCurrentLeaf] = useState<FlipPageIndex>(startPage);
   const pendingStartRef = useRef<number | null>(null);
@@ -82,11 +84,21 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   useEffect(() => {
     const controller = new AbortController();
     const connect = async () => {
+      const loadPublicStory = async () => {
+        const publicResponse = await fetch(`${BACKEND_URL}/story/public/${storyId}`, { signal: controller.signal });
+        if (!publicResponse.ok) throw new Error(`Public story failed: ${publicResponse.status}`);
+        const payload = await publicResponse.json() as { story?: ReaderStory };
+        if (!payload.story) throw new Error("Shared story is unavailable");
+        setCanShare(false);
+        setStory(payload.story);
+        setLoading(false);
+        setError(false);
+      };
+
       try {
         const token = await getToken?.();
         if (!token) {
-          setLoading(false);
-          setError(true);
+          await loadPublicStory();
           return;
         }
 
@@ -94,7 +106,13 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
           signal: controller.signal,
         });
-        if (!response.ok || !response.body) throw new Error(`Story stream failed: ${response.status}`);
+        if (!response.ok || !response.body) {
+          // A signed-in visitor may still be viewing somebody else's public
+          // story, so fall back to the read-only public endpoint.
+          await loadPublicStory();
+          return;
+        }
+        setCanShare(true);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -320,6 +338,29 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       console.error("PDF export failed", err);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!story) return;
+    try {
+      const token = await getToken?.();
+      if (!token) return;
+      const response = await axios.post(`${BACKEND_URL}/story/${story.id}/share`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const shareUrl = response.data?.shareUrl || `${window.location.origin}/stories/${story.id}`;
+      if (navigator.share) {
+        await navigator.share({ title: story.title, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        window.setTimeout(() => setShareCopied(false), 2200);
+      }
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        console.error("Story sharing failed", err);
+      }
     }
   };
 
@@ -573,6 +614,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
         onClose={() => router.back()}
         onExportPdf={handleExportPdf}
         onOrderBook={() => setOrderOpen(true)}
+        onShare={handleShare}
+        canShare={canShare}
+        shareCopied={shareCopied}
         embedded={embedded}
       />
 

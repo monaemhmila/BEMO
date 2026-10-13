@@ -7,6 +7,7 @@ import { trialService } from "../services/trial.service";
 import { storyGenerationLimiter } from "../middleware/rateLimiter";
 import { logger } from "../lib/logger";
 import { z } from "zod";
+import { env } from "../config/env";
 
 const router = Router();
 const storyService = StoryService.getInstance();
@@ -236,6 +237,66 @@ router.get("/events/:id", authMiddleware, async (req, res) => {
     clearInterval(updates);
   });
   await send();
+});
+
+/**
+ * GET /story/public/:id
+ * Read-only access for a completed story that its owner has shared.
+ * Deliberately selects only reader fields; ownership and private generation
+ * metadata are never exposed to public viewers.
+ */
+router.get("/public/:id", async (req, res) => {
+  try {
+    const story = await prismaClient.story.findFirst({
+      where: { id: req.params.id, isPublic: true, status: "Completed" },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        childName: true,
+        dedication: true,
+        language: true,
+        pages: {
+          orderBy: { pageNumber: "asc" },
+          select: { id: true, pageNumber: true, content: true, imageUrl: true, audioUrl: true, status: true },
+        },
+      },
+    });
+
+    if (!story) {
+      res.status(404).json({ message: "This story is not shared or is not ready yet." });
+      return;
+    }
+
+    res.json({ story });
+  } catch (error) {
+    logger.error({ error, storyId: req.params.id }, "Failed to fetch public story");
+    res.status(500).json({ message: "Failed to fetch shared story" });
+  }
+});
+
+/** Enable sharing for the story owner and return its stable share URL. */
+router.post("/:id/share", authMiddleware, async (req, res) => {
+  try {
+    const story = await prismaClient.story.findFirst({
+      where: { id: req.params.id, userId: req.userId! },
+      select: { id: true, status: true },
+    });
+    if (!story) {
+      res.status(404).json({ message: "Story not found" });
+      return;
+    }
+    if (story.status !== "Completed") {
+      res.status(409).json({ message: "The story must be completed before it can be shared." });
+      return;
+    }
+
+    await prismaClient.story.update({ where: { id: story.id }, data: { isPublic: true } });
+    res.json({ isPublic: true, shareUrl: `${env.FRONTEND_URL || ""}/stories/${story.id}` });
+  } catch (error) {
+    logger.error({ error, storyId: req.params.id }, "Failed to enable story sharing");
+    res.status(500).json({ message: "Failed to enable story sharing" });
+  }
 });
 
 /**

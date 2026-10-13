@@ -1,9 +1,9 @@
-/** Printed personalized-book layout: 30 pages, 21 AI generations. */
+/** Printed personalized-book layout: 30 pages, 22 AI generations. */
 export const PERSONALIZED_PRINT_PAGE_COUNT = 30;
 export const PERSONALIZED_GENERATED_PRINT_PAGE_COUNT = 29;
-export const PERSONALIZED_IMAGE_GENERATION_COUNT = 21;
-export const PERSONALIZED_CHILD_IMAGE_COUNT = 13;
-export const PERSONALIZED_SCENE_IMAGE_COUNT = 8;
+export const PERSONALIZED_IMAGE_GENERATION_COUNT = 22;
+export const PERSONALIZED_CHILD_IMAGE_COUNT = 15;
+export const PERSONALIZED_SCENE_IMAGE_COUNT = 7;
 
 export type PersonalizedPageKind = "child" | "scene-left" | "scene-right" | "final-cover";
 
@@ -14,10 +14,11 @@ export interface PersonalizedPageSlot {
 }
 
 /**
- * Page 1 is the child-focused front cover. The physical order is four pages
- * of child, child, scene-left, scene-right repeated six times, followed by
- * two final scene spreads. This gives 13 generated square child pages and
- * eight generated two-page scene spreads. Page 30 is the existing back cover.
+ * Page 1 is the child-focused front cover. The physical order is the initial
+ * child pages, followed by alternating two-page scene spreads and child-page
+ * pairs, then one additional scene spread and two final square child pages.
+ * This gives 15 generated square child pages and seven generated two-page
+ * scene spreads. Page 30 is the existing back cover.
  */
 export function getPersonalizedPageSlot(pageNumber: number): PersonalizedPageSlot {
   if (pageNumber === PERSONALIZED_PRINT_PAGE_COUNT) {
@@ -36,6 +37,7 @@ export function getPersonalizedPageSlot(pageNumber: number): PersonalizedPageSlo
     [14, 8], [15, 9],
     [18, 10], [19, 11],
     [22, 12], [23, 13],
+    [28, 14], [29, 15],
   ]);
   const childGeneration = groupedChildPages.get(pageNumber);
   if (childGeneration) {
@@ -46,7 +48,7 @@ export function getPersonalizedPageSlot(pageNumber: number): PersonalizedPageSlo
   const spreadStart = pageNumber % 2 === 0 ? pageNumber : pageNumber - 1;
   const sceneNumber = new Map<number, number>([
     [4, 1], [8, 2], [12, 3], [16, 4], [20, 5],
-    [24, 6], [26, 7], [28, 8],
+    [24, 6], [26, 7],
   ]).get(spreadStart);
   if (!sceneNumber) throw new Error(`UNMAPPED_PERSONALIZED_PAGE_${pageNumber}`);
   return {

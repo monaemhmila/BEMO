@@ -53,11 +53,29 @@ const FINAL_COVER_COPY = {
   },
 } as const;
 
+function repairCoverText(value: string): string {
+  // Some older deployments persisted these strings after an accidental
+  // UTF-8 -> Latin-1 conversion (for example, "HÃ©ros"). Repair that data at
+  // the rendering boundary so all three language versions print correctly.
+  if (!/[ÃÂâ€¦ÙØ]/.test(value)) return value;
+  try {
+    return Buffer.from(value, "latin1").toString("utf8");
+  } catch {
+    return value;
+  }
+}
+
 function getFinalCoverCopy(language?: string | null) {
   const normalized = (language || "english").toLowerCase();
-  if (normalized.startsWith("fr")) return FINAL_COVER_COPY.french;
-  if (normalized.startsWith("ar")) return FINAL_COVER_COPY.arabic;
-  return FINAL_COVER_COPY.english;
+  const copy = normalized.startsWith("fr")
+    ? FINAL_COVER_COPY.french
+    : normalized.startsWith("ar")
+      ? FINAL_COVER_COPY.arabic
+      : FINAL_COVER_COPY.english;
+  return {
+    title: repairCoverText(copy.title),
+    body: repairCoverText(copy.body),
+  };
 }
 
 // --- Kid-friendly palette -------------------------------------------------
@@ -474,40 +492,68 @@ export class PDFService {
 
   private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
     const copy = getFinalCoverCopy(story.language);
-    const boxWidth = width * 0.78;
-    const titleSize = width * 0.075;
-    const bodySize = width * 0.027;
+    const panelWidth = width * 0.78;
+    const panelPaddingX = width * 0.07;
+    const textWidth = panelWidth - panelPaddingX * 2;
+    const titleSize = width * 0.052;
+    const bodySize = width * 0.021;
+    const titleLineHeight = titleSize * 1.18;
+    const bodyLineHeight = bodySize * 1.38;
     this.font(doc, "Title", "Helvetica-Bold").fontSize(titleSize);
-    const titleHeight = doc.heightOfString(copy.title, { width: boxWidth, align: "center", lineGap: 2 });
+    const titleHeight = doc.heightOfString(copy.title, {
+      width: textWidth,
+      align: "center",
+      lineGap: titleLineHeight - titleSize,
+    });
     this.font(doc, "BodyRegular", "Helvetica").fontSize(bodySize);
-    const bodyHeight = doc.heightOfString(copy.body, { width: boxWidth, align: "center", lineGap: 2 });
+    const bodyHeight = doc.heightOfString(copy.body, {
+      width: textWidth,
+      align: "center",
+      lineGap: bodyLineHeight - bodySize,
+    });
     const gap = height * 0.035;
-    const top = (height - titleHeight - gap - bodyHeight) / 2;
+    const panelPaddingY = height * 0.055;
+    const panelHeight = titleHeight + gap + bodyHeight + panelPaddingY * 2;
+    const panelX = (width - panelWidth) / 2;
+    const panelY = (height - panelHeight) / 2;
+
+    // Keep the final message readable over every reusable cover artwork.
+    doc
+      .roundedRect(panelX + 2, panelY + 3, panelWidth, panelHeight, width * 0.035)
+      .fillColor("#23384A")
+      .fillOpacity(0.18)
+      .fill();
+    doc
+      .roundedRect(panelX, panelY, panelWidth, panelHeight, width * 0.035)
+      .fillColor("#FFFDF8")
+      .fillOpacity(0.97)
+      .fill();
+    doc.fillOpacity(1);
 
     this.drawCoverLine(doc, copy.title, {
-      x: (width - boxWidth) / 2,
-      y: top,
-      width: boxWidth,
+      x: panelX + panelPaddingX,
+      y: panelY + panelPaddingY,
+      width: textWidth,
       align: "center",
       fontSize: titleSize,
-      color: STORY_TEXT_COLOR,
-      lineHeight: titleSize * 1.15,
-      shadowOpacity: 0.75,
-      shadowOffsetY: 1.5,
-      shadowBlur: 5,
+      color: "#315B75",
+      lineHeight: titleLineHeight,
+      shadowOpacity: 0.16,
+      shadowOffsetY: 1,
+      shadowBlur: 2,
     });
 
     this.drawCoverLine(doc, copy.body, {
-      x: (width - boxWidth) / 2,
-      y: top + titleHeight + gap,
-      width: boxWidth,
+      x: panelX + panelPaddingX,
+      y: panelY + panelPaddingY + titleHeight + gap,
+      width: textWidth,
       align: "center",
       fontSize: bodySize,
-      color: STORY_TEXT_COLOR,
-      lineHeight: bodySize * 1.35,
-      shadowOpacity: 0.7,
+      color: "#40515D",
+      lineHeight: bodyLineHeight,
+      shadowOpacity: 0.1,
       shadowOffsetY: 1,
-      shadowBlur: 4,
+      shadowBlur: 2,
     });
   }
 

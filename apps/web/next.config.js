@@ -29,6 +29,17 @@ const backendPattern = (() => {
 
 const nextConfig = {
   poweredByHeader: false,
+  // Closing-cover URLs are intentionally stored as reusable `/assets/covers`
+  // paths. Proxy them through Next so existing stories and new stories both
+  // resolve the asset from the backend instead of the web container.
+  async rewrites() {
+    return backendUrl
+      ? [{
+        source: "/assets/covers/:path*",
+        destination: `${backendUrl.replace(/\/$/, "")}/assets/covers/:path*`,
+      }]
+      : [];
+  },
   experimental: {
     // Tree-shake these barrel packages per import instead of shipping them whole.
     optimizePackageImports: ["lucide-react", "framer-motion", "date-fns"],

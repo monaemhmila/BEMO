@@ -1,4 +1,5 @@
 import path from "path";
+import { env } from "../config/env";
 
 export type StoryCoverColor = "blue" | "green" | "pink";
 
@@ -51,6 +52,7 @@ export function chooseStoryCover(input: {
   else if (pinkScore > greenScore && pinkScore > blueScore) color = "pink";
 
   const filename = COVER_FILES[color];
+  const publicBase = env.PUBLIC_ASSET_BASE_URL?.replace(/\/$/, "");
   const sourceCandidates = [
     path.join(process.cwd(), "src", "covers", filename),
     path.join(process.cwd(), "apps", "backend", "src", "covers", filename),
@@ -59,7 +61,7 @@ export function chooseStoryCover(input: {
 
   return {
     color,
-    url: `/assets/covers/${filename}`,
+    url: publicBase ? `${publicBase}/assets/covers/${filename}` : `/assets/covers/${filename}`,
     filePath: sourceCandidates[0],
   };
 }
