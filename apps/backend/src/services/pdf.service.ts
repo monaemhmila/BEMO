@@ -117,7 +117,7 @@ const COVER_TITLE = {
   shadowOffsetY: 2 * WEB_PX, // 2px
   shadowBlur: 12 * WEB_PX, // 12px
   starring: {
-    size: 1.5 * WEB_CQW, // clamp(0.45rem, 1.5cqw, 0.85rem) -> 8.93pt
+    size: 0.78 * WEB_CQW,
     marginTop: 1.4 * WEB_CQW, // mt-[1.4cqw]
     leading: 1.3,
     tracking: 0.28, // tracking-[0.28em]
@@ -126,9 +126,9 @@ const COVER_TITLE = {
   },
   footer: {
     bottom: 0.04 * PAGE_HEIGHT, // bottom-[4%]
-    dedicationSize: 1.8 * WEB_CQW, // clamp(0.55rem, 1.8cqw, 1rem) -> 10.7pt
+    dedicationSize: 0.9 * WEB_CQW,
     dedicationLeading: 1.375, // leading-snug
-    pillSize: 1.2 * WEB_CQW, // clamp(0.4rem, 1.2cqw, 0.75rem) -> 7.14pt
+    pillSize: 0.7 * WEB_CQW,
     pillTracking: 0.3, // tracking-[0.3em]
     pillPadX: 0.02 * PAGE_WIDTH, // px-[2%]
     pillPadY: 0.8 * WEB_CQW, // py-[0.8cqw]
