@@ -329,8 +329,14 @@ export class PDFService {
     sortedPages.forEach((page, index) => {
       const split = splitImages[index];
       if (split?.left && split.right) {
+        // Covers are single square book leaves. If an old record contains a
+        // wide cover/closing image, keep one crop instead of creating a second
+        // apparent cover page.
+        const isSinglePageCover = page.pageNumber === 1 || page.pageNumber === sortedPages.length;
         leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.left, renderText: true });
-        leaves.push({ pageNumber: page.pageNumber, content: "", image: split.right, renderText: false });
+        if (!isSinglePageCover) {
+          leaves.push({ pageNumber: page.pageNumber, content: "", image: split.right, renderText: false });
+        }
       } else if (split?.full) {
         leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.full, renderText: true });
       } else {
@@ -461,8 +467,9 @@ export class PDFService {
   }
 
   /**
-   * Emotional ending (page 15): full-bleed square illustration with the closing
-   * thought placed at the bottom-center text-safe area.
+   * Emotional ending: full-bleed illustration with the closing thought placed
+   * at the bottom-center text-safe area. Only the first leaf gets text when a
+   * legacy wide image is split into two PDF leaves.
    */
   private renderEndingPage(
     doc: PDFKit.PDFDocument,
@@ -472,12 +479,15 @@ export class PDFService {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
+    if (leaf.renderText) {
+      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
+    }
   }
 
   /**
-   * Closing page (page 15): full-bleed square illustration with a short, warm
-   * goodbye centered in the lower middle of the page.
+   * Closing page: full-bleed illustration with one short, warm goodbye. The
+   * renderText guard prevents the closing cover overlay from being repeated on
+   * the second half of a legacy split image.
    */
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
@@ -487,7 +497,9 @@ export class PDFService {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawFinalCoverMessage(doc, story, width, height);
+    if (leaf.renderText) {
+      this.drawFinalCoverMessage(doc, story, width, height);
+    }
   }
 
   private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
@@ -589,13 +601,20 @@ export class PDFService {
       : {
         ...layout,
         y: layout.y + 10,
-        width: layout.width * 0.88,
+        // Let the story copy use almost the full safe-area width again. The
+        // vertical limit below is what keeps it 2 cm above the page edge.
+        width: layout.width * 0.96,
+        fontSize: layout.fontSize * 0.86,
+        lineHeight: layout.lineHeight * 0.86,
         x: layout.x + layout.width > STORYBOOK_PAGE_WIDTH_PT * 0.82
-          ? layout.x + layout.width * 0.12
+          ? layout.x + layout.width * 0.04
           : layout.align === "center"
-            ? layout.x + layout.width * 0.06
+            ? layout.x + layout.width * 0.02
             : layout.x,
-        maxLines: Math.min(layout.maxLines, 5),
+        maxLines: Math.max(
+          1,
+          Math.floor((STORYBOOK_PAGE_HEIGHT_PT - 56.7 - (layout.y + 10)) / (layout.lineHeight * 0.86)),
+        ),
       };
 
     const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
