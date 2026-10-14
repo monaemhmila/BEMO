@@ -134,6 +134,7 @@ export function getPageComposition(
 ): PageComposition {
   const textPosition = getTextPosition(pageNumber, totalPages);
   const isCover = pageNumber === 1;
+  const isOpening = pageNumber === 2;
   const isWide = textPosition === "bottom-center" || textPosition === "center";
 
   const characterSide: CharacterSide =
@@ -150,7 +151,9 @@ export function getPageComposition(
     textSafeArea: "",
     characterSide,
     sideCharacterArea: "",
-    textWidthPercent: isCover ? 0.88 : isWide ? 0.6 : 0.5,
+    // The opening page is the first narrative reveal: let its caption run
+    // across the full lower text-safe band while remaining bottom-left.
+    textWidthPercent: isCover ? 0.88 : isOpening ? 0.88 : isWide ? 0.6 : 0.5,
     textMaxWords: textPosition === "center" ? 14 : isCover ? 4 : 60,
   };
 }

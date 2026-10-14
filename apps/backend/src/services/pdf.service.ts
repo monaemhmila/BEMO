@@ -111,7 +111,7 @@ const WEB_PX = 0.75; // 1 CSS px, in points
 const COVER_TITLE = {
   top: 0.07 * PAGE_HEIGHT, // top-[7%]
   sidePad: 0.08 * PAGE_WIDTH, // px-[8%]
-  fontSize: 4.2 * WEB_CQW, // clamp(1rem, 4.2cqw, 2.2rem) -> 25.0pt
+  fontSize: 3.2 * WEB_CQW, // compact two-line cover title
   leading: 1.25, // leading-tight
   shadowOpacity: 0.7, // 0 2px 12px rgba(0, 0, 0, 0.7)
   shadowOffsetY: 2 * WEB_PX, // 2px
@@ -942,6 +942,14 @@ export class PDFService {
       }
     }
     if (currentLine) lines.push(currentLine);
+
+    // Keep the cover title contained within the single cover leaf. Long
+    // generated titles are reduced to a compact two-line cover treatment.
+    if (lines.length > 2) {
+      lines.length = 2;
+      const lastLine = lines[1].replace(/[.!,;:!?\s]+$/, "");
+      lines[1] = `${lastLine}…`;
+    }
 
     // Wave / wobble parameters
     const waveAmplitude = fontSize * 0.16;   // vertical bounce height

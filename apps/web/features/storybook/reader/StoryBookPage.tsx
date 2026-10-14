@@ -93,6 +93,7 @@ export const StoryBookPage = forwardRef<HTMLDivElement, StoryBookPageProps>(
         className={cn(
           "story-book-page",
           isCover && "is-cover",
+          page.pageNumber === 2 && "is-opening",
           side === "left" && "is-left",
           side === "right" && "is-right",
           side === "single" && "is-single"

@@ -58,7 +58,7 @@ export function StoryBookCover({ title, childName, dedication, language, isClosi
       <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-black/55" />
 
       <div className="absolute top-[7%] inset-x-0 text-center px-[8%]">
-        <h2 className="font-display font-bold text-white text-[clamp(1rem,4.2cqw,2.2rem)] leading-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">
+        <h2 className="max-h-[2.5em] overflow-hidden font-display font-bold text-white text-[clamp(0.9rem,3.2cqw,1.8rem)] leading-tight [text-shadow:0_2px_12px_rgba(0,0,0,0.7)]">
           {title}
         </h2>
         {childName && (

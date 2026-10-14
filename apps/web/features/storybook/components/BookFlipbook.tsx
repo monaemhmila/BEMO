@@ -153,7 +153,9 @@ function PageSheet({
         <>
           <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
           <p
-            className={`absolute bottom-9 text-white text-xs md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${side === "left" ? "left-5 right-10" : "right-5 left-10"
+            className={`absolute bottom-9 text-white text-xs md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${page.pageNumber === 2
+                ? "left-5 right-5"
+                : side === "left" ? "left-5 right-10" : "right-5 left-10"
               }`}
           >
             {page.content}
