@@ -128,7 +128,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "printer" | "printer-accounts" | "activity" | "analytics";
+type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "printer" | "printer-accounts" | "activity" | "analytics" | "test";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -2738,6 +2738,136 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
   );
 }
 
+function TestTab() {
+  const [childPhoto, setChildPhoto] = useState<File | null>(null);
+  const [childName, setChildName] = useState("");
+  const [age, setAge] = useState("6");
+  const [gender, setGender] = useState("");
+  const [category, setCategory] = useState("adventure");
+  const [language, setLanguage] = useState("English");
+  const [audience, setAudience] = useState("4-8");
+  const [theme, setTheme] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const testPayload = {
+    inputs: {
+      child_name: childName || "Child name",
+      age: Number(age) || 6,
+      gender: gender || null,
+      category,
+      language,
+      audience_age_range: audience,
+      style: "simple animated",
+      interior_pages: 14,
+      cover_pages: 1,
+      child_photo: childPhoto?.name || null,
+      theme: theme || null,
+    },
+    pipeline: [
+      "Generate structured story JSON (title, cover, and exactly 14 pages)",
+      "Create a reusable animated child reference from the uploaded photo",
+      "Generate one full-color cover",
+      "Generate 14 black-and-white coloring pages using the same reference",
+      "Validate identity consistency and assemble print-ready assets",
+    ],
+    output: {
+      story: "title, cover_summary, cover_scene_description, 14 page objects",
+      images: "1 full-color cover + 14 black-and-white coloring pages",
+      print_ready: true,
+    },
+  };
+
+  const copyPayload = async () => {
+    await navigator.clipboard.writeText(JSON.stringify(testPayload, null, 2));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const reset = () => {
+    setChildPhoto(null);
+    setChildName("");
+    setAge("6");
+    setGender("");
+    setCategory("adventure");
+    setLanguage("English");
+    setAudience("4-8");
+    setTheme("");
+  };
+
+  const fieldClass = "w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-purple-400/60 focus:ring-1 focus:ring-purple-400/40";
+  const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45";
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-purple-400/25 bg-gradient-to-r from-purple-900/35 via-indigo-900/25 to-slate-900/30 p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-purple-300">Pipeline test workspace</p>
+            <h2 className="mt-1 text-xl font-bold text-white">Personalized coloring book test</h2>
+            <p className="mt-1 max-w-2xl text-sm text-white/55">Prepare one test payload from the recommended workflow. This tab is intentionally isolated from customer generation.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/60">
+            <span className="h-2 w-2 rounded-full bg-amber-400" />
+            Preview mode
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-white">Book inputs</h3>
+              <p className="mt-1 text-xs text-white/40">These values will be injected into the story and image prompts.</p>
+            </div>
+            <button type="button" onClick={reset} className="text-xs font-semibold text-white/40 hover:text-white">Reset</button>
+          </div>
+
+          <div className="mb-5 rounded-xl border border-dashed border-white/15 bg-black/15 p-4">
+            <label className="flex cursor-pointer items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-2xl">
+                {childPhoto ? "🖼️" : "📷"}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Child photo</p>
+                <p className="mt-1 text-xs text-white/40">Used only as the identity reference for the character.</p>
+                <p className="mt-2 text-xs font-semibold text-purple-300">{childPhoto?.name || "Choose an image"}</p>
+              </div>
+              <input type="file" accept="image/*" className="sr-only" onChange={(event) => setChildPhoto(event.target.files?.[0] || null)} />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label><span className={labelClass}>Child name</span><input className={fieldClass} value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="e.g. Jasser" /></label>
+            <label><span className={labelClass}>Age</span><input className={fieldClass} type="number" min="1" max="12" value={age} onChange={(e) => setAge(e.target.value)} /></label>
+            <label><span className={labelClass}>Gender (optional)</span><input className={fieldClass} value={gender} onChange={(e) => setGender(e.target.value)} placeholder="Optional" /></label>
+            <label><span className={labelClass}>Audience age range</span><input className={fieldClass} value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="4-8" /></label>
+            <label><span className={labelClass}>Story category</span><select className={fieldClass} value={category} onChange={(e) => setCategory(e.target.value)}><option value="adventure">Adventure</option><option value="friendship">Friendship</option><option value="fantasy">Fantasy</option><option value="animals">Animals</option><option value="space">Space</option></select></label>
+            <label><span className={labelClass}>Language</span><select className={fieldClass} value={language} onChange={(e) => setLanguage(e.target.value)}><option>English</option><option>French</option><option>Arabic</option></select></label>
+          </div>
+          <label className="mt-4 block"><span className={labelClass}>Theme or extra direction</span><textarea className={`${fieldClass} min-h-[92px] resize-y`} value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Optional: kindness unlocks a magical forest..." /></label>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div><h3 className="font-bold text-white">Test payload</h3><p className="mt-1 text-xs text-white/40">Live preview of the planned pipeline request.</p></div>
+            <button type="button" onClick={() => void copyPayload()} className="rounded-lg bg-purple-500/20 px-3 py-2 text-xs font-semibold text-purple-200 hover:bg-purple-500/30">{copied ? "Copied" : "Copy JSON"}</button>
+          </div>
+          <pre className="max-h-[530px] overflow-auto rounded-xl border border-white/10 bg-[#09090b] p-4 text-xs leading-5 text-emerald-300/90">{JSON.stringify(testPayload, null, 2)}</pre>
+        </section>
+      </div>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="mb-4 flex items-center justify-between"><div><h3 className="font-bold text-white">Expected output</h3><p className="mt-1 text-xs text-white/40">The test is structured for the recommended 14-page book workflow.</p></div><span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-300">15 image assets</span></div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {["Story JSON · 14 pages", "Animated child reference", "Full-color cover", "14 B&W coloring pages"].map((item, index) => <div key={item} className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><p className="text-xs font-bold text-purple-300">0{index + 1}</p><p className="mt-2 text-sm font-semibold text-white">{item}</p></div>)}
+        </div>
+        <div className="mt-4 rounded-xl bg-amber-400/10 px-4 py-3 text-xs text-amber-200/80">Generation is not triggered from this preview yet. The payload is ready to connect to the story, character-reference, cover, and interior-page endpoints.</div>
+      </section>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
@@ -2819,7 +2949,7 @@ export default function AdminPage() {
     setColoringBookLoading(true);
     try {
       const headers = await authHeaders();
-      const response = await axios.post(`${BACKEND_URL}/admin/testing/coloring-book`, { storyId, pageCount: 6 }, {
+      const response = await axios.post(`${BACKEND_URL}/admin/testing/coloring-book`, { storyId, pageCount: 14 }, {
         headers,
         responseType: "blob",
       });
@@ -3006,6 +3136,7 @@ export default function AdminPage() {
     { id: "printer-accounts", label: "Printers", icon: <UserCheck className="w-4 h-4" />, count: printerAccounts.filter((printer) => printer.isActive).length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
     { id: "analytics", label: "Analytics", icon: <MousePointerClick className="w-4 h-4" /> },
+    { id: "test", label: "Test", icon: <Sparkles className="w-4 h-4" /> },
   ];
 
   return (
@@ -3194,6 +3325,8 @@ export default function AdminPage() {
                           ? "Story Templates"
                           : activeTab === "analytics"
                             ? "Analytics & Traffic"
+                            : activeTab === "test"
+                              ? "Pipeline Test"
                             : activeTab}
                 </h1>
                 <p className="text-white/40 text-xs mt-0.5">Mon Petit Hero · Super Admin</p>
@@ -3415,7 +3548,7 @@ export default function AdminPage() {
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">Admin testing tool</p>
                       <h2 className="mt-1 text-lg font-bold text-white">Generate a coloring book</h2>
-                      <p className="mt-1 text-sm text-white/55">Uses the selected story&apos;s child reference and creates a separate black-and-white PDF.</p>
+                      <p className="mt-1 text-sm text-white/55">Creates a separate 15-page test PDF: one full-color cover plus 14 black-and-white coloring pages.</p>
                     </div>
                     <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
                       <select
@@ -3550,6 +3683,8 @@ export default function AdminPage() {
             {/* ── FACE LAB TAB ─────────────────────────────────────────────── */}
             {/* ── ANALYTICS TAB ────────────────────────────────────────────── */}
             {activeTab === "analytics" && <AnalyticsTab authHeaders={authHeaders} />}
+
+            {activeTab === "test" && <TestTab />}
 
             {/* ── ORDERS TAB ───────────────────────────────────────────────── */}
             {activeTab === "orders" && (

@@ -660,14 +660,13 @@ const TranslateTemplateSchema = z.object({
  */
 router.post("/testing/coloring-book", async (req, res) => {
   const storyId = typeof req.body?.storyId === "string" ? req.body.storyId : "";
-  const pageCount = Number.isFinite(Number(req.body?.pageCount)) ? Number(req.body.pageCount) : 6;
   if (!storyId) {
     res.status(400).json({ message: "storyId is required" });
     return;
   }
 
   try {
-    const pdf = await generateAdminColoringBook({ storyId, pageCount });
+    const pdf = await generateAdminColoringBook({ storyId, pageCount: 14 });
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="coloring-book-${storyId}.pdf"`);
     res.send(pdf);
