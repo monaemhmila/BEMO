@@ -3078,11 +3078,13 @@ export default function AdminPage() {
     void fetchAll();
 
     // Keep orders, stories, generation progress, and printer status current
-    // without interrupting the admin's current tab or showing a full loader.
+    // without exhausting the backend's shared API rate limit. This dashboard
+    // loads eight endpoints per refresh, so a five-second loop could generate
+    // more than 1,400 requests in one rate-limit window from a single tab.
     const refresh = () => {
       if (document.visibilityState === "visible") void fetchAll({ silent: true });
     };
-    const interval = window.setInterval(refresh, 5000);
+    const interval = window.setInterval(refresh, 30000);
     document.addEventListener("visibilitychange", refresh);
 
     return () => {
