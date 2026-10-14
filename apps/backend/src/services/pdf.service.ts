@@ -383,7 +383,7 @@ export class PDFService {
             this.renderClosingPage(doc, leaf, story);
             break;
           default:
-            this.renderStoryPage(doc, leaf);
+            this.renderStoryPage(doc, leaf, totalBookPages);
         }
       });
       doc.end();
@@ -456,13 +456,14 @@ export class PDFService {
    */
   private renderStoryPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf
+    leaf: PdfLeaf,
+    totalPages: number
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
-      this.drawStoryText(doc, leaf.pageNumber, leaf.content);
+      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
     }
   }
 
