@@ -405,9 +405,16 @@ export class PDFService {
         content: "Opening page - text placed in the bottom-left text-safe area, white with a soft shadow.",
         imageUrl: null,
       },
+      ...Array.from({ length: 12 }, (_, index) => ({
+        pageNumber: index + 3,
+        content: index % 2 === 0
+          ? "Story page - text placed in the bottom-right text-safe area, white with a soft shadow."
+          : "Story page - text placed in the bottom-left text-safe area, white with a soft shadow.",
+        imageUrl: null,
+      })),
       {
-        pageNumber: 3,
-        content: "Story page - text placed in the bottom-right text-safe area, white with a soft shadow.",
+        pageNumber: 15,
+        content: "Closing page - a warm goodbye message centered over the closing artwork.",
         imageUrl: null,
       },
     ];
@@ -573,13 +580,6 @@ export class PDFService {
       doc.image(image, 0, 0, { width, height });
       return;
     }
-
-    this.font(doc, "BodyRegular", "Helvetica").fontSize(16).fillColor(STORY_TEXT_COLOR).text(
-      " on its way!",
-      0,
-      height / 2 - 8,
-      { width, align: "center" }
-    );
   }
 
   /**
@@ -833,12 +833,15 @@ export class PDFService {
 
     const height = doc.heightOfString(text, textOptions);
     const steps = 6;
-    for (let i = 1; i <= steps; i += 1) {
-      const t = i / steps;
-      doc
-        .fillColor("#000000")
-        .fillOpacity((options.shadowOpacity ?? 0) * Math.pow(1 - t, 1.6))
-        .text(text, x, y + (options.shadowOffsetY ?? 0) * 0.4 * t + (options.shadowBlur ?? 0) * t, textOptions);
+    const shadowOpacity = options.shadowOpacity ?? 0;
+    if (shadowOpacity > 0) {
+      for (let i = 1; i <= steps; i += 1) {
+        const t = i / steps;
+        doc
+          .fillColor("#000000")
+          .fillOpacity(shadowOpacity * Math.pow(1 - t, 1.6))
+          .text(text, x, y + (options.shadowOffsetY ?? 0) * 0.4 * t + (options.shadowBlur ?? 0) * t, textOptions);
+      }
     }
     doc.fillOpacity(1);
 
