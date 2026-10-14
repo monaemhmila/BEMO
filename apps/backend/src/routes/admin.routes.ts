@@ -18,8 +18,20 @@ import {
 } from "../lib/template-images";
 import { generateOrderedStory } from "../services/ordered-story-generation.service";
 import { generateAdminColoringBook } from "../services/coloring-book-generation.service";
+import { StoryService, type StoryTemplateRow } from "../services/story.service";
 
 const router = Router();
+const storyService = StoryService.getInstance();
+
+const AdminColoringBookInputSchema = z.object({
+  childName: z.string().trim().min(1).max(80),
+  childAge: z.coerce.number().int().min(1).max(12),
+  gender: z.string().trim().max(20).optional().nullable(),
+  category: z.string().trim().max(40).default("adventure"),
+  language: z.string().trim().max(30).default("English"),
+  theme: z.string().trim().max(500).optional().nullable(),
+  childImage: z.string().trim().min(20).max(12_000_000),
+});
 
 // Protect ALL admin routes
 router.use(authMiddleware);
@@ -674,6 +686,74 @@ router.post("/testing/coloring-book", async (req, res) => {
     const message = error instanceof Error ? error.message : "COLORING_BOOK_FAILED";
     const status = message === "STORY_NOT_FOUND" ? 404 : message.startsWith("STORY_") ? 409 : 500;
     logger.error({ error, storyId }, "Failed to generate admin coloring book");
+    res.status(status).json({ message: status === 500 ? "Failed to generate coloring book" : message });
+  }
+});
+
+/**
+ * POST /admin/testing/coloring-book/generate
+ * Creates a one-off admin story from the Test tab inputs and returns the
+ * finished A4 coloring-book PDF. This bypasses customer trial consumption.
+ */
+router.post("/testing/coloring-book/generate", async (req, res) => {
+  const validation = AdminColoringBookInputSchema.safeParse(req.body);
+  if (!validation.success) {
+    res.status(400).json({ message: "Please provide a child name, age, and photo.", errors: validation.error.flatten() });
+    return;
+  }
+
+  let storyId: string | null = null;
+  try {
+    const input = validation.data;
+    const baseTemplate = await prismaClient.storyTemplate.findFirst({
+      where: { isActive: true, source: "PREDEFINED" },
+      orderBy: [{ difficulty: "asc" }, { name: "asc" }],
+    });
+    if (!baseTemplate) throw new Error("NO_ACTIVE_STORY_TEMPLATE");
+
+    const storedPrompts = baseTemplate.prompts as unknown as StoryTemplateRow["prompts"];
+    const template: StoryTemplateRow = {
+      id: baseTemplate.id,
+      name: baseTemplate.name,
+      description: baseTemplate.description,
+      ageRange: baseTemplate.ageRange,
+      category: input.category || baseTemplate.category,
+      difficulty: baseTemplate.difficulty,
+      prompts: {
+        ...storedPrompts,
+        theme: input.theme || storedPrompts.theme,
+        educationalFocus: "Learn clear colors and identify the important animals, objects, letters, or numbers in each scene.",
+      },
+    };
+
+    const gender = input.gender === "boy" || input.gender === "girl" ? input.gender : undefined;
+    const script = await storyService.generatePersonalizedStoryScript(
+      input.childName,
+      {
+        childName: input.childName,
+        childAge: input.childAge,
+        template,
+        language: input.language,
+        gender,
+      },
+      { name: input.childName, age: input.childAge },
+    );
+    const created = await storyService.createStory(
+      req.userId!,
+      script,
+      "simple animated",
+      { childName: input.childName, childAge: input.childAge, gender, language: input.language, childImage: input.childImage, template },
+    );
+    storyId = created.story.id;
+
+    const pdf = await generateAdminColoringBook({ storyId, pageCount: 14 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${input.childName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-coloring-book-a4.pdf"`);
+    res.send(pdf);
+  } catch (error) {
+    logger.error({ error, storyId }, "Failed to generate admin coloring book from test inputs");
+    const message = error instanceof Error ? error.message : "COLORING_BOOK_FAILED";
+    const status = message === "NO_ACTIVE_STORY_TEMPLATE" ? 409 : 500;
     res.status(status).json({ message: status === 500 ? "Failed to generate coloring book" : message });
   }
 });

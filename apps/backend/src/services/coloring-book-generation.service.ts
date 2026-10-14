@@ -61,6 +61,8 @@ export async function generateAdminColoringBook(input: ColoringBookGenerationInp
       id: true,
       title: true,
       childName: true,
+      childAge: true,
+      category: true,
       referenceImageUrl: true,
       pages: { orderBy: { pageNumber: "asc" }, select: { pageNumber: true, imagePrompt: true, content: true } },
     },
@@ -76,11 +78,18 @@ export async function generateAdminColoringBook(input: ColoringBookGenerationInp
   const sourcePages = story.pages.slice(0, pageCount);
   if (sourcePages.length < pageCount) throw new Error("STORY_NEEDS_14_PAGES");
 
+  const characterReferenceUrl = await coloringBookImageService.generateCharacterReference({
+    childName: story.childName,
+    childAge: story.childAge,
+    category: story.category || "color-learning adventure",
+    referenceImageUrl: story.referenceImageUrl,
+  });
+
   const cover = await coloringBookImageService.generateCover({
     childName: story.childName,
     title: story.title,
     scene: sourcePages[0]?.imagePrompt || sourcePages[0]?.content || "A joyful magical adventure",
-    referenceImageUrl: story.referenceImageUrl,
+    referenceImageUrl: characterReferenceUrl,
   });
 
   const pages: ColoringBookPage[] = [];
@@ -90,7 +99,7 @@ export async function generateAdminColoringBook(input: ColoringBookGenerationInp
     const image = await coloringBookImageService.generatePage({
       childName: story.childName,
       scene: `${scene}. COLOR LESSON FOR THIS PAGE: ${colorGuide}`,
-      referenceImageUrl: story.referenceImageUrl,
+      referenceImageUrl: characterReferenceUrl,
       pageNumber: index + 1,
     });
     pages.push({ pageNumber: index + 1, image, caption: page.content?.slice(0, 220), colorGuide });

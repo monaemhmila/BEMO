@@ -2738,7 +2738,7 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
   );
 }
 
-function TestTab() {
+function TestTab({ authHeaders }: { authHeaders: () => Promise<{ Authorization: string }> }) {
   const [childPhoto, setChildPhoto] = useState<File | null>(null);
   const [childName, setChildName] = useState("");
   const [age, setAge] = useState("6");
@@ -2748,6 +2748,7 @@ function TestTab() {
   const [audience, setAudience] = useState("4-8");
   const [theme, setTheme] = useState("");
   const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const testPayload = {
     inputs: {
@@ -2783,6 +2784,51 @@ function TestTab() {
     window.setTimeout(() => setCopied(false), 1600);
   };
 
+  const generateColoringBook = async () => {
+    if (!childPhoto || !childName.trim()) {
+      toast.error("Add the child name and photo first");
+      return;
+    }
+    setGenerating(true);
+    try {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(childPhoto.type) || childPhoto.size > 3 * 1024 * 1024) {
+        toast.error("Use a JPG, PNG, or WebP photo smaller than 3 MB");
+        return;
+      }
+      const childImage = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read the child photo"));
+        reader.readAsDataURL(childPhoto);
+      });
+      const response = await axios.post(
+        `${BACKEND_URL}/admin/testing/coloring-book/generate`,
+        { childName: childName.trim(), childAge: Number(age), gender: gender || undefined, category, language, theme: theme || undefined, childImage },
+        { headers: await authHeaders(), responseType: "blob" },
+      );
+      const url = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${childName.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-coloring-book-a4.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("A4 coloring book generated and downloaded");
+    } catch (error) {
+      let message = "Failed to generate coloring book";
+      if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+        try {
+          const body = JSON.parse(await error.response.data.text()) as { message?: string };
+          message = body.message || message;
+        } catch { /* keep the friendly fallback */ }
+      }
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const reset = () => {
     setChildPhoto(null);
     setChildName("");
@@ -2807,8 +2853,8 @@ function TestTab() {
             <p className="mt-1 max-w-2xl text-sm text-white/55">Prepare one test payload from the recommended workflow. This tab is intentionally isolated from customer generation.</p>
           </div>
           <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/60">
-            <span className="h-2 w-2 rounded-full bg-amber-400" />
-            Preview mode
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Admin generation
           </div>
         </div>
       </div>
@@ -2862,7 +2908,13 @@ function TestTab() {
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {["Story JSON · 14 pages", "Animated child reference", "Full-color cover", "14 B&W coloring pages"].map((item, index) => <div key={item} className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><p className="text-xs font-bold text-purple-300">0{index + 1}</p><p className="mt-2 text-sm font-semibold text-white">{item}</p></div>)}
         </div>
-        <div className="mt-4 rounded-xl bg-amber-400/10 px-4 py-3 text-xs text-amber-200/80">Generation is not triggered from this preview yet. The payload is ready to connect to the story, character-reference, cover, and interior-page endpoints.</div>
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-emerald-100/80"><span className="font-bold text-emerald-200">Ready to generate.</span> This creates the story, generates the cover and 14 interiors, then downloads the A4 PDF.</div>
+          <button type="button" onClick={() => void generateColoringBook()} disabled={generating || !childName.trim() || !childPhoto} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-bold text-emerald-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookCopy className="h-4 w-4" />}
+            {generating ? "Generating book..." : "Generate A4 coloring book"}
+          </button>
+        </div>
       </section>
     </div>
   );
@@ -3684,7 +3736,7 @@ export default function AdminPage() {
             {/* ── ANALYTICS TAB ────────────────────────────────────────────── */}
             {activeTab === "analytics" && <AnalyticsTab authHeaders={authHeaders} />}
 
-            {activeTab === "test" && <TestTab />}
+            {activeTab === "test" && <TestTab authHeaders={authHeaders} />}
 
             {/* ── ORDERS TAB ───────────────────────────────────────────────── */}
             {activeTab === "orders" && (

@@ -5,6 +5,35 @@ import { safeFetchAndValidateImage } from "../lib/safe-image-fetcher";
 
 /** Dedicated image generator for the admin coloring-book experiment. */
 export class ColoringBookImageService {
+  async generateCharacterReference(input: {
+    childName?: string | null;
+    childAge?: number | null;
+    category?: string | null;
+    referenceImageUrl: string;
+  }): Promise<string> {
+    const prompt = [
+      "Transform the supplied child photo into a reusable simple animated 2D children's storybook character reference.",
+      "Preserve the child's recognizable face, hair, skin tone, age, and natural proportions.",
+      "Show a friendly full-body standing pose, clean silhouette, simple age-appropriate outfit, and plain light background.",
+      "Do not copy the photo background, do not add scenery, text, letters, logos, watermark, or extra characters.",
+      `Child: ${input.childName || "the child"}, age ${input.childAge || "unknown"}, story category: ${input.category || "adventure"}.`,
+    ].join(" ");
+
+    const response = await fal.subscribe("xai/grok-imagine-image/edit", {
+      input: {
+        prompt,
+        image_urls: [input.referenceImageUrl],
+        aspect_ratio: "1:1",
+        resolution: "2k",
+        output_format: "png",
+        num_images: 1,
+      },
+    });
+    const imageUrl = (response.data as { images?: Array<{ url?: string }> })?.images?.[0]?.url;
+    if (!imageUrl) throw new Error("Character reference generation returned no image");
+    return imageUrl;
+  }
+
   async generateCover(input: {
     childName?: string | null;
     title: string;
