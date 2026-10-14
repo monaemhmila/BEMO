@@ -85,13 +85,13 @@ const STORY_TEXT_SHADOW = "#000000";
 const STORY_TEXT_OUTLINE = "#1A2235";
 
 
-// Exact square printed page size in points (148.5 x 148.5 mm), shared with the
+// Exact square printed page size in points (140 x 140 mm), shared with the
 // contracts so the image pipeline and PDF layout stay in lockstep. Every
 // story ships as exactly 15 pages - page 1 is the full-bleed cover with a
 // PDF-rendered title, pages 2-13 carry the story, page 14 the emotional
 // ending and page 15 the closing.
-const PAGE_WIDTH = STORYBOOK_PAGE_WIDTH_PT; // 148.5mm square
-const PAGE_HEIGHT = STORYBOOK_PAGE_HEIGHT_PT; // 148.5mm square
+const PAGE_WIDTH = STORYBOOK_PAGE_WIDTH_PT; // 140mm square
+const PAGE_HEIGHT = STORYBOOK_PAGE_HEIGHT_PT; // 140mm square
 
 // --- Web reader parity ------------------------------------------------------
 // `reader.css` and StoryBookCover.tsx express the cover in container query
@@ -492,75 +492,63 @@ export class PDFService {
 
   private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
     const copy = getFinalCoverCopy(story.language);
-    const panelWidth = width * 0.78;
-    const panelPaddingX = width * 0.07;
-    const textWidth = panelWidth - panelPaddingX * 2;
-    const titleSize = width * 0.052;
-    const bodySize = width * 0.021;
-    const titleLineHeight = titleSize * 1.18;
-    const bodyLineHeight = bodySize * 1.38;
-    this.font(doc, "Title", "Helvetica-Bold").fontSize(titleSize);
-    const titleHeight = doc.heightOfString(copy.title, {
-      width: textWidth,
-      align: "center",
-      lineGap: titleLineHeight - titleSize,
-    });
-    this.font(doc, "BodyRegular", "Helvetica").fontSize(bodySize);
-    const bodyHeight = doc.heightOfString(copy.body, {
-      width: textWidth,
-      align: "center",
-      lineGap: bodyLineHeight - bodySize,
-    });
-    const gap = height * 0.035;
-    const panelPaddingY = height * 0.055;
-    const panelHeight = titleHeight + gap + bodyHeight + panelPaddingY * 2;
-    const panelX = (width - panelWidth) / 2;
-    const panelY = (height - panelHeight) / 2;
 
-    // Keep the final message readable over every reusable cover artwork.
-    doc
-      .roundedRect(panelX + 2, panelY + 3, panelWidth, panelHeight, width * 0.035)
-      .fillColor("#23384A")
-      .fillOpacity(0.18)
-      .fill();
-    doc
-      .roundedRect(panelX, panelY, panelWidth, panelHeight, width * 0.035)
-      .fillColor("#FFFDF8")
-      .fillOpacity(0.97)
-      .fill();
-    doc.fillOpacity(1);
+    // Layout: no panel/shape — text sits directly on the full-bleed cover image.
+    const sidePad = width * 0.08;
+    const textWidth = width - sidePad * 2;
 
-    this.drawCoverLine(doc, copy.title, {
-      x: panelX + panelPaddingX,
-      y: panelY + panelPaddingY,
-      width: textWidth,
-      align: "center",
-      fontSize: titleSize,
-      color: "#315B75",
-      lineHeight: titleLineHeight,
-      shadowOpacity: 0.16,
-      shadowOffsetY: 1,
-      shadowBlur: 2,
-    });
+    // Title: big, white, goofy wavy letters at the top
+    const titleSize = width * 0.072;
+    const titleLineHeight = titleSize * 1.35;
+    const titleY = height * 0.06;
+
+    // Arabic text uses connected ligatures that break when drawn per-character,
+    // so fall back to the standard centered line for Arabic.
+    const isArabic = (story.language || "").toLowerCase().startsWith("ar");
+    let titleBottom: number;
+
+    if (isArabic) {
+      this.font(doc, "Title", "Helvetica-Bold").fontSize(titleSize);
+      titleBottom = this.drawCoverLine(doc, copy.title, {
+        x: sidePad,
+        y: titleY,
+        width: textWidth,
+        align: "center",
+        fontSize: titleSize,
+        color: "#FFFFFF",
+        lineHeight: titleLineHeight,
+        shadowOpacity: 0.8,
+        shadowOffsetY: 2,
+        shadowBlur: 10,
+      });
+    } else {
+      titleBottom = this.drawGoofyTitle(doc, copy.title, width, titleY, textWidth, titleSize, titleLineHeight);
+    }
+
+    // Body: black text, centered below the title
+    const bodySize = width * 0.023;
+    const bodyLineHeight = bodySize * 1.42;
+    const gap = height * 0.04;
+    const bodyY = titleBottom + gap;
 
     this.drawCoverLine(doc, copy.body, {
-      x: panelX + panelPaddingX,
-      y: panelY + panelPaddingY + titleHeight + gap,
+      x: sidePad,
+      y: bodyY,
       width: textWidth,
       align: "center",
       fontSize: bodySize,
-      color: "#40515D",
+      color: "#000000",
       lineHeight: bodyLineHeight,
-      shadowOpacity: 0.1,
-      shadowOffsetY: 1,
-      shadowBlur: 2,
+      shadowOpacity: 0,
+      shadowOffsetY: 0,
+      shadowBlur: 0,
     });
   }
 
   /**
    * Place the cover-cropped image so it fills every pixel of the page.
    * The buffer is already cover-cropped to the exact square page aspect, so
-   * drawing it at 0,0 stretched to the 14.85 cm page never distorts it.
+   * drawing it at 0,0 stretched to the 14 cm page never distorts it.
    */
   private drawPageImage(
     doc: PDFKit.PDFDocument,
@@ -592,20 +580,39 @@ export class PDFService {
     const cleanText = (text || "").trim();
     if (!cleanText) return;
 
+    // Keep the cover and closing-page artwork exactly as designed. For normal
+    // story pages, move the caption slightly lower and make its text block
+    // narrower so it does not stretch too far across the illustration.
+    const isCoverOrClosing = getPageType(pageNumber, totalPages) === "cover" || getPageType(pageNumber, totalPages) === "closing";
+    const normalPageLayout = isCoverOrClosing
+      ? layout
+      : {
+        ...layout,
+        y: layout.y + 10,
+        width: layout.width * 0.88,
+        x: layout.x + layout.width > STORYBOOK_PAGE_WIDTH_PT * 0.82
+          ? layout.x + layout.width * 0.12
+          : layout.align === "center"
+            ? layout.x + layout.width * 0.06
+            : layout.x,
+        maxLines: Math.min(layout.maxLines, 5),
+      };
+
     const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
-    this.font(doc, baseFont, "Helvetica").fontSize(layout.fontSize);
+    this.font(doc, baseFont, "Helvetica").fontSize(normalPageLayout.fontSize);
 
     const options: PDFKit.Mixins.TextOptions = {
       width: 500,
-      height: Math.round(layout.maxLines * layout.lineHeight),
-      align: layout.align,
-      lineGap: layout.lineHeight - layout.fontSize,
+      height: Math.round(normalPageLayout.maxLines * normalPageLayout.lineHeight),
+      align: normalPageLayout.align,
+      lineGap: normalPageLayout.lineHeight - normalPageLayout.fontSize,
       characterSpacing: 0.2,
       ellipsis: true,
       lineBreak: true,
     };
 
-    this.drawTextWithShadow(doc, cleanText, 50, layout.y, options, layout);
+    options.width = normalPageLayout.width;
+    this.drawTextWithShadow(doc, cleanText, normalPageLayout.x, normalPageLayout.y, options, normalPageLayout);
   }
 
   /**
@@ -879,6 +886,107 @@ export class PDFService {
 
   private font(doc: PDFKit.PDFDocument, customFont: string, fallback: string) {
     return doc.font(this.customFontsAvailable ? customFont : fallback);
+  }
+
+  /**
+   * Draw the title text character-by-character with a playful wavy arc,
+   * per-character rotation, and subtle size wobble — giving it a bent,
+   * goofy, fun storybook feel. Returns the Y coordinate just below the
+   * last line so the caller can position content beneath it.
+   */
+  private drawGoofyTitle(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    pageWidth: number,
+    baseY: number,
+    maxWidth: number,
+    fontSize: number,
+    lineHeight: number,
+  ): number {
+    this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
+
+    // Word-wrap into lines manually so we can draw each character individually.
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let currentLine = "";
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (doc.widthOfString(testLine) > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    // Wave / wobble parameters
+    const waveAmplitude = fontSize * 0.16;   // vertical bounce height
+    const maxRotation = 7;                   // degrees of tilt per character
+    const sizeWobble = 0.07;                 // ±7 % size variation
+    const shadowSteps = 4;
+
+    lines.forEach((line, lineIndex) => {
+      this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
+      const chars = line.split("");
+      const charWidths = chars.map((c) => doc.widthOfString(c));
+      const totalLineWidth = charWidths.reduce((s, w) => s + w, 0);
+
+      let cursorX = (pageWidth - totalLineWidth) / 2; // centre the line
+      const cursorY = baseY + lineIndex * lineHeight;
+
+      chars.forEach((char, i) => {
+        const charW = charWidths[i];
+
+        // Spaces just advance the cursor — nothing to draw.
+        if (char === " ") {
+          cursorX += charW;
+          return;
+        }
+
+        // Progress through the line drives the wave.
+        const t = chars.length > 1 ? i / (chars.length - 1) : 0.5;
+        const phase = t * Math.PI * 2.2 + lineIndex * 1.8; // offset per line
+        const yOff = Math.sin(phase) * waveAmplitude;
+        const rot = Math.cos(phase) * maxRotation;
+        const scale = 1 + Math.sin(t * Math.PI * 3.4 + lineIndex) * sizeWobble;
+        const charSize = fontSize * scale;
+
+        const cx = cursorX + charW / 2;
+        const cy = cursorY + yOff;
+
+        // --- shadow passes (soft dark halo) ---
+        for (let s = 1; s <= shadowSteps; s++) {
+          const st = s / shadowSteps;
+          doc.save();
+          doc.translate(cx, cy + 6 * st);
+          doc.rotate(rot, { origin: [0, 0] });
+          this.font(doc, "Title", "Helvetica-Bold")
+            .fontSize(charSize)
+            .fillColor("#000000")
+            .fillOpacity(0.7 * Math.pow(1 - st, 1.5));
+          doc.text(char, -charW / 2, 0, { lineBreak: false });
+          doc.fillOpacity(1);
+          doc.restore();
+        }
+
+        // --- solid white character on top ---
+        doc.save();
+        doc.translate(cx, cy);
+        doc.rotate(rot, { origin: [0, 0] });
+        this.font(doc, "Title", "Helvetica-Bold")
+          .fontSize(charSize)
+          .fillColor("#FFFFFF")
+          .fillOpacity(1);
+        doc.text(char, -charW / 2, 0, { lineBreak: false });
+        doc.restore();
+
+        cursorX += charW;
+      });
+    });
+
+    // Return y just below the last line, accounting for the wave overshoot.
+    return baseY + lines.length * lineHeight + waveAmplitude;
   }
 
   private drawSparkle(doc: PDFKit.PDFDocument, cx: number, cy: number, size: number, color: string) {

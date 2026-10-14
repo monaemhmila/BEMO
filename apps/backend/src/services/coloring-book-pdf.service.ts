@@ -56,11 +56,13 @@ export class ColoringBookPdfService {
         { width: width - 104, align: "center" },
       );
       document.image(page.image, 62, 76, { fit: [width - 124, height - 205], align: "center", valign: "center" });
-      document.moveTo(52, height - 119).lineTo(width - 52, height - 119).lineWidth(0.7).strokeColor("#777777").stroke();
-      document.fontSize(8.5).font("Helvetica-Bold").text("Scene: ", 52, height - 108, { continued: true, width: width - 104, lineGap: 1 });
-      document.font("Helvetica").text(page.caption || "Color the scene and tell the story.", { width: width - 104, lineGap: 1 });
-      document.font("Helvetica-Bold").text("Color guide: ", 52, height - 76, { continued: true, width: width - 104, lineGap: 1 });
-      document.font("Helvetica").text(page.colorGuide, { width: width - 104, lineGap: 1 });
+      const footerX = 78;
+      const footerWidth = width - 156;
+      document.moveTo(footerX, height - 128).lineTo(width - footerX, height - 128).lineWidth(0.7).strokeColor("#777777").stroke();
+      document.fontSize(8.5).font("Helvetica-Bold").text("Scene: ", footerX, height - 117, { continued: true, width: footerWidth, lineGap: 1 });
+      document.font("Helvetica").text(page.caption || "Color the scene and tell the story.", { width: footerWidth, lineGap: 1 });
+      document.font("Helvetica-Bold").text("Color guide: ", footerX, height - 82, { continued: true, width: footerWidth, lineGap: 1 });
+      document.font("Helvetica").text(page.colorGuide, { width: footerWidth, lineGap: 1 });
       document.fontSize(9).font("Helvetica").text(`PAGE ${page.pageNumber}`, 48, height - 38, { width: width - 96, align: "center" });
     }
 
