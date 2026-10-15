@@ -474,7 +474,8 @@ router.get("/preview-pdf", async (req, res) => {
   try {
     const pdfService = new PDFService();
     const title = (req.query.title as string) || "Empty Storybook Layout Preview";
-    const pdfBuffer = await pdfService.generateEmptyPreviewPdf(title);
+    const language = (req.query.language as string) || "English";
+    const pdfBuffer = await pdfService.generateEmptyPreviewPdf(title, language);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", 'inline; filename="empty-storybook-preview.pdf"');

@@ -25,11 +25,17 @@ const FINAL_COVER_COPY = {
   },
 } as const;
 
+const SHORT_FINAL_COVER_BODY = {
+  english: "Childhood passes quickly, but happy memories last forever.\n\nI turn your child’s dreams, name, and favorite things into a story of their own.\n\nEvery page is a new adventure with your child as the hero.\n\nA special book to love today and remember for years.",
+  french: "L’enfance passe vite, mais les beaux souvenirs restent pour toujours.\n\nJe transforme les rêves, le prénom et les choses préférées de votre enfant en une histoire unique.\n\nChaque page est une nouvelle aventure où votre enfant est le héros.\n\nUn livre à aimer aujourd’hui et à garder longtemps.",
+  arabic: "تمرّ الطفولة بسرعة، لكن لحظاتها الجميلة تبقى إلى الأبد.\n\nأحوّل أحلام طفلك واسمه وأشياءه المفضلة إلى قصة خاصة به.\n\nفي كل صفحة مغامرة جديدة، وطفلك هو البطل.\n\nكتاب جميل يحبه اليوم ويحتفظ به لسنوات طويلة.",
+} as const;
+
 function getFinalCoverCopy(language?: string | null) {
   const normalized = (language || "english").toLowerCase();
-  if (normalized.startsWith("fr")) return FINAL_COVER_COPY.french;
-  if (normalized.startsWith("ar")) return FINAL_COVER_COPY.arabic;
-  return FINAL_COVER_COPY.english;
+  if (normalized.startsWith("fr")) return { ...FINAL_COVER_COPY.french, body: SHORT_FINAL_COVER_BODY.french };
+  if (normalized.startsWith("ar")) return { ...FINAL_COVER_COPY.arabic, body: SHORT_FINAL_COVER_BODY.arabic };
+  return { ...FINAL_COVER_COPY.english, body: SHORT_FINAL_COVER_BODY.english };
 }
 
 /**

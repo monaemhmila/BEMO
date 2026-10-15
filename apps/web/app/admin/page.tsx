@@ -2938,6 +2938,7 @@ export default function AdminPage() {
   const [grantAmount, setGrantAmount] = useState(3);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+  const [pdfPreviewLanguage, setPdfPreviewLanguage] = useState("English");
   const [coloringStoryId, setColoringStoryId] = useState("");
   const [coloringBookLoading, setColoringBookLoading] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
@@ -2959,14 +2960,14 @@ export default function AdminPage() {
     setPdfPreviewLoading(true);
     try {
       const headers = await authHeaders();
-      const response = await axios.get(`${BACKEND_URL}/admin/preview-pdf`, {
+      const response = await axios.get(`${BACKEND_URL}/admin/preview-pdf?language=${encodeURIComponent(pdfPreviewLanguage)}`, {
         headers,
         responseType: "blob",
       });
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);
-      toast.success("Empty PDF layout preview generated!");
+      toast.success(`${pdfPreviewLanguage} PDF layout preview generated!`);
     } catch (error) {
       toast.error("Failed to generate PDF preview");
       console.error(error);
@@ -3477,14 +3478,27 @@ export default function AdminPage() {
                         Inspect the PDF book layout, typography, image frames, margins, and page counters on a clean template without needing AI image generation.
                       </p>
                     </div>
-                    <button
-                      onClick={handlePreviewEmptyPdf}
-                      disabled={pdfPreviewLoading}
-                      className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2 shrink-0 disabled:opacity-50"
-                    >
-                      <Eye className="w-4 h-4" />
-                      {pdfPreviewLoading ? "Generating Preview..." : "View Empty PDF Layout"}
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <label className="sr-only" htmlFor="pdf-preview-language">Preview language</label>
+                      <select
+                        id="pdf-preview-language"
+                        value={pdfPreviewLanguage}
+                        onChange={(e) => setPdfPreviewLanguage(e.target.value)}
+                        className="px-3 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option className="bg-[#17171a]" value="English">English</option>
+                        <option className="bg-[#17171a]" value="French">Français</option>
+                        <option className="bg-[#17171a]" value="Arabic">العربية</option>
+                      </select>
+                      <button
+                        onClick={handlePreviewEmptyPdf}
+                        disabled={pdfPreviewLoading}
+                        className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <Eye className="w-4 h-4" />
+                        {pdfPreviewLoading ? "Generating Preview..." : "View Empty PDF Layout"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 

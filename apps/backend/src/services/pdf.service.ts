@@ -53,6 +53,12 @@ const FINAL_COVER_COPY = {
   },
 } as const;
 
+const SHORT_FINAL_COVER_BODY = {
+  english: "Childhood passes quickly, but happy memories last forever.\n\nI turn your child’s dreams, name, and favorite things into a story of their own.\n\nEvery page is a new adventure with your child as the hero.\n\nA special book to love today and remember for years.",
+  french: "L’enfance passe vite, mais les beaux souvenirs restent pour toujours.\n\nJe transforme les rêves, le prénom et les choses préférées de votre enfant en une histoire unique.\n\nChaque page est une nouvelle aventure où votre enfant est le héros.\n\nUn livre à aimer aujourd’hui et à garder longtemps.",
+  arabic: "تمرّ الطفولة بسرعة، لكن لحظاتها الجميلة تبقى إلى الأبد.\n\nأحوّل أحلام طفلك واسمه وأشياءه المفضلة إلى قصة خاصة به.\n\nفي كل صفحة مغامرة جديدة، وطفلك هو البطل.\n\nكتاب جميل يحبه اليوم ويحتفظ به لسنوات طويلة.",
+} as const;
+
 function repairCoverText(value: string): string {
   // Some older deployments persisted these strings after an accidental
   // UTF-8 -> Latin-1 conversion (for example, "HÃ©ros"). Repair that data at
@@ -74,7 +80,7 @@ function getFinalCoverCopy(language?: string | null) {
       : FINAL_COVER_COPY.english;
   return {
     title: repairCoverText(copy.title),
-    body: repairCoverText(copy.body),
+    body: SHORT_FINAL_COVER_BODY[normalized.startsWith("fr") ? "french" : normalized.startsWith("ar") ? "arabic" : "english"],
   };
 }
 
@@ -396,7 +402,10 @@ export class PDFService {
   /**
    * Generate an empty/sample storybook PDF layout preview for admin testing
    */
-  async generateEmptyPreviewPdf(title = "Empty Storybook Layout Preview"): Promise<Buffer> {
+  async generateEmptyPreviewPdf(
+    title = "Empty Storybook Layout Preview",
+    language = "English"
+  ): Promise<Buffer> {
     const samplePages: StoryPagePayload[] = [
       {
         pageNumber: 1,
@@ -426,6 +435,7 @@ export class PDFService {
       {
         title,
         dedication: "",
+        language,
       },
       samplePages
     );
