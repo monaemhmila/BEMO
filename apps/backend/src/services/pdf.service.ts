@@ -518,7 +518,7 @@ export class PDFService {
     const textWidth = width - sidePad * 2;
 
     // Title: big, white, goofy wavy letters at the top
-    const titleSize = 60;
+    const titleSize = 5;
     const titleLineHeight = titleSize * 1.35;
     const titleY = height * 0.06;
 
@@ -546,7 +546,7 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 10;
+    const bodySize = 1;
     const bodyLineHeight = bodySize * 1.42;
     const gap = height * 0.04;
     const bodyY = titleBottom + gap;
