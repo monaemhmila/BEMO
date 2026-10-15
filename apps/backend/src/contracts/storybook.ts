@@ -169,7 +169,7 @@ export function getPageTextLayout(
   const composition = getPageComposition(pageNumber, totalPages);
   const width = STORYBOOK_PAGE_WIDTH_PT;
   const height = STORYBOOK_PAGE_HEIGHT_PT;
-  const margin = 56;
+  const margin = 25;
 
   switch (composition.textPosition) {
     case "top-center":
@@ -189,8 +189,8 @@ export function getPageTextLayout(
     case "bottom-left":
       return {
         x: margin,
-        y: height - 150,
-        width: width * composition.textWidthPercent,
+        y: height - 300,
+        width: 300,
         align: "left",
         fontSize: 15,
         lineHeight: 19,
@@ -202,9 +202,9 @@ export function getPageTextLayout(
       };
     case "bottom-right":
       return {
-        x: width - margin - width * composition.textWidthPercent,
-        y: height - 150,
-        width: width * composition.textWidthPercent,
+        x: margin,
+        y: height - 300,
+        width: 300,
         align: "left",
         fontSize: 15,
         lineHeight: 19,
