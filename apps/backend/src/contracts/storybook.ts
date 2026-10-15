@@ -189,7 +189,7 @@ export function getPageTextLayout(
     case "bottom-left":
       return {
         x: margin,
-        y: height - 300,
+        y: height - 50,
         width: 300,
         align: "left",
         fontSize: 15,
@@ -203,7 +203,7 @@ export function getPageTextLayout(
     case "bottom-right":
       return {
         x: margin,
-        y: height - 300,
+        y: height - 50,
         width: 300,
         align: "left",
         fontSize: 15,

@@ -111,9 +111,7 @@ const WEB_PX = 0.75; // 1 CSS px, in points
 const COVER_TITLE = {
   top: 0.07 * PAGE_HEIGHT, // top-[7%]
   sidePad: 0.08 * PAGE_WIDTH, // px-[8%]
-  // Keep the PDF cover title compact enough that it can never spill into
-  // additional pages in the empty layout preview.
-  fontSize: 0.8 * WEB_CQW,
+  fontSize: 3.2 * WEB_CQW, // compact two-line cover title
   leading: 1.25, // leading-tight
   shadowOpacity: 0.7, // 0 2px 12px rgba(0, 0, 0, 0.7)
   shadowOffsetY: 2 * WEB_PX, // 2px
@@ -520,7 +518,7 @@ export class PDFService {
     const textWidth = width - sidePad * 2;
 
     // Title: big, white, goofy wavy letters at the top
-    const titleSize = width * 0.072;
+    const titleSize = 60;
     const titleLineHeight = titleSize * 1.35;
     const titleY = height * 0.06;
 
@@ -548,7 +546,7 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = width * 0.023;
+    const bodySize = 10;
     const bodyLineHeight = bodySize * 1.42;
     const gap = height * 0.04;
     const bodyY = titleBottom + gap;
