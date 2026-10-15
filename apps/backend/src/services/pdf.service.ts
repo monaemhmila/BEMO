@@ -126,6 +126,8 @@ const COVER_TITLE = {
   },
   footer: {
     bottom: 0.04 * PAGE_HEIGHT, // bottom-[4%]
+    whiteSpaceY: 167,
+    whiteSpaceSidePad: 87,
     dedicationSize: 0.9 * WEB_CQW,
     dedicationLeading: 1.375, // leading-snug
     pillSize: 0.7 * WEB_CQW,
@@ -518,7 +520,7 @@ export class PDFService {
     const textWidth = width - sidePad * 2;
 
     // Title: big, white, goofy wavy letters at the top
-    const titleSize = 5;
+    const titleSize = 15;
     const titleLineHeight = titleSize * 1.35;
     const titleY = height * 0.06;
 
@@ -546,7 +548,7 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 1;
+    const bodySize = 3;
     const bodyLineHeight = bodySize * 1.42;
     const gap = height * 0.04;
     const bodyY = titleBottom + gap;
@@ -738,6 +740,8 @@ export class PDFService {
 
     const dedication = (story.dedication ?? "").trim();
     const footer = COVER_TITLE.footer;
+    const footerSidePad = footer.whiteSpaceSidePad;
+    const footerWidth = width - footerSidePad * 2;
     if (dedication) {
       const quote = `\u201C${dedication}\u201D`;
       this.font(doc, "Title", "Helvetica-Oblique").fontSize(footer.dedicationSize);
@@ -746,15 +750,15 @@ export class PDFService {
       // wraps grows *upward*. PDFKit text grows downward, so measure first and
       // lift the start point by the block's real height.
       const blockHeight = doc.heightOfString(quote, {
-        width: contentWidth,
+        width: footerWidth,
         align: "center",
         lineGap: lineHeight - footer.dedicationSize,
         lineBreak: true,
       });
       this.drawCoverLine(doc, quote, {
-        x: COVER_TITLE.sidePad,
-        y: height - footer.bottom - blockHeight,
-        width: contentWidth,
+        x: footerSidePad,
+        y: footer.whiteSpaceY,
+        width: footerWidth,
         align: "center",
         fontSize: footer.dedicationSize,
         color: STORY_TEXT_COLOR,
@@ -777,7 +781,7 @@ export class PDFService {
     const boxWidth = textWidth + footer.pillPadX * 2;
     const boxHeight = footer.pillSize + footer.pillPadY * 2;
     const boxX = (width - boxWidth) / 2;
-    const boxY = height - footer.bottom - boxHeight;
+    const boxY = footer.whiteSpaceY;
 
     doc.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight / 2);
     doc.fillColor(footer.pillColor).fillOpacity(footer.pillOpacity).fill();
