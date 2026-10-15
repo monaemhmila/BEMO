@@ -559,12 +559,12 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 7;
+    const bodySize = 11;
     const bodyLineHeight = bodySize * 1.42;
     const gap = 45;
     const bodyY = titleBottom + gap;
 
-    this.font(doc, "BodyRegular", "Helvetica").fontSize(bodySize);
+    doc.font("Helvetica-Bold").fontSize(bodySize);
     this.drawCoverLine(doc, copy.body, {
       x: sidePad,
       y: bodyY,
