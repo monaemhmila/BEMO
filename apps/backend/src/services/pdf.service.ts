@@ -517,7 +517,7 @@ export class PDFService {
     const copy = getFinalCoverCopy(story.language);
 
     // Layout: no panel/shape — text sits directly on the full-bleed cover image.
-    const sidePad = 113.39; // 4 cm from each side on the 14 cm PDF page
+    const sidePad = 85.04; // 3 cm from each side on the 14 cm PDF page
     const textWidth = width - sidePad * 2;
 
     // Title: big, white, goofy wavy letters at the top
@@ -549,9 +549,9 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 9;
+    const bodySize = 7;
     const bodyLineHeight = bodySize * 1.42;
-    const gap = 60;
+    const gap = 45;
     const bodyY = titleBottom + gap;
 
     this.font(doc, "BodyRegular", "Helvetica").fontSize(bodySize);
