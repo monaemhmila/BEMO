@@ -131,7 +131,7 @@ const COVER_TITLE = {
     pillBottom: 28.35, // 1 cm above the bottom edge
     dedicationSize: 0.9 * WEB_CQW,
     dedicationLeading: 1.375, // leading-snug
-    pillSize: 0.7 * WEB_CQW,
+    pillSize: 0.85 * WEB_CQW,
     pillTracking: 0.3, // tracking-[0.3em]
     pillPadX: 0.02 * PAGE_WIDTH, // px-[2%]
     pillPadY: 0.8 * WEB_CQW, // py-[0.8cqw]
@@ -549,7 +549,7 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 2;
+    const bodySize = 1;
     const bodyLineHeight = bodySize * 1.42;
     const gap = height * 0.04;
     const bodyY = titleBottom + gap;
