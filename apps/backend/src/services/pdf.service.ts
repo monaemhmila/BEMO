@@ -128,6 +128,7 @@ const COVER_TITLE = {
     bottom: 0.04 * PAGE_HEIGHT, // bottom-[4%]
     whiteSpaceY: 167,
     whiteSpaceSidePad: 87,
+    pillBottom: 28.35, // 1 cm above the bottom edge
     dedicationSize: 0.9 * WEB_CQW,
     dedicationLeading: 1.375, // leading-snug
     pillSize: 0.7 * WEB_CQW,
@@ -548,7 +549,7 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 3;
+    const bodySize = 2;
     const bodyLineHeight = bodySize * 1.42;
     const gap = height * 0.04;
     const bodyY = titleBottom + gap;
@@ -781,7 +782,8 @@ export class PDFService {
     const boxWidth = textWidth + footer.pillPadX * 2;
     const boxHeight = footer.pillSize + footer.pillPadY * 2;
     const boxX = (width - boxWidth) / 2;
-    const boxY = footer.whiteSpaceY;
+    // Keep the fallback label independent from the dedication text area.
+    const boxY = height - footer.pillBottom - boxHeight;
 
     doc.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight / 2);
     doc.fillColor(footer.pillColor).fillOpacity(footer.pillOpacity).fill();
