@@ -549,9 +549,9 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 10;
+    const bodySize = 6;
     const bodyLineHeight = bodySize * 1.42;
-    const gap = 70.87; // 2.5 cm below the title
+    const gap = 60;
     const bodyY = titleBottom + gap;
 
     this.font(doc, "BodyRegular", "Helvetica").fontSize(bodySize);
