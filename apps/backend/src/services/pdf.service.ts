@@ -111,7 +111,9 @@ const WEB_PX = 0.75; // 1 CSS px, in points
 const COVER_TITLE = {
   top: 0.07 * PAGE_HEIGHT, // top-[7%]
   sidePad: 0.08 * PAGE_WIDTH, // px-[8%]
-  fontSize: 3.2 * WEB_CQW, // compact two-line cover title
+  // Keep the PDF cover title compact enough that it can never spill into
+  // additional pages in the empty layout preview.
+  fontSize: 0.8 * WEB_CQW,
   leading: 1.25, // leading-tight
   shadowOpacity: 0.7, // 0 2px 12px rgba(0, 0, 0, 0.7)
   shadowOffsetY: 2 * WEB_PX, // 2px
@@ -627,7 +629,9 @@ export class PDFService {
       align: normalPageLayout.align,
       lineGap: normalPageLayout.lineHeight - normalPageLayout.fontSize,
       characterSpacing: 0.2,
-      ellipsis: true,
+      // Let the copy wrap at the safe-area width without replacing the end
+      // of the phrase with an ellipsis in the generated PDF.
+      ellipsis: false,
       lineBreak: true,
     };
 
