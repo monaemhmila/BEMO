@@ -418,7 +418,7 @@ export class PDFService {
       {
         pageNumber: 15,
         content: "Closing page - a warm goodbye message centered over the closing artwork.",
-        imageUrl: "/assets/covers/GREEN-CO.jpg",
+        imageUrl: "/assets/covers/GREEN-CO.png",
       },
     ];
 
