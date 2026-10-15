@@ -549,7 +549,7 @@ export class PDFService {
     }
 
     // Body: black text, centered below the title
-    const bodySize = 0.5;
+    const bodySize = 0.05;
     const bodyLineHeight = bodySize * 1.42;
     const gap = height * 0.04;
     const bodyY = titleBottom + gap;
