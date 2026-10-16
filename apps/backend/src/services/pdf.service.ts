@@ -304,7 +304,8 @@ export class PDFService {
   async generateStorybookPdf(
     story: StoryPayload,
     pages: StoryPagePayload[],
-    onWarning?: (message: string) => void
+    onWarning?: (message: string) => void,
+    options?: { allowMissingArtwork?: boolean }
   ): Promise<Buffer> {
     // Render exactly the pages provided for this story: keep the first page for
     // each page number in order, ignore any duplicate/extra pages that may exist
@@ -349,7 +350,7 @@ export class PDFService {
         `The image host was unreachable; the book was rendered without those illustrations.`;
       console.error(message);
       onWarning?.(message);
-      throw new Error(message);
+      if (!options?.allowMissingArtwork) throw new Error(message);
     }
 
     // A 16:9 story page becomes two PDF leaves (left square, then right square).

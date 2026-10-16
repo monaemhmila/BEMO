@@ -405,7 +405,8 @@ router.get("/story/:id/pdf", async (req, res) => {
       (message) => {
         missingArtWarning = message;
         logger.warn({ storyId, message }, "Story PDF rendered without some artwork");
-      }
+      },
+      { allowMissingArtwork: true }
     );
 
     const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";

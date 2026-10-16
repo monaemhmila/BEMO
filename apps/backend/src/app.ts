@@ -169,7 +169,9 @@ export function createApp() {
 
       const pdfBuffer = await new PDFService().generateStorybookPdf(
         { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
-        story.pages.map((page) => ({ pageNumber: page.pageNumber, content: page.content, imageUrl: page.imageUrl }))
+        story.pages.map((page) => ({ pageNumber: page.pageNumber, content: page.content, imageUrl: page.imageUrl })),
+        undefined,
+        { allowMissingArtwork: true }
       );
       const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
       await prismaClient.story.update({ where: { id: story.id }, data: { pdfUrl } });
