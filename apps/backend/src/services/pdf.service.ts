@@ -662,7 +662,15 @@ export class PDFService {
     };
 
     options.width = normalPageLayout.width;
-    this.drawTextWithShadow(doc, cleanText, normalPageLayout.x, normalPageLayout.y, options, normalPageLayout);
+    this.drawTextWithShadow(
+      doc,
+      cleanText,
+      normalPageLayout.x,
+      normalPageLayout.y,
+      options,
+      normalPageLayout,
+      this.isArabicLanguage(language),
+    );
   }
 
   /**
@@ -679,8 +687,16 @@ export class PDFService {
     x: number,
     y: number,
     options: PDFKit.Mixins.TextOptions,
-    layout: { glowOpacity: number; shadowOffsetX: number; shadowOffsetY: number; shadowOpacity: number }
+    layout: { glowOpacity: number; shadowOffsetX: number; shadowOffsetY: number; shadowOpacity: number },
+    arabic = false,
   ) {
+    // Do not add selectable shadow/outline copies for Arabic. PDF readers
+    // otherwise extract each visual pass as a repeated RTL sentence.
+    if (arabic) {
+      doc.fillColor(STORY_TEXT_COLOR).fillOpacity(1).text(text, x, y, options);
+      return;
+    }
+
     // 8px of CSS blur at 96dpi is 6pt; the 1px y-offset is 0.75pt.
     const BLUR_PASSES = 6;
     const BLUR_SPREAD = 6;
@@ -774,7 +790,7 @@ export class PDFService {
         color: STORY_TEXT_COLOR,
         opacity: 0.9,
         lineHeight,
-        shadowOpacity: 0.7,
+        shadowOpacity: arabic ? 0 : 0.7,
         shadowOffsetY: 1 * WEB_PX,
         shadowBlur: 8 * WEB_PX,
       });
