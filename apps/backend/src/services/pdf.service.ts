@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import bidiFactory from "bidi-js";
+import arabicReshaper from "arabic-reshaper";
 import path from "path";
 import fs, { existsSync } from "fs";
 import {
@@ -765,8 +766,12 @@ export class PDFService {
 
     lines.forEach((logicalLine, index) => {
       if (!logicalLine) return;
-      const levels = bidi.getEmbeddingLevels(logicalLine, "rtl");
-      const visualLine = bidi.getReorderedString(logicalLine, levels);
+      // Shape while the text is still logical. Once converted to presentation
+      // forms, the Unicode bidi pass can reorder the visual glyph sequence
+      // without asking PDFKit/fontkit to reshape already-reversed Arabic.
+      const shapedLine = arabicReshaper.convertArabic(logicalLine);
+      const levels = bidi.getEmbeddingLevels(shapedLine, "rtl");
+      const visualLine = bidi.getReorderedString(shapedLine, levels);
       doc
         .fillColor(color)
         .fillOpacity(1)

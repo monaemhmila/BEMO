@@ -3,3 +3,10 @@ declare namespace Express {
         userId?: string;
     }
 }
+
+declare module "arabic-reshaper" {
+    const arabicReshaper: {
+        convertArabic(value: string): string;
+    };
+    export = arabicReshaper;
+}
