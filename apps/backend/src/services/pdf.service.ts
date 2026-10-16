@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import bidiFactory from "bidi-js";
 import path from "path";
 import fs, { existsSync } from "fs";
 import {
@@ -83,8 +84,9 @@ function repairPdfText(value: string): string {
 }
 
 function prepareArabicPdfText(value: string): string {
-  const repaired = repairPdfText(value).trim();
-  return repaired ? `\u200F${repaired}\u200F` : repaired;
+  // Keep source text in logical (natural) order. Directionality is applied by
+  // the renderer; adding RTL marks or reversing the value breaks mixed text.
+  return repairPdfText(value).trim();
 }
 
 function getFinalCoverCopy(language?: string | null) {
@@ -189,6 +191,7 @@ const ARABIC_FONT_PATH = [
   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
   "C:\\Windows\\Fonts\\tahoma.ttf",
 ].find(existsSync);
+const bidi = bidiFactory();
 
 // --- Page artwork download -------------------------------------------------
 // Story art lives on fal's CDN, which can be slow to reach from some networks:
@@ -578,6 +581,7 @@ export class PDFService {
       shadowOpacity: 0,
       shadowOffsetY: 0,
       shadowBlur: 0,
+      rtl: this.isArabicLanguage(story.language),
     });
   }
 
@@ -693,7 +697,7 @@ export class PDFService {
     // Do not add selectable shadow/outline copies for Arabic. PDF readers
     // otherwise extract each visual pass as a repeated RTL sentence.
     if (arabic) {
-      doc.fillColor(STORY_TEXT_COLOR).fillOpacity(1).text(text, x, y, options);
+      this.drawRtlText(doc, text, x, y, options, STORY_TEXT_COLOR);
       return;
     }
 
@@ -722,6 +726,56 @@ export class PDFService {
     doc
       .fillColor(STORY_TEXT_COLOR)
       .text(text, x, y, options);
+  }
+
+  /**
+   * PDFKit shapes Arabic glyphs through fontkit, but its line wrapper does not
+   * apply the Unicode Bidirectional Algorithm. Wrap the logical paragraph
+   * first, then let bidi-js resolve the visual order for each complete line.
+   * The input string is never mutated or reversed.
+   */
+  private drawRtlText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    x: number,
+    y: number,
+    options: PDFKit.Mixins.TextOptions,
+    color: string,
+  ) {
+    const lineHeight = (doc as PDFKit.PDFDocument & { _fontSize?: number })._fontSize! + (options.lineGap || 0);
+    const lines: string[] = [];
+    const paragraphs = text.split(/\r?\n/);
+    for (const paragraph of paragraphs) {
+      if (!paragraph.trim()) {
+        lines.push("");
+        continue;
+      }
+      let line = "";
+      for (const word of paragraph.trim().split(/\s+/)) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (line && doc.widthOfString(candidate) > (options.width || 0)) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = candidate;
+        }
+      }
+      if (line) lines.push(line);
+    }
+
+    lines.forEach((logicalLine, index) => {
+      if (!logicalLine) return;
+      const levels = bidi.getEmbeddingLevels(logicalLine, "rtl");
+      const visualLine = bidi.getReorderedString(logicalLine, levels);
+      doc
+        .fillColor(color)
+        .fillOpacity(1)
+        .text(visualLine, x, y + index * lineHeight, {
+          ...options,
+          align: "right",
+          lineBreak: false,
+        });
+    });
   }
 
   /**
@@ -761,6 +815,7 @@ export class PDFService {
         shadowOpacity: COVER_TITLE.shadowOpacity,
         shadowOffsetY: COVER_TITLE.shadowOffsetY,
         shadowBlur: COVER_TITLE.shadowBlur,
+        rtl: arabic,
       });
     }
 
@@ -793,6 +848,7 @@ export class PDFService {
         shadowOpacity: arabic ? 0 : 0.7,
         shadowOffsetY: 1 * WEB_PX,
         shadowBlur: 8 * WEB_PX,
+        rtl: arabic,
       });
       return;
     }
@@ -853,6 +909,7 @@ export class PDFService {
       shadowOpacity?: number;
       shadowOffsetY?: number;
       shadowBlur?: number;
+      rtl?: boolean;
     }
   ): number {
     const { x, y, width, align, fontSize, color, lineHeight } = options;
@@ -864,10 +921,13 @@ export class PDFService {
       lineBreak: true,
     };
 
-    const height = doc.heightOfString(text, textOptions);
+    const rtl = options.rtl === true;
+    const height = rtl
+      ? this.rtlLineCount(doc, text, width) * lineHeight
+      : doc.heightOfString(text, textOptions);
     const steps = 6;
     const shadowOpacity = options.shadowOpacity ?? 0;
-    if (shadowOpacity > 0) {
+    if (shadowOpacity > 0 && !rtl) {
       for (let i = 1; i <= steps; i += 1) {
         const t = i / steps;
         doc
@@ -878,13 +938,37 @@ export class PDFService {
     }
     doc.fillOpacity(1);
 
-    doc
-      .fillColor(color)
-      .fillOpacity(options.opacity ?? 1)
-      .text(text, x, y, textOptions);
+    if (rtl) {
+      this.drawRtlText(doc, text, x, y, { ...textOptions, fontSize }, color);
+    } else {
+      doc
+        .fillColor(color)
+        .fillOpacity(options.opacity ?? 1)
+        .text(text, x, y, textOptions);
+    }
     doc.fillOpacity(1);
 
     return y + Math.max(height, lineHeight);
+  }
+
+  private rtlLineCount(doc: PDFKit.PDFDocument, text: string, width: number): number {
+    let count = 0;
+    for (const paragraph of text.split(/\r?\n/)) {
+      if (!paragraph.trim()) {
+        count += 1;
+        continue;
+      }
+      let line = "";
+      for (const word of paragraph.trim().split(/\s+/)) {
+        const candidate = line ? `${line} ${word}` : word;
+        if (line && doc.widthOfString(candidate) > width) {
+          count += 1;
+          line = word;
+        } else line = candidate;
+      }
+      if (line) count += 1;
+    }
+    return count;
   }
 
   private paintBackground(doc: PDFKit.PDFDocument, width: number, height: number, variant: "cover" | "page") {
