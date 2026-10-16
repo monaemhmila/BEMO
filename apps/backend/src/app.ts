@@ -162,7 +162,7 @@ export function createApp() {
         where: { id: storyId },
         include: { pages: { orderBy: { pageNumber: "asc" } } },
       });
-      if (!story || story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
+      if (!story || story.pages.length === 0 || (story.status !== "Completed" && story.pages.some((page) => page.status !== "Generated" || !page.imageUrl))) {
         next();
         return;
       }

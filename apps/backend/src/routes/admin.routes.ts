@@ -389,7 +389,7 @@ router.get("/story/:id/pdf", async (req, res) => {
       return;
     }
 
-    if (story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
+    if (story.pages.length === 0 || (story.status !== "Completed" && story.pages.some((page) => page.status !== "Generated" || !page.imageUrl))) {
       res.status(409).json({ message: "Wait until all story illustrations are ready before exporting." });
       return;
     }
