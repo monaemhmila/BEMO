@@ -162,6 +162,7 @@ For each page:
 - Write a charming paragraph of 2 sentences of story text with heart and imagination.
 - Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES .
 - Keep the hero as the main character. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
+- In imageDescription, refer to the hero only as a boy or girl and describe the action and emotion. Never include the child's name, age, hair, face, skin tone, eye color, ethnicity, complexion, or other physical identity details.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never shorts).
 - Ensure there is no white space , no blank margins.
@@ -286,10 +287,7 @@ ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
 Beat plan (page 1 = beat 1, ... page ${pageCount} = beat ${pageCount}):
 ${beatPlan}
 
-${characterProfile?.appearance
-        ? `Character appearance: ${characterProfile.appearance}`
-        : "The uploaded reference image defines the character's real face and appearance."
-      }
+      The uploaded reference image supplies identity consistency only; never describe physical identity details in imageDescription.
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
@@ -301,7 +299,7 @@ For each page:
 - Build the imageDescription by covering the ENTIRE background in four consecutive zones, one after the other: describe what is on the RIGHT side, then the LEFT side, then the TOP, then the BOTTOM, so every part of the backdrop is fully described with absolutely no un-described area.
 - Keep all four zones part of ONE continuous, seamless background scene: same location, same time of day, same weather, same lighting and the same color palette across right/left/top/bottom. The zones must blend smoothly into each other where they meet (no hard seams, no abrupt color or style changes, no cut-off objects at any edge), so the whole frame reads as a single homogeneous environment rather than four separate panels.
 - Make the ENVIRONMENT and any SIDE CHARACTERS/CREATURES imaginative, and detailed.
-- The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
+- In imageDescription, refer to the hero only as a boy or girl and describe only the action, emotion, and setting. Never include the child's name, age, hair, face, skin tone, eye color, ethnicity, complexion, or other physical identity details. The uploaded reference image handles visual consistency.
 - The imageDescription must NEVER mention or imply any art style, illustration style, medium, or drawing technique - never use words like illustration, storybook, cartoon, anime, painting, watercolor, 3D, drawing, sketch, render, or any similar artistic term. Descriptions are purely about the scene CONTENT: the setting, time of day, weather, lighting, colors, characters, objects, and atmosphere. The artwork's visual style is applied separately and is not part of the description.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not render any story text inside the image.
@@ -355,7 +353,9 @@ Return ONLY valid JSON:
       const beatIndex = Math.min(templateBeats.length - 1, Math.floor((index * templateBeats.length) / pageCount));
       return `  - Page ${index + 1}: ${templateBeats[beatIndex] || "Continue the warm adventure naturally."}`;
     }).join("\n");
-    const appearance = characterProfile?.appearance || "The uploaded reference image defines the child's appearance.";
+    const appearance = characterProfile?.appearance
+      ? "The uploaded reference image supplies identity consistency only; do not copy physical appearance details into any image description."
+      : "The uploaded reference image supplies identity consistency only.";
 
     const layoutPlan = Array.from({ length: pageCount }, (_, index) => {
       const pageNumber = index + 1;
@@ -371,14 +371,14 @@ adventure, challenge, resolution, and gentle ending. Page 1 is a short cover hoo
 short closing story page before the reusable final cover image.
 
 The story text may mention and feature the child on every page. Return TWO separate image prompts:
-- childImageDescription: for child_page pages only. Describe the child, their action, and the setting.
+- childImageDescription: for child_page pages only. Describe only the setting and what the ${input.gender || "child"} is doing or feeling. You may say "boy" or "girl", but never use the child's name, age, hair, face, skin, eyes, ethnicity, complexion, or any other physical identity detail.
 - sceneImageDescription: for scene-left and scene-right pages only. Describe the environment, objects,
 lighting, weather, and atmosphere ONLY. It must contain no child, no person, no people, no human figure,
 no face, no portrait, no character, no hero, no name, and no pronoun referring to a person.
 Never reuse childImageDescription as sceneImageDescription. Never put image style instructions, text,
 signs, logos, or story text inside either image prompt.
 
-Child identity for the prose: ${appearance}
+Child identity for the prose only: ${appearance}
 ${input.language ? `Write the title and story text in ${input.language}.` : "Write the title and story text in English."}
 ${input.dedication ? `Dedication: "${input.dedication}"` : ""}
 
@@ -892,9 +892,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         position = comp.characterSide === "left" ? "left" : "right";
       }
 
-      const scenePrompt = options?.childName
-        ? `${options.childName} ${prompt.trim()}`
-        : prompt;
+      const scenePrompt = `A ${options?.gender || "child"} is ${prompt.trim()}`;
 
       const { requestId } =
         await this.faceConsistency.generateFaceConsistentImage(

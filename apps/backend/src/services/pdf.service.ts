@@ -71,6 +71,17 @@ function repairCoverText(value: string): string {
   }
 }
 
+function repairPdfText(value: string): string {
+  let repaired = value;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (!/[ÃÂÐÑØÙÛÜ]/.test(repaired)) break;
+    const next = Buffer.from(repaired, "latin1").toString("utf8");
+    if (next.includes("�")) break;
+    repaired = next;
+  }
+  return repaired;
+}
+
 function getFinalCoverCopy(language?: string | null) {
   const normalized = (language || "english").toLowerCase();
   const copy = normalized.startsWith("fr")
@@ -79,8 +90,12 @@ function getFinalCoverCopy(language?: string | null) {
       ? FINAL_COVER_COPY.arabic
       : FINAL_COVER_COPY.english;
   return {
-    title: repairCoverText(copy.title),
-    body: SHORT_FINAL_COVER_BODY[normalized.startsWith("fr") ? "french" : normalized.startsWith("ar") ? "arabic" : "english"],
+    title: repairPdfText(copy.title),
+    body: repairPdfText(
+      SHORT_FINAL_COVER_BODY[
+        normalized.startsWith("fr") ? "french" : normalized.startsWith("ar") ? "arabic" : "english"
+      ]
+    ),
   };
 }
 
@@ -174,6 +189,11 @@ const FONTS = {
   bodyBold: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
   bodyExtraBold: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
 };
+const ARABIC_FONT_PATH = [
+  path.join(FONT_DIR, "Arabic.ttf"),
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+  "C:\\Windows\\Fonts\\tahoma.ttf",
+].find(existsSync);
 
 // --- Page artwork download -------------------------------------------------
 // Story art lives on fal's CDN, which can be slow to reach from some networks:
@@ -279,6 +299,7 @@ async function fetchSplitPageImages(url: string): Promise<BookPageImage | null> 
 
 export class PDFService {
   private readonly customFontsAvailable = Object.values(FONTS).every(existsSync);
+  private readonly arabicFontAvailable = Boolean(ARABIC_FONT_PATH);
 
   async generateStorybookPdf(
     story: StoryPayload,
@@ -444,12 +465,14 @@ export class PDFService {
   private registerFonts(doc: PDFKit.PDFDocument) {
     // Font assets are optional in production deployments. The visual hierarchy
     // remains intact with PDFKit's bundled fonts if a deployment has not copied them.
-    if (!this.customFontsAvailable) return;
-    doc.registerFont("Title", FONTS.title);
-    doc.registerFont("BodyRegular", FONTS.bodyRegular);
-    doc.registerFont("BodySemiBold", FONTS.bodySemiBold);
-    doc.registerFont("BodyBold", FONTS.bodyBold);
-    doc.registerFont("BodyExtraBold", FONTS.bodyExtraBold);
+    if (this.customFontsAvailable) {
+      doc.registerFont("Title", FONTS.title);
+      doc.registerFont("BodyRegular", FONTS.bodyRegular);
+      doc.registerFont("BodySemiBold", FONTS.bodySemiBold);
+      doc.registerFont("BodyBold", FONTS.bodyBold);
+      doc.registerFont("BodyExtraBold", FONTS.bodyExtraBold);
+    }
+    if (ARABIC_FONT_PATH) doc.registerFont("Arabic", ARABIC_FONT_PATH);
   }
 
   /**
@@ -541,7 +564,7 @@ export class PDFService {
     let titleBottom: number;
 
     if (isArabic) {
-      this.font(doc, "Title", "Helvetica-Bold").fontSize(titleSize);
+      this.arabicFont(doc).fontSize(titleSize);
       titleBottom = this.drawCoverLine(doc, copy.title, {
         x: sidePad,
         y: titleY,
@@ -564,7 +587,7 @@ export class PDFService {
     const gap = 45;
     const bodyY = titleBottom + gap;
 
-    doc.font("Helvetica-Bold").fontSize(bodySize);
+    this.arabicFont(doc).fontSize(bodySize);
     this.drawCoverLine(doc, copy.body, {
       x: sidePad,
       y: bodyY,
@@ -928,6 +951,10 @@ export class PDFService {
 
   private font(doc: PDFKit.PDFDocument, customFont: string, fallback: string) {
     return doc.font(this.customFontsAvailable ? customFont : fallback);
+  }
+
+  private arabicFont(doc: PDFKit.PDFDocument) {
+    return doc.font(this.arabicFontAvailable ? "Arabic" : "Helvetica");
   }
 
   /**

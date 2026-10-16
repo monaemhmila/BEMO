@@ -9,6 +9,19 @@ const imageService = ImageGenerationService.getInstance();
 const SCENE_FORBIDDEN_WORDS = /\b(child|children|kid|kids|boy|girl|person|people|human|humans|face|faces|portrait|portraits|character|characters|hero|heroes|he|she|him|her|his|their|they|them)\b/i;
 const SAFE_ENVIRONMENT_FALLBACK = "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
 
+function genericChildScenePrompt(prompt: string, childName: string, gender?: "boy" | "girl" | null): string {
+  const escapedName = childName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const withoutIdentity = prompt
+    .replace(new RegExp(`\\b${escapedName}\\b`, "gi"), "")
+    .replace(/\b(?:named|called)\s+[\p{L}][\p{L}'-]*/giu, "")
+    .replace(/\b\d{1,2}(?:[- ]year[- ]old)?\b/gi, "")
+    .replace(/\b(?:with|has|having)\s+[^,.!?;]*(?:hair|skin|eyes|face|complexion|ethnicity)[^,.!?;]*[,.;]?/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.!?;])/g, "$1")
+    .trim();
+  return `A ${gender || "child"} is ${withoutIdentity}`;
+}
+
 /** Image operations for the new personalized 30-page layout only. */
 export class PersonalizedBookImageService {
   async generateChildSquare(input: {
@@ -20,10 +33,9 @@ export class PersonalizedBookImageService {
     artStyle?: string | null;
   }): Promise<string> {
     const imageUrl = await imageService.generateImageSync({
-      prompt: `${input.childName}, ${input.childAge ?? "young"} years old ${input.gender || "child"}: ${input.prompt}. The child is the only human hero and is clearly visible.`,
+      prompt: `${genericChildScenePrompt(input.prompt, input.childName, input.gender)}. The child is happy, smiling, and clearly visible.`,
       aspectRatio: "1:1",
       imageUrl: input.referenceImageUrl,
-      childName: input.childName,
       artStyle: input.artStyle || undefined,
     });
     return saveRemoteImageLocally(imageUrl, "generated", `personalized_child_${Date.now()}`);
