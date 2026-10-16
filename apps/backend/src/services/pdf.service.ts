@@ -742,10 +742,10 @@ export class PDFService {
 
     const contentWidth = width - COVER_TITLE.sidePad * 2;
     let y = COVER_TITLE.top;
+    const arabic = this.isArabicLanguage(story.language);
 
     const title = (story.title ?? "").trim();
     if (title) {
-      const arabic = this.isArabicLanguage(story.language);
       const coverTitle = this.isArabicLanguage(story.language)
         ? prepareArabicPdfText(title)
         : repairPdfText(title);
