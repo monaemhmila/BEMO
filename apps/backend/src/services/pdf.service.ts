@@ -312,25 +312,26 @@ export class PDFService {
     // in an old story, and pad any gaps with blank placeholders so the book layout
     // always matches the generated story page count.
     const byPageNumber = new Map<number, StoryPagePayload>();
-    [...pages]
-      .sort((a, b) => a.pageNumber - b.pageNumber)
-      .forEach((page) => {
-        if (!byPageNumber.has(page.pageNumber)) byPageNumber.set(page.pageNumber, page);
-      });
+    const orderedPages = [...pages].sort((a, b) => a.pageNumber - b.pageNumber);
+    orderedPages.forEach((page) => {
+      if (!byPageNumber.has(page.pageNumber)) byPageNumber.set(page.pageNumber, page);
+    });
 
     const sortedPages: StoryPagePayload[] = Array.from(
-      { length: Math.max(0, ...[...byPageNumber.keys()]) },
+      { length: Math.max(0, pages.length, ...[...byPageNumber.keys()]) },
       (_, index) => {
         const pageNumber = index + 1;
         return (
           byPageNumber.get(pageNumber) || {
+            ...(orderedPages[index] || { content: "", imageUrl: null }),
             pageNumber,
-            content: "",
-            imageUrl: null,
           }
         );
       }
     );
+    if (sortedPages.length === 0) {
+      throw new Error("PDF_GENERATION_NO_PAGES");
+    }
 
     const splitImages = await mapWithConcurrency(sortedPages, IMAGE_FETCH_CONCURRENCY, (page) =>
       page.imageUrl ? fetchSplitPageImages(page.imageUrl) : Promise.resolve(null)

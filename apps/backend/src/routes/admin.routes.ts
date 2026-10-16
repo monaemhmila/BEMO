@@ -419,12 +419,13 @@ router.get("/story/:id/pdf", async (req, res) => {
     }
     res.send(pdfBuffer);
   } catch (error) {
-    logger.error({ error, storyId }, "Failed to generate admin story PDF");
+    const details = error instanceof Error ? error.message : String(error);
+    logger.error({ error: details, storyId, stack: error instanceof Error ? error.stack : undefined }, "Failed to generate admin story PDF");
     if (error instanceof Error && error.message.startsWith("PDF for ")) {
       res.status(409).json({ message: "Some page artwork could not be downloaded. Please retry the failed pages." });
       return;
     }
-    res.status(500).json({ message: "Failed to generate story PDF" });
+    res.status(500).json({ message: "Failed to generate story PDF", details });
   }
 });
 
