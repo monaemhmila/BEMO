@@ -82,20 +82,15 @@ function repairPdfText(value: string): string {
   return repaired;
 }
 
+function prepareArabicPdfText(value: string): string {
+  const repaired = repairPdfText(value).trim();
+  return repaired ? `\u200F${repaired}\u200F` : repaired;
+}
+
 function getFinalCoverCopy(language?: string | null) {
-  const normalized = (language || "english").toLowerCase();
-  const copy = normalized.startsWith("fr")
-    ? FINAL_COVER_COPY.french
-    : normalized.startsWith("ar")
-      ? FINAL_COVER_COPY.arabic
-      : FINAL_COVER_COPY.english;
   return {
-    title: repairPdfText(copy.title),
-    body: repairPdfText(
-      SHORT_FINAL_COVER_BODY[
-        normalized.startsWith("fr") ? "french" : normalized.startsWith("ar") ? "arabic" : "english"
-      ]
-    ),
+    title: "Une petite aventure, un souvenir pour toujours",
+    body: "L\u2019enfance passe vite, mais les beaux souvenirs restent pour toujours.\n\nJe transforme les r\u00eaves, le pr\u00e9nom et les choses pr\u00e9f\u00e9r\u00e9es de votre enfant en une histoire unique.\n\nChaque page est une nouvelle aventure o\u00f9 votre enfant est le h\u00e9ros.\n\nUn livre \u00e0 aimer aujourd\u2019hui et \u00e0 garder longtemps.",
   };
 }
 
@@ -409,13 +404,13 @@ export class PDFService {
             this.renderCoverPage(doc, leaf, story);
             break;
           case "ending":
-            this.renderEndingPage(doc, leaf, totalBookPages);
+            this.renderEndingPage(doc, leaf, totalBookPages, story);
             break;
           case "closing":
             this.renderClosingPage(doc, leaf, story);
             break;
           default:
-            this.renderStoryPage(doc, leaf, totalBookPages);
+            this.renderStoryPage(doc, leaf, totalBookPages, story);
         }
       });
       doc.end();
@@ -502,13 +497,14 @@ export class PDFService {
   private renderStoryPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    totalPages: number
+    totalPages: number,
+    story: StoryPayload
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
-      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
+      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages, story.language);
     }
   }
 
@@ -520,13 +516,14 @@ export class PDFService {
   private renderEndingPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    totalPages: number
+    totalPages: number,
+    story: StoryPayload
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
-      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
+      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages, story.language);
     }
   }
 
@@ -558,30 +555,10 @@ export class PDFService {
     // Title: big, white, goofy wavy letters at the top
     const titleSize = 15;
     const titleLineHeight = titleSize * 1.35;
-    const titleY = height * 0.06;
+    const finalCoverLift = 28.35; // 1 cm in PDF points
+    const titleY = height * 0.06 - finalCoverLift;
 
-    // Arabic text uses connected ligatures that break when drawn per-character,
-    // so fall back to the standard centered line for Arabic.
-    const isArabic = (story.language || "").toLowerCase().startsWith("ar");
-    let titleBottom: number;
-
-    if (isArabic) {
-      this.arabicFont(doc).fontSize(titleSize);
-      titleBottom = this.drawCoverLine(doc, copy.title, {
-        x: sidePad,
-        y: titleY,
-        width: textWidth,
-        align: "center",
-        fontSize: titleSize,
-        color: "#FFFFFF",
-        lineHeight: titleLineHeight,
-        shadowOpacity: 0.8,
-        shadowOffsetY: 2,
-        shadowBlur: 10,
-      });
-    } else {
-      titleBottom = this.drawGoofyTitle(doc, copy.title, width, titleY, textWidth, titleSize, titleLineHeight);
-    }
+    const titleBottom = this.drawGoofyTitle(doc, copy.title, width, titleY, textWidth, titleSize, titleLineHeight);
 
     // Body: black text, centered below the title
     const bodySize = 11;
@@ -589,7 +566,7 @@ export class PDFService {
     const gap = 45;
     const bodyY = titleBottom + gap;
 
-    this.arabicFont(doc).fontSize(bodySize);
+    this.font(doc, "BodyBold", "Helvetica-Bold").fontSize(bodySize);
     this.drawCoverLine(doc, copy.body, {
       x: sidePad,
       y: bodyY,
@@ -627,9 +604,17 @@ export class PDFService {
    * derived from the page number via the contracts, keeping the PDF layout
    * identical to the text-safe area the image generator was told to reserve.
    */
-  private drawStoryText(doc: PDFKit.PDFDocument, pageNumber: number, text: string, totalPages = 15) {
+  private drawStoryText(
+    doc: PDFKit.PDFDocument,
+    pageNumber: number,
+    text: string,
+    totalPages = 15,
+    language?: string | null,
+  ) {
     const layout = getPageTextLayout(pageNumber, totalPages);
-    const cleanText = (text || "").trim();
+    const cleanText = this.isArabicLanguage(language)
+      ? prepareArabicPdfText(text || "")
+      : repairPdfText((text || "").trim());
     if (!cleanText) return;
 
     // Keep the cover and closing-page artwork exactly as designed. For normal
@@ -657,8 +642,12 @@ export class PDFService {
         ),
       };
 
-    const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
-    this.font(doc, baseFont, "Helvetica").fontSize(normalPageLayout.fontSize);
+    if (this.isArabicLanguage(language)) {
+      this.arabicFont(doc).fontSize(normalPageLayout.fontSize);
+    } else {
+      const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
+      this.font(doc, baseFont, "Helvetica").fontSize(normalPageLayout.fontSize);
+    }
 
     const options: PDFKit.Mixins.TextOptions = {
       width: 500,
@@ -721,8 +710,8 @@ export class PDFService {
 
   /**
    * The outside-cover overlay, mirroring `StoryBookCover.tsx`: a top-to-bottom
-   * scrim so the type stays readable over any artwork, then the title, the
-   * "Starring ..." credit, and either the dedication or the Mon Petit Hero pill.
+   * scrim so the type stays readable over any artwork, then the title and
+   * either the dedication or the Mon Petit Hero pill.
    *
    * CSS reaches the scrim with `bg-gradient-to-b from-black/45 via-transparent
    * to-black/55`. PDFKit has no gradient fill, so it is approximated with
@@ -740,8 +729,12 @@ export class PDFService {
 
     const title = (story.title ?? "").trim();
     if (title) {
-      this.font(doc, "Title", "Helvetica-Bold").fontSize(COVER_TITLE.fontSize);
-      y = this.drawCoverLine(doc, title, {
+      const arabic = this.isArabicLanguage(story.language);
+      const coverTitle = this.isArabicLanguage(story.language)
+        ? prepareArabicPdfText(title)
+        : repairPdfText(title);
+      (arabic ? this.arabicFont(doc) : this.font(doc, "Title", "Helvetica-Bold")).fontSize(COVER_TITLE.fontSize);
+      y = this.drawCoverLine(doc, coverTitle, {
         x: COVER_TITLE.sidePad,
         y,
         width: contentWidth,
@@ -752,26 +745,6 @@ export class PDFService {
         shadowOpacity: COVER_TITLE.shadowOpacity,
         shadowOffsetY: COVER_TITLE.shadowOffsetY,
         shadowBlur: COVER_TITLE.shadowBlur,
-      });
-    }
-
-    const childName = (story.childName ?? "").trim();
-    if (childName) {
-      const star = COVER_TITLE.starring;
-      this.font(doc, "BodySemiBold", "Helvetica-Bold").fontSize(star.size);
-      y += star.marginTop;
-      y = this.drawCoverLine(doc, `STARRING ${childName.toUpperCase()}`, {
-        x: COVER_TITLE.sidePad,
-        y,
-        width: contentWidth,
-        align: "center",
-        fontSize: star.size,
-        color: star.color,
-        tracking: star.tracking,
-        lineHeight: star.size * star.leading,
-        shadowOpacity: star.shadowOpacity,
-        shadowOffsetY: 1 * WEB_PX,
-        shadowBlur: 6 * WEB_PX,
       });
     }
 
@@ -957,6 +930,10 @@ export class PDFService {
 
   private arabicFont(doc: PDFKit.PDFDocument) {
     return doc.font(this.arabicFontAvailable ? "Arabic" : "Helvetica");
+  }
+
+  private isArabicLanguage(language?: string | null) {
+    return (language || "").toLowerCase().startsWith("ar");
   }
 
   /**
