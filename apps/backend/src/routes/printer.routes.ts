@@ -4,6 +4,7 @@ import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
 import { printerAuthMiddleware } from "../middleware/printerAuth";
 import { PDFService } from "../services/pdf.service";
+import { isLocalAssetAvailable } from "../lib/storage";
 import { logger } from "../lib/logger";
 
 const router = Router();
@@ -159,7 +160,7 @@ router.get("/orders/:id/pdf", async (req, res) => {
       res.status(409).json({ message: "The story PDF is not ready yet." });
       return;
     }
-    if (story.pdfUrl) {
+    if (story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }

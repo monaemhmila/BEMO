@@ -19,6 +19,7 @@ import {
 import { generateOrderedStory } from "../services/ordered-story-generation.service";
 import { generateAdminColoringBook } from "../services/coloring-book-generation.service";
 import { StoryService, type StoryTemplateRow } from "../services/story.service";
+import { isLocalAssetAvailable } from "../lib/storage";
 
 const router = Router();
 const storyService = StoryService.getInstance();
@@ -383,7 +384,7 @@ router.get("/story/:id/pdf", async (req, res) => {
       return;
     }
 
-    if (story.pdfUrl) {
+    if (story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }

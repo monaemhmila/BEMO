@@ -23,6 +23,8 @@ import { analyticsRouter } from "./routes/analytics.routes";
 import { printerRouter } from "./routes/printer.routes";
 import { gamesRouter } from "./routes/games.routes";
 import { assistantRouter } from "./routes/assistant.routes";
+import { PDFService } from "./services/pdf.service";
+import { saveBufferAsset } from "./lib/storage";
 
 initSentry();
 
@@ -152,6 +154,30 @@ export function createApp() {
   app.use("/assets/pdfs", express.static(path.join(process.cwd(), "assets", "pdfs")));
   // Backward-compatible location used by older production containers.
   app.use("/assets/pdfs", express.static(path.join(process.cwd(), "apps", "backend", "assets", "pdfs")));
+  // Recover PDF URLs created before a container restart removed local files.
+  app.get("/assets/pdfs/:filename", async (req, res, next) => {
+    try {
+      const storyId = path.basename(req.params.filename).replace(/\.pdf$/i, "");
+      const story = await prismaClient.story.findUnique({
+        where: { id: storyId },
+        include: { pages: { orderBy: { pageNumber: "asc" } } },
+      });
+      if (!story || story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
+        next();
+        return;
+      }
+
+      const pdfBuffer = await new PDFService().generateStorybookPdf(
+        { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
+        story.pages.map((page) => ({ pageNumber: page.pageNumber, content: page.content, imageUrl: page.imageUrl }))
+      );
+      const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
+      await prismaClient.story.update({ where: { id: story.id }, data: { pdfUrl } });
+      res.type("application/pdf").send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   // Generated child pages and split scene halves are persisted here by the
   // personalized print pipeline and need to remain readable by the PDF and

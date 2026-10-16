@@ -12,7 +12,7 @@ import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAG
 import { logger } from "../lib/logger";
 import { z } from "zod";
 import { chooseStoryCover } from "../services/story-cover.service";
-import { saveBufferAsset } from "../lib/storage";
+import { isLocalAssetAvailable, saveBufferAsset } from "../lib/storage";
 import {
   PERSONALIZED_PRINT_PAGE_COUNT,
   getPersonalizedPageSlot,
@@ -491,7 +491,7 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
     // PDF generation is expensive because it downloads and processes every
     // illustration. Reuse the completed export instead of rebuilding it for
     // every download request.
-    if (story.pdfUrl) {
+    if (story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }
