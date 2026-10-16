@@ -150,6 +150,8 @@ export function createApp() {
 
   // Serve generated PDFs saved to assets/pdfs (e.g. /assets/pdfs/{storyId}.pdf)
   app.use("/assets/pdfs", express.static(path.join(process.cwd(), "assets", "pdfs")));
+  // Backward-compatible location used by older production containers.
+  app.use("/assets/pdfs", express.static(path.join(process.cwd(), "apps", "backend", "assets", "pdfs")));
 
   // Generated child pages and split scene halves are persisted here by the
   // personalized print pipeline and need to remain readable by the PDF and

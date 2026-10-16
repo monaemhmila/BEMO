@@ -27,6 +27,6 @@ COPY --from=builder /app/apps/backend/src/covers ./apps/backend/src/covers
 COPY --from=builder /app/apps/backend/assets/covers ./apps/backend/src/covers
 COPY --from=builder /app/apps/backend/src/fonts ./apps/backend/src/fonts
 
-RUN mkdir -p /app/apps/backend/assets/pdfs /app/apps/backend/assets/previews /app/apps/backend/assets/covers
+RUN mkdir -p /app/assets/pdfs /app/assets/previews /app/assets/covers
 EXPOSE 8080
 CMD ["node", "apps/backend/dist/index.js"]
