@@ -939,7 +939,7 @@ export class PDFService {
     doc.fillOpacity(1);
 
     if (rtl) {
-      this.drawRtlText(doc, text, x, y, { ...textOptions, fontSize }, color);
+      this.drawRtlText(doc, text, x, y, textOptions, color);
     } else {
       doc
         .fillColor(color)
