@@ -554,16 +554,16 @@ export class PDFService {
 
     // Title: big, white, goofy wavy letters at the top
     const titleSize = 15;
-    const titleLineHeight = titleSize * 1.35;
-    const finalCoverLift = 28.35; // 1 cm in PDF points
-    const titleY = height * 0.06 - finalCoverLift;
+    const titleLineHeight = titleSize * 1.2;
+    const finalCoverDrop = 28.35; // 1 cm lower in PDF points
+    const titleY = height * 0.06 + finalCoverDrop;
 
     const titleBottom = this.drawGoofyTitle(doc, copy.title, width, titleY, textWidth, titleSize, titleLineHeight);
 
     // Body: black text, centered below the title
     const bodySize = 11;
-    const bodyLineHeight = bodySize * 1.42;
-    const gap = 45;
+    const bodyLineHeight = bodySize * 1.28;
+    const gap = 20;
     const bodyY = titleBottom + gap;
 
     this.font(doc, "BodyBold", "Helvetica-Bold").fontSize(bodySize);
