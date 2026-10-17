@@ -6,8 +6,7 @@
   "scripts": {
     "start": "ts-node index.ts",
     "dev": "ts-node index.ts",
-    "prebuild": "prisma generate --schema=../../packages/db/prisma/schema.prisma",
-    "build": "tsc",
+    "build": "prisma generate --schema=../../packages/db/prisma/schema.prisma && tsc",
     "test:security": "ts-node src/lib/safe-image-fetcher.test.ts",
     "test:integration": "ts-node src/integration/health.integration.test.ts"
   },

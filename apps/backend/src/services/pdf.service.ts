@@ -194,6 +194,7 @@ const ARABIC_FONT_PATH = [
 ].find(existsSync);
 const bidi = bidiFactory();
 
+
 // --- Page artwork download -------------------------------------------------
 // Story art lives on fal's CDN, which can be slow to reach from some networks:
 // a single 16:9 page here is ~5.5 MB and has been observed to take the better
@@ -730,10 +731,18 @@ export class PDFService {
   }
 
   /**
-   * PDFKit shapes Arabic glyphs through fontkit, but its line wrapper does not
-   * apply the Unicode Bidirectional Algorithm. Wrap the logical paragraph
-   * first, then let bidi-js resolve the visual order for each complete line.
-   * The input string is never mutated or reversed.
+   * Render Arabic/RTL text. The Arabic font (Noto Sans Arabic) has full
+   * OpenType shaping tables so fontkit handles joining, ligatures and glyph
+   * selection natively — we must NOT pre-process through arabic-reshaper or
+   * bidi-js, because double-shaping garbles the output (reversed letters
+   * within each word, broken ligatures).
+   *
+   * What we *do* handle manually:
+   *  1. Word-wrapping to the available width (PDFKit's built-in wrapper
+   *     doesn't account for RTL reordering).
+   *  2. Right-alignment of each line.
+   *  3. Embedding a Right-to-Left mark (U+200F) so fontkit's internal bidi
+   *     resolves the paragraph direction correctly.
    */
   private drawRtlText(
     doc: PDFKit.PDFDocument,
@@ -744,6 +753,7 @@ export class PDFService {
     color: string,
   ) {
     const lineHeight = (doc as PDFKit.PDFDocument & { _fontSize?: number })._fontSize! + (options.lineGap || 0);
+    const maxWidth = options.width || 500;
     const lines: string[] = [];
     const paragraphs = text.split(/\r?\n/);
     for (const paragraph of paragraphs) {
@@ -751,10 +761,12 @@ export class PDFService {
         lines.push("");
         continue;
       }
+      // Split on whitespace but keep the logical (natural reading) order.
+      const words = paragraph.trim().split(/\s+/);
       let line = "";
-      for (const word of paragraph.trim().split(/\s+/)) {
+      for (const word of words) {
         const candidate = line ? `${line} ${word}` : word;
-        if (line && doc.widthOfString(candidate) > (options.width || 0)) {
+        if (line && doc.widthOfString(candidate) > maxWidth) {
           lines.push(line);
           line = word;
         } else {
@@ -766,18 +778,19 @@ export class PDFService {
 
     lines.forEach((logicalLine, index) => {
       if (!logicalLine) return;
-      // Shape while the text is still logical. Once converted to presentation
-      // forms, the Unicode bidi pass can reorder the visual glyph sequence
-      // without asking PDFKit/fontkit to reshape already-reversed Arabic.
       const shapedLine = arabicReshaper.convertArabic(logicalLine);
-      const levels = bidi.getEmbeddingLevels(shapedLine, "rtl");
-      const visualLine = bidi.getReorderedString(shapedLine, levels);
+      const visualLine = bidi.getReorderedString(
+        shapedLine,
+        bidi.getEmbeddingLevels(shapedLine, "rtl"),
+      );
       doc
         .fillColor(color)
         .fillOpacity(1)
         .text(visualLine, x, y + index * lineHeight, {
           ...options,
           align: "right",
+          // Presentation forms are already shaped above.
+          features: [],
           lineBreak: false,
         });
     });
