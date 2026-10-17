@@ -88,7 +88,11 @@ const storyReaderBidi = bidiFactory();
 
 /** Keep the same logical text the browser story reader receives. */
 function normalizeStoryReaderArabicText(value: string): string {
-  return repairPdfText(value).trim();
+  return repairPdfText(value)
+    // Browsers use these invisible direction controls for bidi punctuation;
+    // PDFKit/fontkit can otherwise emit them as visible missing-glyph boxes.
+    .replace(/[\u061C\u200B\u200C\u200D\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g, "")
+    .trim();
 }
 
 /** Convert browser-style logical Arabic text into PDFKit's visual glyph order. */
