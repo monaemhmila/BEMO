@@ -1,6 +1,4 @@
 import PDFDocument from "pdfkit";
-import arabicReshaper from "arabic-reshaper";
-import bidiFactory from "bidi-js";
 import path from "path";
 import fs, { existsSync } from "fs";
 import {
@@ -84,8 +82,6 @@ function repairPdfText(value: string): string {
   return repaired;
 }
 
-const storyReaderBidi = bidiFactory();
-
 /** Keep the same logical text the browser story reader receives. */
 function normalizeStoryReaderArabicText(value: string): string {
   return repairPdfText(value)
@@ -93,23 +89,6 @@ function normalizeStoryReaderArabicText(value: string): string {
     // PDFKit/fontkit can otherwise emit them as visible missing-glyph boxes.
     .replace(/[\u061C\u200B\u200C\u200D\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g, "")
     .trim();
-}
-
-/** Convert browser-style logical Arabic text into PDFKit's visual glyph order. */
-function shapeStoryReaderArabicLine(value: string): string {
-  const reshaped = arabicReshaper.convertArabic(value);
-  const embedding = storyReaderBidi.getEmbeddingLevels(reshaped, "rtl");
-  const characters = Array.from(reshaped);
-  const mirrored = storyReaderBidi.getMirroredCharactersMap(reshaped, embedding.levels);
-  mirrored.forEach((character, index) => {
-    characters[index] = character;
-  });
-  const flips = storyReaderBidi.getReorderSegments(reshaped, embedding);
-  for (const [start, end] of flips) {
-    const segment = characters.slice(start, end + 1).reverse();
-    characters.splice(start, segment.length, ...segment);
-  }
-  return characters.join("");
 }
 
 function getFinalCoverCopy(language?: string | null) {
@@ -900,6 +879,7 @@ export class PDFService {
           align: options.align || "right",
           width: maxWidth,
           characterSpacing: 0,
+          features: ["calt"],
           lineBreak: false,
         });
       doc.fillOpacity(1);
@@ -916,14 +896,14 @@ export class PDFService {
       let logicalLine = "";
       for (const word of paragraph.trim().split(/\s+/)) {
         const candidate = logicalLine ? `${logicalLine} ${word}` : word;
-        if (logicalLine && doc.widthOfString(shapeStoryReaderArabicLine(candidate)) > width) {
-          lines.push(shapeStoryReaderArabicLine(logicalLine));
+        if (logicalLine && doc.widthOfString(candidate, { features: ["calt"] }) > width) {
+          lines.push(logicalLine);
           logicalLine = word;
         } else {
           logicalLine = candidate;
         }
       }
-      if (logicalLine) lines.push(shapeStoryReaderArabicLine(logicalLine));
+      if (logicalLine) lines.push(logicalLine);
     }
     return lines;
   }
