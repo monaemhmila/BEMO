@@ -1,4 +1,8 @@
 import PDFDocument from "pdfkit";
+import arabicReshaper from "arabic-reshaper";
+// bidi-js ships JavaScript without TypeScript declarations.
+// @ts-expect-error -- runtime package has no bundled declaration file.
+import bidiFactory from "bidi-js";
 import path from "path";
 import fs, { existsSync } from "fs";
 import {
@@ -82,10 +86,28 @@ function repairPdfText(value: string): string {
   return repaired;
 }
 
-function prepareArabicPdfText(value: string): string {
-  // Keep source text in logical (natural) order. Directionality is applied by
-  // the renderer; adding RTL marks or reversing the value breaks mixed text.
+const storyReaderBidi = bidiFactory();
+
+/** Keep the same logical text the browser story reader receives. */
+function normalizeStoryReaderArabicText(value: string): string {
   return repairPdfText(value).trim();
+}
+
+/** Convert browser-style logical Arabic text into PDFKit's visual glyph order. */
+function shapeStoryReaderArabicLine(value: string): string {
+  const reshaped = arabicReshaper.convertArabic(value);
+  const embedding = storyReaderBidi.getEmbeddingLevels(reshaped, "rtl");
+  const characters = Array.from(reshaped);
+  const mirrored = storyReaderBidi.getMirroredCharactersMap(reshaped, embedding);
+  mirrored.forEach((character, index) => {
+    characters[index] = character;
+  });
+  const flips = storyReaderBidi.getReorderSegments(reshaped, embedding);
+  for (const [start, end] of flips) {
+    const segment = characters.slice(start, end + 1).reverse();
+    characters.splice(start, segment.length, ...segment);
+  }
+  return characters.join("");
 }
 
 function getFinalCoverCopy(language?: string | null) {
@@ -487,8 +509,8 @@ export class PDFService {
       this.registerFonts(doc);
 
       const arabic = this.isArabicLanguage(language);
-      const normalizedTitle = arabic ? prepareArabicPdfText(title) : repairPdfText(title.trim());
-      const normalizedText = arabic ? prepareArabicPdfText(text) : repairPdfText(text.trim());
+      const normalizedTitle = arabic ? normalizeStoryReaderArabicText(title) : repairPdfText(title.trim());
+      const normalizedText = arabic ? normalizeStoryReaderArabicText(text) : repairPdfText(text.trim());
       const align: PDFKit.Mixins.TextOptions["align"] = arabic ? "right" : "left";
 
       const drawFooter = () => {
@@ -504,15 +526,27 @@ export class PDFService {
 
       if (arabic) this.arabicFont(doc).fontSize(24);
       else this.font(doc, "BodyExtraBold", "Helvetica-Bold").fontSize(24);
-      doc.fillColor("#241b3b").text(normalizedTitle || "Sample Story", 56, y, { width, align });
-      y += doc.heightOfString(normalizedTitle || "Sample Story", { width, align }) + 24;
+      const titleText = normalizedTitle || "Sample Story";
+      if (arabic) {
+        this.drawRtlText(doc, titleText, 56, y, { width, align: "right", lineGap: 0 }, "#241b3b", 1);
+        y += this.rtlLineCount(doc, titleText, width) * 24 + 24;
+      } else {
+        doc.fillColor("#241b3b").text(titleText, 56, y, { width, align });
+        y += doc.heightOfString(titleText, { width, align }) + 24;
+      }
 
       if (arabic) this.arabicFont(doc).fontSize(16);
       else this.font(doc, "BodyRegular", "Helvetica").fontSize(16);
       for (const paragraph of normalizedText.split(/\n\s*\n/).filter(Boolean)) {
-        const paragraphHeight = doc.heightOfString(paragraph, { width, align, lineGap: 7 });
+        const paragraphHeight = arabic
+          ? this.rtlLineCount(doc, paragraph, width) * 23
+          : doc.heightOfString(paragraph, { width, align, lineGap: 7 });
         if (y + paragraphHeight > bottom) addPage();
-        doc.fillColor("#334155").text(paragraph, 56, y, { width, align, lineGap: 7 });
+        if (arabic) {
+          this.drawRtlText(doc, paragraph, 56, y, { width, align: "right", lineGap: 7 }, "#334155", 1);
+        } else {
+          doc.fillColor("#334155").text(paragraph, 56, y, { width, align, lineGap: 7 });
+        }
         y += paragraphHeight + 18;
       }
       drawFooter();
@@ -609,6 +643,8 @@ export class PDFService {
   private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
     const copy = getFinalCoverCopy(story.language);
     const arabic = this.isArabicLanguage(story.language);
+    const coverTitle = arabic ? normalizeStoryReaderArabicText(copy.title) : copy.title;
+    const coverBody = arabic ? normalizeStoryReaderArabicText(copy.body) : copy.body;
 
     // Layout: no panel/shape — text sits directly on the full-bleed cover image.
     const sidePad = 85.04; // 3 cm from each side on the 14 cm PDF page
@@ -622,7 +658,7 @@ export class PDFService {
     let titleBottom: number;
     if (arabic) {
       this.arabicFont(doc).fontSize(titleSize);
-      titleBottom = this.drawCoverLine(doc, copy.title, {
+      titleBottom = this.drawCoverLine(doc, coverTitle, {
         x: sidePad,
         y: titleY,
         width: textWidth,
@@ -636,7 +672,7 @@ export class PDFService {
         rtl: true,
       });
     } else {
-      titleBottom = this.drawGoofyTitle(doc, copy.title, width, titleY, textWidth, titleSize, titleLineHeight);
+      titleBottom = this.drawGoofyTitle(doc, coverTitle, width, titleY, textWidth, titleSize, titleLineHeight);
     }
 
     // Body: black text, centered below the title
@@ -650,7 +686,7 @@ export class PDFService {
     } else {
       this.font(doc, "BodyBold", "Helvetica-Bold").fontSize(bodySize);
     }
-    this.drawCoverLine(doc, copy.body, {
+    this.drawCoverLine(doc, coverBody, {
       x: sidePad,
       y: bodyY,
       width: textWidth,
@@ -697,7 +733,7 @@ export class PDFService {
   ) {
     const layout = getPageTextLayout(pageNumber, totalPages);
     const cleanText = this.isArabicLanguage(language)
-      ? prepareArabicPdfText(text || "")
+      ? normalizeStoryReaderArabicText(text || "")
       : repairPdfText((text || "").trim());
     if (!cleanText) return;
 
@@ -819,17 +855,8 @@ export class PDFService {
   }
 
   /**
-   * Render Arabic/RTL text cleanly using the Noto Sans Arabic font.
-   *
-   * Fontkit natively shapes Arabic OpenType features (joining, ligatures,
-   * medial/final forms) and places glyphs in proper RTL reading order when
-   * `features: ["calt"]` is passed.
-   *
-   * We:
-   *  1. Break the logical paragraph into lines respecting the maximum width.
-   *  2. Keep characterSpacing at 0 so cursive Arabic joins remain unbroken.
-   *  3. Pass `features: ["calt"]` and `lineBreak: false` to let fontkit
-   *     render the line naturally and beautifully without letter or word reversal.
+   * Render Arabic/RTL text using the story reader's logical direction,
+   * caption alignment, shaping, and line wrapping.
    */
   private drawRtlText(
     doc: PDFKit.PDFDocument,
@@ -843,44 +870,44 @@ export class PDFService {
     const fontSize = (doc as PDFKit.PDFDocument & { _fontSize?: number })._fontSize || 14;
     const lineHeight = fontSize + (options.lineGap || 0);
     const maxWidth = options.width || 500;
-    const align = options.align || "right";
+    const lines = this.storyReaderArabicLines(doc, text, maxWidth);
 
-    const lines: string[] = [];
-    const paragraphs = text.split(/\r?\n/);
-    for (const paragraph of paragraphs) {
-      if (!paragraph.trim()) {
-        lines.push("");
-        continue;
-      }
-      const words = paragraph.trim().split(/\s+/);
-      let currentLine = "";
-      for (const word of words) {
-        const candidate = currentLine ? `${currentLine} ${word}` : word;
-        if (currentLine && doc.widthOfString(candidate, { features: ["calt"] }) > maxWidth) {
-          lines.push(currentLine);
-          currentLine = word;
-        } else {
-          currentLine = candidate;
-        }
-      }
-      if (currentLine) lines.push(currentLine);
-    }
-
-    lines.forEach((logicalLine, index) => {
-      if (!logicalLine) return;
+    lines.forEach((visualLine, index) => {
+      if (!visualLine) return;
       doc
         .fillColor(color)
         .fillOpacity(opacity)
-        .text(logicalLine, x, y + index * lineHeight, {
+        .text(visualLine, x, y + index * lineHeight, {
           ...options,
-          align,
+          align: "right",
           width: maxWidth,
           characterSpacing: 0,
-          features: ["calt"],
           lineBreak: false,
         });
       doc.fillOpacity(1);
     });
+  }
+
+  private storyReaderArabicLines(doc: PDFKit.PDFDocument, text: string, width: number): string[] {
+    const lines: string[] = [];
+    for (const paragraph of text.split(/\r?\n/)) {
+      if (!paragraph.trim()) {
+        lines.push("");
+        continue;
+      }
+      let logicalLine = "";
+      for (const word of paragraph.trim().split(/\s+/)) {
+        const candidate = logicalLine ? `${logicalLine} ${word}` : word;
+        if (logicalLine && doc.widthOfString(shapeStoryReaderArabicLine(candidate)) > width) {
+          lines.push(shapeStoryReaderArabicLine(logicalLine));
+          logicalLine = word;
+        } else {
+          logicalLine = candidate;
+        }
+      }
+      if (logicalLine) lines.push(shapeStoryReaderArabicLine(logicalLine));
+    }
+    return lines;
   }
 
   /**
@@ -906,7 +933,7 @@ export class PDFService {
     const title = (story.title ?? "").trim();
     if (title) {
       const coverTitle = this.isArabicLanguage(story.language)
-        ? prepareArabicPdfText(title)
+        ? normalizeStoryReaderArabicText(title)
         : repairPdfText(title);
       (arabic ? this.arabicFont(doc) : this.font(doc, "Title", "Helvetica-Bold")).fontSize(COVER_TITLE.fontSize);
       y = this.drawCoverLine(doc, coverTitle, {
@@ -1068,23 +1095,7 @@ export class PDFService {
   }
 
   private rtlLineCount(doc: PDFKit.PDFDocument, text: string, width: number): number {
-    let count = 0;
-    for (const paragraph of text.split(/\r?\n/)) {
-      if (!paragraph.trim()) {
-        count += 1;
-        continue;
-      }
-      let line = "";
-      for (const word of paragraph.trim().split(/\s+/)) {
-        const candidate = line ? `${line} ${word}` : word;
-        if (line && doc.widthOfString(candidate, { features: ["calt"] }) > width) {
-          count += 1;
-          line = word;
-        } else line = candidate;
-      }
-      if (line) count += 1;
-    }
-    return count;
+    return this.storyReaderArabicLines(doc, text, width).length;
   }
 
   private paintBackground(doc: PDFKit.PDFDocument, width: number, height: number, variant: "cover" | "page") {
