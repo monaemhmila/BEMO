@@ -1,7 +1,5 @@
 import PDFDocument from "pdfkit";
 import arabicReshaper from "arabic-reshaper";
-// bidi-js ships JavaScript without TypeScript declarations.
-// @ts-expect-error -- runtime package has no bundled declaration file.
 import bidiFactory from "bidi-js";
 import path from "path";
 import fs, { existsSync } from "fs";
@@ -98,7 +96,7 @@ function shapeStoryReaderArabicLine(value: string): string {
   const reshaped = arabicReshaper.convertArabic(value);
   const embedding = storyReaderBidi.getEmbeddingLevels(reshaped, "rtl");
   const characters = Array.from(reshaped);
-  const mirrored = storyReaderBidi.getMirroredCharactersMap(reshaped, embedding);
+  const mirrored = storyReaderBidi.getMirroredCharactersMap(reshaped, embedding.levels);
   mirrored.forEach((character, index) => {
     characters[index] = character;
   });
