@@ -1,6 +1,4 @@
 import PDFDocument from "pdfkit";
-import bidiFactory from "bidi-js";
-import arabicReshaper from "arabic-reshaper";
 import path from "path";
 import fs, { existsSync } from "fs";
 import {
@@ -51,7 +49,7 @@ const FINAL_COVER_COPY = {
   },
   arabic: {
     title: "مغامرة صغيرة، وذكرى تبقى للأبد",
-    body: "تمرّ أيام الطفولة بسرعة، لكن أجمل اللحظات تبقى محفورة في قلوبنا إلى الأبد.\n\nلهذا وُجدتُ، لأحوّل أحلام طفلك إلى قصة جميلة تشبهه وتخصّه وحده.\n\nباسمه، وأشيائه المفضّلة، ولمسة من السحر، يأخذه كل كتاب من Mon Petit Héros إلى عالم جديد مليء بالمغامرات والمفاجآت.\n\nمع كل صفحة، يكتشف طفلك شيئًا جديدًا، ويكون هو بطل الحكاية.\n\nأنا أكثر من مجرد كتاب. أنا ذكرى جميلة من طفولته، يحبّها اليوم ويحتفظ بها في قلبه لسنوات طويلة.",
+    body: "تمرّ أيام الطفولة بسرعة، لكن أجمل اللحظات تبقى محفورة في قلوبنا إلى الأبد.\n\nلهذا وُجدتُ، لأحوّل أحلام طفلك إلى قصة جميلة تشبهه وتخصّه وحده.\n\nباسمه، وأشيائه المفضّلة، ولمسة من السحر، يأخذه كل كتاب من مون بيتي هيرو إلى عالم جديد مليء بالمغامرات والمفاجآت.\n\nمع كل صفحة، يكتشف طفلك شيئًا جديدًا، ويكون هو بطل الحكاية.\n\nأنا أكثر من مجرد كتاب. أنا ذكرى جميلة من طفولته، يحبّها اليوم ويحتفظ بها في قلبه لسنوات طويلة.",
   },
 } as const;
 
@@ -91,10 +89,10 @@ function prepareArabicPdfText(value: string): string {
 }
 
 function getFinalCoverCopy(language?: string | null) {
-  return {
-    title: "Une petite aventure, un souvenir pour toujours",
-    body: "L\u2019enfance passe vite, mais les beaux souvenirs restent pour toujours.\n\nJe transforme les r\u00eaves, le pr\u00e9nom et les choses pr\u00e9f\u00e9r\u00e9es de votre enfant en une histoire unique.\n\nChaque page est une nouvelle aventure o\u00f9 votre enfant est le h\u00e9ros.\n\nUn livre \u00e0 aimer aujourd\u2019hui et \u00e0 garder longtemps.",
-  };
+  const lang = (language || "").toLowerCase();
+  if (lang.startsWith("ar")) return FINAL_COVER_COPY.arabic;
+  if (lang.startsWith("en")) return FINAL_COVER_COPY.english;
+  return FINAL_COVER_COPY.french;
 }
 
 // --- Kid-friendly palette -------------------------------------------------
@@ -192,7 +190,7 @@ const ARABIC_FONT_PATH = [
   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
   "C:\\Windows\\Fonts\\tahoma.ttf",
 ].find(existsSync);
-const bidi = bidiFactory();
+
 
 
 // --- Page artwork download -------------------------------------------------
@@ -552,26 +550,48 @@ export class PDFService {
 
   private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
     const copy = getFinalCoverCopy(story.language);
+    const arabic = this.isArabicLanguage(story.language);
 
     // Layout: no panel/shape — text sits directly on the full-bleed cover image.
     const sidePad = 85.04; // 3 cm from each side on the 14 cm PDF page
     const textWidth = width - sidePad * 2;
 
-    // Title: big, white, goofy wavy letters at the top
     const titleSize = 15;
     const titleLineHeight = titleSize * 1.2;
     const finalCoverDrop = 28.35; // 1 cm lower in PDF points
     const titleY = height * 0.06 + finalCoverDrop;
 
-    const titleBottom = this.drawGoofyTitle(doc, copy.title, width, titleY, textWidth, titleSize, titleLineHeight);
+    let titleBottom: number;
+    if (arabic) {
+      this.arabicFont(doc).fontSize(titleSize);
+      titleBottom = this.drawCoverLine(doc, copy.title, {
+        x: sidePad,
+        y: titleY,
+        width: textWidth,
+        align: "center",
+        fontSize: titleSize,
+        color: STORY_TEXT_COLOR,
+        lineHeight: titleLineHeight,
+        shadowOpacity: COVER_TITLE.shadowOpacity,
+        shadowOffsetY: COVER_TITLE.shadowOffsetY,
+        shadowBlur: COVER_TITLE.shadowBlur,
+        rtl: true,
+      });
+    } else {
+      titleBottom = this.drawGoofyTitle(doc, copy.title, width, titleY, textWidth, titleSize, titleLineHeight);
+    }
 
     // Body: black text, centered below the title
-    const bodySize = 11;
-    const bodyLineHeight = bodySize * 1.28;
-    const gap = 20;
+    const bodySize = arabic ? 9.5 : 11;
+    const bodyLineHeight = bodySize * (arabic ? 1.38 : 1.28);
+    const gap = 16;
     const bodyY = titleBottom + gap;
 
-    this.font(doc, "BodyBold", "Helvetica-Bold").fontSize(bodySize);
+    if (arabic) {
+      this.arabicFont(doc).fontSize(bodySize);
+    } else {
+      this.font(doc, "BodyBold", "Helvetica-Bold").fontSize(bodySize);
+    }
     this.drawCoverLine(doc, copy.body, {
       x: sidePad,
       y: bodyY,
@@ -583,7 +603,7 @@ export class PDFService {
       shadowOpacity: 0,
       shadowOffsetY: 0,
       shadowBlur: 0,
-      rtl: this.isArabicLanguage(story.language),
+      rtl: arabic,
     });
   }
 
@@ -655,19 +675,20 @@ export class PDFService {
       this.font(doc, baseFont, "Helvetica").fontSize(normalPageLayout.fontSize);
     }
 
+    const isArabic = this.isArabicLanguage(language);
     const options: PDFKit.Mixins.TextOptions = {
-      width: 500,
+      width: normalPageLayout.width,
       height: Math.round(normalPageLayout.maxLines * normalPageLayout.lineHeight),
-      align: normalPageLayout.align,
+      align: isArabic
+        ? (normalPageLayout.align === "center" ? "center" : "right")
+        : normalPageLayout.align,
       lineGap: normalPageLayout.lineHeight - normalPageLayout.fontSize,
-      characterSpacing: 0.2,
+      characterSpacing: isArabic ? 0 : 0.2,
       // Let the copy wrap at the safe-area width without replacing the end
       // of the phrase with an ellipsis in the generated PDF.
       ellipsis: false,
       lineBreak: true,
     };
-
-    options.width = normalPageLayout.width;
     this.drawTextWithShadow(
       doc,
       cleanText,
@@ -696,10 +717,19 @@ export class PDFService {
     layout: { glowOpacity: number; shadowOffsetX: number; shadowOffsetY: number; shadowOpacity: number },
     arabic = false,
   ) {
-    // Do not add selectable shadow/outline copies for Arabic. PDF readers
-    // otherwise extract each visual pass as a repeated RTL sentence.
     if (arabic) {
-      this.drawRtlText(doc, text, x, y, options, STORY_TEXT_COLOR);
+      if (layout.shadowOpacity > 0) {
+        this.drawRtlText(
+          doc,
+          text,
+          x + (layout.shadowOffsetX || 0) * 0.4,
+          y + Math.max(1, (layout.shadowOffsetY || 0) * 0.7 + 0.8),
+          options,
+          STORY_TEXT_SHADOW,
+          layout.shadowOpacity * 0.6,
+        );
+      }
+      this.drawRtlText(doc, text, x, y, options, STORY_TEXT_COLOR, 1);
       return;
     }
 
@@ -731,18 +761,17 @@ export class PDFService {
   }
 
   /**
-   * Render Arabic/RTL text. The Arabic font (Noto Sans Arabic) has full
-   * OpenType shaping tables so fontkit handles joining, ligatures and glyph
-   * selection natively — we must NOT pre-process through arabic-reshaper or
-   * bidi-js, because double-shaping garbles the output (reversed letters
-   * within each word, broken ligatures).
+   * Render Arabic/RTL text cleanly using the Noto Sans Arabic font.
    *
-   * What we *do* handle manually:
-   *  1. Word-wrapping to the available width (PDFKit's built-in wrapper
-   *     doesn't account for RTL reordering).
-   *  2. Right-alignment of each line.
-   *  3. Embedding a Right-to-Left mark (U+200F) so fontkit's internal bidi
-   *     resolves the paragraph direction correctly.
+   * Fontkit natively shapes Arabic OpenType features (joining, ligatures,
+   * medial/final forms) and places glyphs in proper RTL reading order when
+   * `features: ["calt"]` is passed.
+   *
+   * We:
+   *  1. Break the logical paragraph into lines respecting the maximum width.
+   *  2. Keep characterSpacing at 0 so cursive Arabic joins remain unbroken.
+   *  3. Pass `features: ["calt"]` and `lineBreak: false` to let fontkit
+   *     render the line naturally and beautifully without letter or word reversal.
    */
   private drawRtlText(
     doc: PDFKit.PDFDocument,
@@ -751,9 +780,13 @@ export class PDFService {
     y: number,
     options: PDFKit.Mixins.TextOptions,
     color: string,
+    opacity = 1,
   ) {
-    const lineHeight = (doc as PDFKit.PDFDocument & { _fontSize?: number })._fontSize! + (options.lineGap || 0);
+    const fontSize = (doc as PDFKit.PDFDocument & { _fontSize?: number })._fontSize || 14;
+    const lineHeight = fontSize + (options.lineGap || 0);
     const maxWidth = options.width || 500;
+    const align = options.align || "right";
+
     const lines: string[] = [];
     const paragraphs = text.split(/\r?\n/);
     for (const paragraph of paragraphs) {
@@ -761,38 +794,34 @@ export class PDFService {
         lines.push("");
         continue;
       }
-      // Split on whitespace but keep the logical (natural reading) order.
       const words = paragraph.trim().split(/\s+/);
-      let line = "";
+      let currentLine = "";
       for (const word of words) {
-        const candidate = line ? `${line} ${word}` : word;
-        if (line && doc.widthOfString(candidate) > maxWidth) {
-          lines.push(line);
-          line = word;
+        const candidate = currentLine ? `${currentLine} ${word}` : word;
+        if (currentLine && doc.widthOfString(candidate, { features: ["calt"] }) > maxWidth) {
+          lines.push(currentLine);
+          currentLine = word;
         } else {
-          line = candidate;
+          currentLine = candidate;
         }
       }
-      if (line) lines.push(line);
+      if (currentLine) lines.push(currentLine);
     }
 
     lines.forEach((logicalLine, index) => {
       if (!logicalLine) return;
-      const shapedLine = arabicReshaper.convertArabic(logicalLine);
-      const visualLine = bidi.getReorderedString(
-        shapedLine,
-        bidi.getEmbeddingLevels(shapedLine, "rtl"),
-      );
       doc
         .fillColor(color)
-        .fillOpacity(1)
-        .text(visualLine, x, y + index * lineHeight, {
+        .fillOpacity(opacity)
+        .text(logicalLine, x, y + index * lineHeight, {
           ...options,
-          align: "right",
-          // Presentation forms are already shaped above.
-          features: [],
+          align,
+          width: maxWidth,
+          characterSpacing: 0,
+          features: ["calt"],
           lineBreak: false,
         });
+      doc.fillOpacity(1);
     });
   }
 
@@ -843,7 +872,7 @@ export class PDFService {
     const footerWidth = width - footerSidePad * 2;
     if (dedication) {
       const quote = `\u201C${dedication}\u201D`;
-      this.font(doc, "Title", "Helvetica-Oblique").fontSize(footer.dedicationSize);
+      (arabic ? this.arabicFont(doc) : this.font(doc, "Title", "Helvetica-Oblique")).fontSize(footer.dedicationSize);
       const lineHeight = footer.dedicationSize * footer.dedicationLeading; // leading-snug
       // The reader pins this block with `bottom-[4%]`, so a dedication that
       // wraps grows *upward*. PDFKit text grows downward, so measure first and
@@ -957,7 +986,18 @@ export class PDFService {
     doc.fillOpacity(1);
 
     if (rtl) {
-      this.drawRtlText(doc, text, x, y, textOptions, color);
+      if (shadowOpacity > 0) {
+        this.drawRtlText(
+          doc,
+          text,
+          x + (options.shadowOffsetY ?? 1) * 0.3,
+          y + (options.shadowOffsetY ?? 2) * 0.7,
+          textOptions,
+          "#000000",
+          shadowOpacity * 0.6,
+        );
+      }
+      this.drawRtlText(doc, text, x, y, textOptions, color, options.opacity ?? 1);
     } else {
       doc
         .fillColor(color)
@@ -979,7 +1019,7 @@ export class PDFService {
       let line = "";
       for (const word of paragraph.trim().split(/\s+/)) {
         const candidate = line ? `${line} ${word}` : word;
-        if (line && doc.widthOfString(candidate) > width) {
+        if (line && doc.widthOfString(candidate, { features: ["calt"] }) > width) {
           count += 1;
           line = word;
         } else line = candidate;
