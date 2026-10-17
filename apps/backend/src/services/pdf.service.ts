@@ -671,6 +671,7 @@ export class PDFService {
         shadowOpacity: COVER_TITLE.shadowOpacity,
         shadowOffsetY: COVER_TITLE.shadowOffsetY,
         shadowBlur: COVER_TITLE.shadowBlur,
+        bold: true,
         rtl: true,
       });
     } else {
@@ -699,6 +700,7 @@ export class PDFService {
       shadowOpacity: 0,
       shadowOffsetY: 0,
       shadowBlur: 0,
+      bold: false,
       rtl: arabic,
     });
   }
@@ -825,6 +827,20 @@ export class PDFService {
           layout.shadowOpacity * 0.6,
         );
       }
+      const blurPasses = 6;
+      const blurSpread = 6;
+      for (let i = 1; i <= blurPasses; i += 1) {
+        const t = i / blurPasses;
+        this.drawRtlText(
+          doc,
+          text,
+          x + layout.shadowOffsetX * 0.4 * t,
+          y + blurSpread * t,
+          options,
+          STORY_TEXT_SHADOW,
+          layout.shadowOpacity * Math.pow(1 - t, 1.6),
+        );
+      }
       this.drawRtlText(doc, text, x, y, options, STORY_TEXT_COLOR, 1);
       return;
     }
@@ -881,7 +897,7 @@ export class PDFService {
         .fillOpacity(opacity)
         .text(visualLine, x, y + index * lineHeight, {
           ...options,
-          align: "right",
+          align: options.align || "right",
           width: maxWidth,
           characterSpacing: 0,
           lineBreak: false,
@@ -949,6 +965,7 @@ export class PDFService {
         shadowOpacity: COVER_TITLE.shadowOpacity,
         shadowOffsetY: COVER_TITLE.shadowOffsetY,
         shadowBlur: COVER_TITLE.shadowBlur,
+        bold: arabic,
         rtl: arabic,
       });
     }
@@ -1043,6 +1060,7 @@ export class PDFService {
       shadowOpacity?: number;
       shadowOffsetY?: number;
       shadowBlur?: number;
+      bold?: boolean;
       rtl?: boolean;
     }
   ): number {
@@ -1074,15 +1092,24 @@ export class PDFService {
 
     if (rtl) {
       if (shadowOpacity > 0) {
-        this.drawRtlText(
-          doc,
-          text,
-          x + (options.shadowOffsetY ?? 1) * 0.3,
-          y + (options.shadowOffsetY ?? 2) * 0.7,
-          textOptions,
-          "#000000",
-          shadowOpacity * 0.6,
-        );
+        const shadowPasses = 6;
+        const shadowSpread = options.shadowBlur ?? 0;
+        for (let i = 1; i <= shadowPasses; i += 1) {
+          const t = i / shadowPasses;
+          this.drawRtlText(
+            doc,
+            text,
+            x + (options.shadowOffsetY ?? 1) * 0.3 * t,
+            y + (options.shadowOffsetY ?? 2) * 0.4 * t + shadowSpread * t,
+            textOptions,
+            "#000000",
+            shadowOpacity * Math.pow(1 - t, 1.6),
+          );
+        }
+      }
+      if (options.bold) {
+        doc.lineWidth(0.65).strokeColor(color);
+        this.drawRtlText(doc, text, x, y, { ...textOptions, stroke: true }, color, options.opacity ?? 1);
       }
       this.drawRtlText(doc, text, x, y, textOptions, color, options.opacity ?? 1);
     } else {
