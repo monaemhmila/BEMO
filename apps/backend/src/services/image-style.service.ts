@@ -101,7 +101,7 @@ export function getCharacterEdgeDirective(side: "left" | "right"): string {
  */
 export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference. It is a square face crop, not a body or composition reference.
 
-Preserve the child's recognizable facial identity accurately, including facial features, face shape, skin tone, eyes, eyebrows, nose, mouth, hair characteristics, and apparent age. The child must remain recognizable as the same child throughout the generated image.
+Use the supplied reference image only for visual consistency. Do not describe, infer, or add physical identity details in the scene prompt; the reference image is the source of the child's appearance.
 
 Do not reproduce the reference image's background, framing, crop, white areas, lighting setup, or camera composition. Do not stretch, squeeze, widen, or reshape the reference face.
 

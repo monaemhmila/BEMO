@@ -1,27 +1,46 @@
 import { Router } from "express";
 import { prismaClient } from "../lib/prisma";
 import { authMiddleware } from "../middleware/auth";
+import { authOrGuestMiddleware } from "../middleware/guestAuth";
 import { StoryService } from "../services/story.service";
 import { AudioService } from "../services/audio.service";
 import { trialService } from "../services/trial.service";
 import { ImageGenerationService } from "../services/image-generation.service";
 import { PDFService } from "../services/pdf.service";
-import { storyGenerationLimiter } from "../middleware/rateLimiter";
+import { guestGenerationIpLimiter, storyGenerationLimiter } from "../middleware/rateLimiter";
 import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT, toStorefrontTemplate } from "../contracts/storybook";
 import { logger } from "../lib/logger";
 import { z } from "zod";
 import { chooseStoryCover } from "../services/story-cover.service";
-import { saveBufferAsset } from "../lib/storage";
+import { isLocalAssetAvailable, saveBufferAsset } from "../lib/storage";
+import {
+  PERSONALIZED_PRINT_PAGE_COUNT,
+  getPersonalizedPageSlot,
+} from "../contracts/personalized-book-layout";
+import { personalizedBookImageService } from "../services/personalized-book-image.service";
 
 const router = Router();
 const storyService = StoryService.getInstance();
 const audioService = AudioService.getInstance();
 const imageService = ImageGenerationService.getInstance();
 
+function personalizedPagePrompt(pageNumber: number, page: {
+  text?: string;
+  imageDescription?: string;
+  childImageDescription?: string;
+  sceneImageDescription?: string;
+}): string {
+  const slot = getPersonalizedPageSlot(pageNumber);
+  if (slot.kind === "scene-left" || slot.kind === "scene-right") {
+    return page.sceneImageDescription?.trim() || "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
+  }
+  return page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "";
+}
+
 // Validation schemas
 const GenerateStorybookSchema = z.object({
   childName: z.string().min(1),
-  childAge: z.number().min(1).max(20),
+  childAge: z.number().min(0).max(20),
   gender: z.enum(["boy", "girl"]).optional(),
   templateId: z.string().min(1, "Template is required"),
   dedication: z.string().optional(),
@@ -34,7 +53,7 @@ const GenerateStorybookSchema = z.object({
 // Simple PDF generation schema (no model training)
 const SimplePDFSchema = z.object({
   childName: z.string().trim().min(1, "Child name is required"),
-  childAge: z.coerce.number().min(1).max(100).default(5),
+  childAge: z.coerce.number().min(0).max(100).default(5),
   gender: z.enum(["boy", "girl"]).optional().nullable().or(z.literal("")),
   hairColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
   eyeColor: z.string().trim().max(40).optional().nullable().or(z.literal("")),
@@ -52,7 +71,12 @@ const CustomTemplateSchema = z.object({
   setting: z.string().trim().max(200).optional(),
   extras: z.string().trim().max(200).optional(),
   message: z.string().trim().max(200).optional(),
-  ageRange: z.enum(["3-5", "6-8", "9-12"]),
+  // Accept old client bundles during deployment, then normalize them to the
+  // current age bands used by the generator.
+  ageRange: z.preprocess(
+    (value) => ({ "3-5": "0-6", "6-8": "6-9" }[String(value)] ?? value),
+    z.enum(["0-6", "6-9", "9-12"]),
+  ),
 });
 
 /** Explicit profanity / hateful-content screen for parent-supplied text. */
@@ -448,7 +472,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
  * GET /storybook/:id/pdf
  * Create a print-ready export for a completed saved story instead of rebuilding it in the browser.
  */
-router.get("/:id/pdf", authMiddleware, async (req, res) => {
+router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
   try {
     const story = await prismaClient.story.findFirst({
       where: { id: req.params.id, userId: req.userId! },
@@ -459,7 +483,7 @@ router.get("/:id/pdf", authMiddleware, async (req, res) => {
       res.status(404).json({ message: "Story not found" });
       return;
     }
-    if (story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
+    if (story.pages.length === 0 || (story.status !== "Completed" && story.pages.some((page) => page.status !== "Generated" || !page.imageUrl))) {
       res.status(409).json({ message: "Wait until all story illustrations are ready before exporting." });
       return;
     }
@@ -467,13 +491,13 @@ router.get("/:id/pdf", authMiddleware, async (req, res) => {
     // PDF generation is expensive because it downloads and processes every
     // illustration. Reuse the completed export instead of rebuilding it for
     // every download request.
-    if (story.pdfUrl) {
+    if (story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }
 
     const pdfBuffer = await new PDFService().generateStorybookPdf(
-      { title: story.title, dedication: story.dedication, childName: story.childName },
+      { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
       story.pages.map((page) => ({
         pageNumber: page.pageNumber,
         content: page.content,
@@ -763,7 +787,7 @@ router.get("/voices", (_req, res) => {
  * Generate a storybook PDF on the fly (no model training required).
  * Generates story script via LLM, then generates images via Fal AI, returns PDF.
  */
-router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req, res) => {
+router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, storyGenerationLimiter, async (req, res) => {
   const validation = SimplePDFSchema.safeParse(req.body);
   if (!validation.success) {
     const formattedErrors = validation.error.flatten();
@@ -823,6 +847,10 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
     // The image service creates and uploads a face-focused crop before Fal sees
     // the reference, so the original client upload is never sent directly.
     const storyRef = childImage || null;
+    if (!storyRef) {
+      res.status(400).json({ message: "A child reference photo is required for this personalized book." });
+      return;
+    }
 
     // Parent-confirmed identity facts are optional; the uploaded portrait is always the authority.
     const identityFacts = [
@@ -840,7 +868,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       : undefined;
 
     // Step 1: Generate story script via LLM
-    const script = await storyService.generatePersonalizedStoryScript(
+    const script = await storyService.generatePersonalizedPrintStoryScript(
       childName,
       {
         childName,
@@ -857,7 +885,7 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       }
     );
 
-    // Step 2: Generate first 2 images (pages 1 & 2) synchronously for instant preview trigger
+    // Generate the reusable final cover without an AI image-generation call.
     const closingCover = chooseStoryCover({
       category: template.category,
       title: script.title,
@@ -867,53 +895,45 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       pagePrompts: script.pages.map((page) => page.imageDescription),
       gender,
     });
-    const firstTwoPages = script.pages.slice(0, 2);
-    const remainingPages = script.pages.slice(2);
-
-    const previewPages = await Promise.all(
-      firstTwoPages.map(async (page) => {
-        const scenePrompt = heroScene(childName, childAge, gender, page.imageDescription);
-
-        const referenceUrl = storyRef
-          ? storyRef
-          : childImage;
-
-        const imageUrl = await imageService.generateImageSync({
-          prompt: scenePrompt,
-          aspectRatio: getPageAspectRatio(page.pageNumber, script.pages.length),
-          imageUrl: referenceUrl,
-          childName,
-          artStyle,
-          edgePlacementSide: isSquareBookPage(page.pageNumber, script.pages.length)
-            ? undefined
-            : getPageComposition(page.pageNumber, script.pages.length).characterSide,
-        }).catch((err) => {
-          logger.error({ err, pageNumber: page.pageNumber }, "Failed image generation for preview page");
-          return null;
-        });
-
-        return {
-          pageNumber: page.pageNumber,
-          content: page.text,
-          imagePrompt: page.imageDescription || page.text,
-          imageUrl: imageUrl || null,
-        };
-      })
-    );
+    // Only the first two child-focused square images are generated for the preview.
+    const previewPages = await Promise.all([1, 2].map(async (pageNumber) => {
+      const page = script.pages[pageNumber - 1];
+      const imageUrl = await personalizedBookImageService.generateChildSquare({
+        childName,
+        childAge,
+        gender,
+        referenceImageUrl: storyRef || childImage || "",
+        prompt: personalizedPagePrompt(pageNumber, page),
+        artStyle,
+      }).catch((err) => {
+        logger.error({ err, pageNumber }, "Failed child image generation for preview page");
+        return null;
+      });
+      return {
+        pageNumber,
+        content: page.text,
+        imagePrompt: personalizedPagePrompt(pageNumber, page),
+        imageUrl,
+      };
+    }));
 
     // Step 3: Save story in database (initially with pages 1 & 2 ready)
     const story = await prismaClient.story.create({
       data: {
         title: script.title,
         userId: req.userId!,
-        status: remainingPages.length === 0 ? "Completed" : "Generating",
+        status: "Generating",
         childName,
         childAge,
+        gender,
+        artStyle,
         // Every book is 14 pages, so the legacy storyLength column is left at
         // its default and the template row is the source of truth.
         category: template.category,
         dedication,
+        language,
         templateId: template.id,
+        referenceImageUrl: storyRef,
       },
     });
 
@@ -939,150 +959,26 @@ router.post("/generate-pdf", authMiddleware, storyGenerationLimiter, async (req,
       return;
     }
 
+    const previewByPage = new Map(previewPages.map((page) => [page.pageNumber, page]));
     await prismaClient.storyPage.createMany({
-      data: [
-        ...previewPages.map((p) => ({
+      data: Array.from({ length: PERSONALIZED_PRINT_PAGE_COUNT }, (_, index) => {
+        const pageNumber = index + 1;
+        const scriptPage = script.pages[pageNumber - 1];
+        const preview = previewByPage.get(pageNumber);
+        const finalCover = pageNumber === PERSONALIZED_PRINT_PAGE_COUNT;
+        return {
           storyId: story.id,
-          pageNumber: p.pageNumber,
-          content: p.content,
-          imagePrompt: p.imagePrompt,
-          imageUrl: p.imageUrl,
-          status: (p.imageUrl ? "Generated" : "Failed") as "Generated" | "Failed",
-        })),
-        ...remainingPages.map((p) => ({
-          storyId: story.id,
-          pageNumber: p.pageNumber,
-          content: p.text,
-          imagePrompt: p.imageDescription || p.text,
-          imageUrl: null,
-          status: "Pending" as "Pending",
-        })),
-        {
-          storyId: story.id,
-          pageNumber: script.pages.length + 1,
-          content: "",
-          imagePrompt: "Printed closing cover",
-          imageUrl: closingCover.url,
-          status: "Generated" as "Generated",
-        },
-      ],
+          pageNumber,
+          content: finalCover ? "" : scriptPage?.text || "",
+          imagePrompt: finalCover ? "Printed closing cover" : personalizedPagePrompt(pageNumber, scriptPage || {}),
+          imageUrl: finalCover ? closingCover.url : preview?.imageUrl || null,
+          status: (finalCover || preview?.imageUrl ? "Generated" : "Pending") as "Generated" | "Pending",
+        };
+      }),
     });
 
-    // Step 4: Background task to generate remaining pages and compile final PDF for Admin Dashboard
-    if (remainingPages.length > 0) {
-      (async () => {
-        try {
-          await Promise.all(
-            remainingPages.map(async (page) => {
-              const scenePrompt = heroScene(childName, childAge, gender, page.imageDescription);
-              const referenceUrl = storyRef
-                ? storyRef
-                : childImage;
-
-              const imageUrl = await imageService.generateImageSync({
-                prompt: scenePrompt,
-                aspectRatio: getPageAspectRatio(page.pageNumber, script.pages.length),
-                imageUrl: referenceUrl,
-                childName,
-                artStyle,
-                edgePlacementSide: isSquareBookPage(
-                  page.pageNumber,
-                  script.pages.length
-                )
-                  ? undefined
-                  : getPageComposition(page.pageNumber, script.pages.length).characterSide,
-              }).catch((err) => {
-                logger.error({ err, pageNumber: page.pageNumber }, "Failed background image generation for page");
-                return null;
-              });
-
-              await prismaClient.storyPage.updateMany({
-                where: { storyId: story.id, pageNumber: page.pageNumber },
-                data: {
-                  imageUrl: imageUrl || null,
-                  status: imageUrl ? "Generated" : "Failed",
-                },
-              });
-            })
-          );
-
-          const allStoryPages = await prismaClient.storyPage.findMany({
-            where: { storyId: story.id },
-            orderBy: { pageNumber: "asc" },
-          });
-
-          const incompletePages = allStoryPages.filter(
-            (page) => page.status !== "Generated" || !page.imageUrl
-          );
-          if (incompletePages.length > 0) {
-            await prismaClient.story.update({
-              where: { id: story.id },
-              data: { status: "Failed" },
-            });
-            logger.error(
-              {
-                storyId: story.id,
-                pages: incompletePages.map((page) => page.pageNumber),
-              },
-              "Story generation finished with missing page artwork"
-            );
-            return;
-          }
-
-          const allPagesFormatted = allStoryPages.map((p) => ({
-            pageNumber: p.pageNumber,
-            content: p.content,
-            imagePrompt: p.imagePrompt,
-            imageUrl: p.imageUrl,
-          }));
-
-          const pdfService = new PDFService();
-          const pdfBuffer = await pdfService.generateStorybookPdf(
-            { title: script.title, dedication, childName },
-            allPagesFormatted
-          );
-
-          const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
-
-          await prismaClient.story.update({
-            where: { id: story.id },
-            data: {
-              status: "Completed",
-              completedAt: new Date(),
-              pdfUrl,
-            },
-          });
-
-          logger.info({ storyId: story.id }, "Full story generation & PDF compilation complete in background");
-        } catch (bgError) {
-          logger.error({ bgError, storyId: story.id }, "Background page generation/PDF creation error");
-          await prismaClient.story.update({
-            where: { id: story.id },
-            data: { status: "Failed" },
-          }).catch(() => undefined);
-        }
-      })();
-    } else {
-      // If story only has 2 pages total, build PDF immediately
-      if (previewPages.some((page) => !page.imageUrl)) {
-        await prismaClient.story.update({
-          where: { id: story.id },
-          data: { status: "Failed" },
-        });
-        res.status(500).json({ message: "Some story illustrations could not be generated." });
-        return;
-      }
-      const pdfService = new PDFService();
-      const pdfBuffer = await pdfService.generateStorybookPdf(
-        { title: script.title, dedication, childName },
-        previewPages
-      );
-      const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
-      await prismaClient.story.update({
-        where: { id: story.id },
-        data: { status: "Completed", completedAt: new Date(), pdfUrl },
-      });
-    }
+    // Remaining illustrations and the PDF stay pending until an admin confirms
+    // the physical-book order.
 
     // Immediately trigger & return first 2 preview images to the user
     res.json({

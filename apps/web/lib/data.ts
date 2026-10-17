@@ -10,6 +10,7 @@ export type Book = {
 export const navLinks = [
   { label: "Home", href: "/" },
   { label: "Books", href: "/books" },
+  { label: "Games", href: "/games" },
   { label: "My Books", href: "/login" },
   { label: "Support", href: "/support" },
 ];

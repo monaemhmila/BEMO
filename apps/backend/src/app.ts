@@ -20,11 +20,20 @@ import { falAiWebhookRouter } from "./routes/fal-ai-webhook.routes";
 import { adminRouter } from "./routes/admin.routes";
 import { orderRouter } from "./routes/order.routes";
 import { analyticsRouter } from "./routes/analytics.routes";
+import { printerRouter } from "./routes/printer.routes";
+import { gamesRouter } from "./routes/games.routes";
+import { assistantRouter } from "./routes/assistant.routes";
+import { PDFService } from "./services/pdf.service";
+import { saveBufferAsset } from "./lib/storage";
 
 initSentry();
 
 export function createApp() {
   const app = express();
+
+  // The app is behind the VPS reverse proxy. This lets express-rate-limit see
+  // the real visitor IP instead of treating every visitor as 127.0.0.1.
+  app.set("trust proxy", 1);
 
   // Concise, clean request logger middleware (silences repetitive background polling)
   app.use((req, res, next) => {
@@ -134,12 +143,51 @@ export function createApp() {
   app.use("/story", storyRouter);
   app.use("/storybook", storybookRouter);
   app.use("/admin", adminRouter);
+  app.use("/printer", printerRouter);
+  app.use("/games", gamesRouter);
+  app.use("/assistant", assistantRouter);
     app.use("/orders", orderRouter);
 
   app.use("/analytics", analyticsRouter);
 
   // Serve generated PDFs saved to assets/pdfs (e.g. /assets/pdfs/{storyId}.pdf)
   app.use("/assets/pdfs", express.static(path.join(process.cwd(), "assets", "pdfs")));
+  // Backward-compatible location used by older production containers.
+  app.use("/assets/pdfs", express.static(path.join(process.cwd(), "apps", "backend", "assets", "pdfs")));
+  // Recover PDF URLs created before a container restart removed local files.
+  app.get("/assets/pdfs/:filename", async (req, res, next) => {
+    try {
+      const storyId = path.basename(req.params.filename).replace(/\.pdf$/i, "");
+      const story = await prismaClient.story.findUnique({
+        where: { id: storyId },
+        include: { pages: { orderBy: { pageNumber: "asc" } } },
+      });
+      if (!story || story.pages.length === 0 || (story.status !== "Completed" && story.pages.some((page) => page.status !== "Generated" || !page.imageUrl))) {
+        next();
+        return;
+      }
+
+      const pdfBuffer = await new PDFService().generateStorybookPdf(
+        { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
+        story.pages.map((page) => ({ pageNumber: page.pageNumber, content: page.content, imageUrl: page.imageUrl })),
+        undefined,
+        { allowMissingArtwork: true }
+      );
+      const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${story.id}.pdf`, "application/pdf");
+      await prismaClient.story.update({ where: { id: story.id }, data: { pdfUrl } });
+      res.type("application/pdf").send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Generated child pages and split scene halves are persisted here by the
+  // personalized print pipeline and need to remain readable by the PDF and
+  // story readers when local filesystem storage is used.
+  app.use("/assets/generated", express.static(path.join(process.cwd(), "assets", "generated"), {
+    maxAge: "30d",
+    fallthrough: true,
+  }));
 
   // Catalogue images uploaded from /admin -> Templates: gallery previews and
   // cover art. Each folder is mounted separately so assets/ as a whole (which

@@ -13,6 +13,8 @@ node_modules/
 **/.env*.local
 !.env.example
 !**/.env.example
+!.env.*.example
+!**/.env.*.example
 !.env.production.example
 !**/.env.production.example
 
@@ -62,8 +64,5 @@ smoke3.out
 # Generated PDFs
 apps/backend/assets/pdfs/
 
-# Catalogue images uploaded from /admin -> Templates (gallery previews and
-# cover art). The URLs live in the StoryTemplate.previews / coverImage columns,
-# so the files belong in object storage, not in the repository.
+# Catalogue preview images uploaded from /admin -> Templates.
 apps/backend/assets/previews/
-apps/backend/assets/covers/

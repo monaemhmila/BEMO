@@ -57,6 +57,16 @@ export async function saveBufferAsset(
   return `${baseUrl.replace(/\/$/, "")}/assets/${key}`;
 }
 
+export function isLocalAssetAvailable(assetUrl: string | null | undefined): boolean {
+  if (!assetUrl || objectStorage) return Boolean(assetUrl);
+  try {
+    const filename = path.basename(new URL(assetUrl).pathname);
+    return Boolean(filename) && fs.existsSync(path.join(getAssetsPath("pdfs"), filename));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Download a remote image (e.g., from fal.media) and save it locally in assets/<subfolder>
  * Uses safeFetchAndValidateImage to protect against SSRF, decompression bombs, and malformed files.

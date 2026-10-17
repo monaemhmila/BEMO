@@ -3,12 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Menu, ShoppingBag, User } from "lucide-react";
+import { Menu, ShoppingBag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SignedIn, SignedOut, UserButton, useUser } from "@clerk/nextjs";
 import { navLinks } from "@/lib/data";
 import { LanguageSelector } from "@/components/language-selector";
+import { motion } from "framer-motion";
+import { BrandLogo } from "@/components/brand-logo";
 import {
   Sheet,
   SheetContent,
@@ -22,6 +24,42 @@ const AUTH_ITEMS = [
   { label: "My Books", href: "/storybook/dashboard" },
   { label: "Create Story", href: "/storybook/create" },
 ];
+
+function DesktopNavLink({
+  href,
+  label,
+  active,
+  featured = false,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  featured?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "relative rounded-full px-4 py-2 text-[15px] font-semibold transition-colors hover:bg-muted hover:text-primary",
+        featured
+          ? "bg-primary px-5 py-2 font-bold text-white hover:bg-violet-deep"
+          : active
+            ? "text-primary"
+            : "text-foreground/80",
+      )}
+    >
+      {label}
+      {active && !featured && (
+        <motion.span
+          layoutId="desktop-nav-active"
+          className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-primary"
+          transition={{ type: "spring", stiffness: 420, damping: 30 }}
+          aria-hidden
+        />
+      )}
+    </Link>
+  );
+}
 
 export function Appbar() {
   const [scrolled, setScrolled] = React.useState(false);
@@ -56,6 +94,7 @@ export function Appbar() {
   const signedInNav = [
     ...currentAuthItems,
     { label: "Shop Books", href: "/books" },
+    { label: "Games", href: "/games" },
     { label: "Support", href: "/support" },
   ];
 
@@ -65,7 +104,7 @@ export function Appbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50">
       {/* Promo strip — matches the homepage announcement bar */}
-      <div className="bg-violet-deep px-4 py-2 text-center text-[13px] font-semibold tracking-wide text-white">
+      <div className="animate-reveal-up bg-violet-deep px-4 py-2 text-center text-[13px] font-semibold tracking-wide text-white">
         Save 20% on 2+ books using code{" "}
         <span className="rounded-md bg-white/15 px-1.5 py-0.5">EXTRA20</span>
       </div>
@@ -73,52 +112,28 @@ export function Appbar() {
       {/* Sticky Mon Petit Hero header */}
       <div
         className={cn(
-          "border-b border-border bg-white/90 backdrop-blur-md transition-shadow",
+          "border-b border-border bg-white/90 backdrop-blur-md transition-[box-shadow,background-color] duration-300",
           scrolled && "shadow-[0_6px_24px_-12px_rgba(31,22,54,.35)]",
         )}
       >
         <div className="shell flex h-[72px] items-center justify-between gap-2 sm:gap-4">
-          <Link href="/" className="flex min-w-0 items-center gap-2" aria-label="Mon Petit Hero home">
-            <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <BookOpen className="size-5" aria-hidden />
-            </span>
-            <span className="truncate font-display text-lg font-semibold text-violet-deep sm:text-xl">
-              Mon Petit Hero
-            </span>
-          </Link>
+          <BrandLogo priority className="min-w-0 truncate" />
 
           <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
             <SignedOut>
               {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={cn(
-                    "rounded-full px-4 py-2 text-[15px] font-semibold transition-colors hover:bg-muted hover:text-primary",
-                    isActive(link.href) ? "text-primary" : "text-foreground/80",
-                  )}
-                >
-                  {link.label}
-                </Link>
+                <DesktopNavLink key={link.label} {...link} active={isActive(link.href)} />
               ))}
             </SignedOut>
 
             <SignedIn>
               {signedInNav.map((item) => (
-                <Link
+                <DesktopNavLink
                   key={item.label}
-                  href={item.href}
-                  className={cn(
-                    "rounded-full px-4 py-2 text-[15px] font-semibold transition-colors hover:bg-muted hover:text-primary",
-                    item.label === "Create Story"
-                      ? "bg-primary px-5 py-2 font-bold text-white hover:bg-violet-deep"
-                      : isActive(item.href)
-                        ? "text-primary"
-                        : "text-foreground/80",
-                  )}
-                >
-                  {item.label}
-                </Link>
+                  {...item}
+                  active={isActive(item.href)}
+                  featured={item.label === "Create Story"}
+                />
               ))}
             </SignedIn>
           </nav>

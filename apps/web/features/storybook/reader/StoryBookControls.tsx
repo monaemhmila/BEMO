@@ -10,6 +10,7 @@ import {
   Pause,
   Play,
   ShoppingBag,
+  Share2,
   Volume2,
   VolumeX,
   X,
@@ -40,6 +41,9 @@ interface StoryBookControlsProps {
   onClose: () => void;
   onExportPdf: () => void;
   onOrderBook: () => void;
+  onShare: () => void;
+  canShare: boolean;
+  shareCopied: boolean;
   /**
    * Drops the "back to library" and fullscreen affordances, which have no
    * meaning when the book is shown inline rather than as a full-page reader.
@@ -62,6 +66,9 @@ export function StoryBookControls({
   onClose,
   onExportPdf,
   onOrderBook,
+  onShare,
+  canShare,
+  shareCopied,
   embedded = false,
 }: StoryBookControlsProps) {
   return (
@@ -164,6 +171,19 @@ export function StoryBookControls({
             >
               <ShoppingBag className="size-4" />
             </Button>
+
+            {canShare && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-full text-white hover:bg-white/20"
+                onClick={onShare}
+                aria-label={shareCopied ? "Share link copied" : "Share story"}
+                title={shareCopied ? "Share link copied" : "Share story"}
+              >
+                <Share2 className="size-4" />
+              </Button>
+            )}
 
             {!embedded && (
               <Button

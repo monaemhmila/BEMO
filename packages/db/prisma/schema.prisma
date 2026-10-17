@@ -25,9 +25,38 @@ model User {
   stories           Story[]
   orders            Order[]
   storyTemplates    StoryTemplate[]
+  guestSession       GuestSession?
+  gameRewardClaimedAt DateTime?
+  gameRewardUsedAt    DateTime?
   
   @@index([clerkId])
   @@index([email])
+}
+
+// Anonymous browser sessions are deliberately separate from Clerk accounts.
+// The raw token is only held by the browser; the database stores its hash.
+model GuestSession {
+  id                String   @id @default(uuid())
+  tokenHash         String   @unique
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  generationUsedAt  DateTime?
+  createdAt         DateTime @default(now())
+  lastSeenAt        DateTime @updatedAt
+  expiresAt         DateTime
+
+  @@index([expiresAt])
+}
+
+model PrinterAccount {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
 }
 
 enum OutputImageStatusEnum {
@@ -66,6 +95,8 @@ model Story {
   // Enhanced personalization fields
   childName   String?
   childAge    Int?
+  gender      String? // "boy" or "girl" for consistent child-image generation
+  artStyle    String? // selected illustration style for later image generations
   // The photo the customer uploaded, kept so a retried page can be re-rendered
   // through the fal image-edit endpoint with the same face reference instead of
   // falling back to an unpersonalised image.
@@ -255,6 +286,10 @@ model Order {
 
   // Price
   totalAmount   Decimal            @db.Decimal(10, 2)
+  subtotalAmount Decimal           @db.Decimal(10, 2)
+  quantity      Int                @default(1)
+  discountPercent Int              @default(0)
+  gameDiscountPercent Int          @default(0)
   currency      String             @default("USD")
 
   // Payment
@@ -263,6 +298,9 @@ model Order {
 
   // Fulfillment
   status        OrderStatusEnum    @default(PENDING)
+  printedAt     DateTime?
+  printedBy     String?
+  printAuditLogs PrintAuditLog[]
 
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -270,7 +308,21 @@ model Order {
   @@index([userId])
   @@index([storyId])
   @@index([status])
+  @@index([printedAt])
   @@index([orderNumber])
+}
+
+model PrintAuditLog {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  action     String
+  reason     String?
+  actorEmail String
+  createdAt  DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([createdAt])
 }
 
 // Page visit & click tracking. Used for the admin analytics dashboard and

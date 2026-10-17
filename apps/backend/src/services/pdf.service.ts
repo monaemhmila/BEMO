@@ -4,6 +4,8 @@ import fs, { existsSync } from "fs";
 import {
   getPageType,
   getPageTextLayout,
+  STORYBOOK_PAGE_WIDTH_PT,
+  STORYBOOK_PAGE_HEIGHT_PT,
 } from "../contracts/storybook";
 import {
   splitForBookPage,
@@ -33,6 +35,67 @@ interface StoryPayload {
   title: string;
   dedication?: string | null;
   childName?: string | null;
+  language?: string | null;
+}
+
+const FINAL_COVER_COPY = {
+  english: {
+    title: "A Little Adventure to Remember Forever",
+    body: "Childhood goes by so quickly, but the happy moments can stay with us forever.\n\nThat's why I'm here. To turn your child's dreams into a beautiful story they can call their own.\n\nWith their name, their favorite things, and a little magic, every Mon Petit Héros book takes them somewhere new and exciting.\n\nEvery page brings a new surprise, with your little one as the star of the adventure.\n\nI'm more than just a book. I'm a special part of their childhood, made to be loved today and remembered for years to come.",
+  },
+  french: {
+    title: "Une petite aventure, un souvenir pour toujours",
+    body: "L'enfance passe si vite, mais les plus beaux moments restent gravés dans nos cœurs.\n\nC'est pour cela que j'existe. Pour transformer les rêves de votre enfant en une belle histoire qui lui ressemble.\n\nAvec son prénom, ce qu'il aime et une touche de magie, chaque livre Mon Petit Héros l'emmène dans un nouvel univers plein de surprises.\n\nÀ chaque page, une nouvelle découverte, avec votre petit héros au cœur de l'aventure.\n\nJe suis bien plus qu'un simple livre. Je suis un petit morceau de son enfance, à aimer aujourd'hui et à garder précieusement pour les années à venir.",
+  },
+  arabic: {
+    title: "مغامرة صغيرة، وذكرى تبقى للأبد",
+    body: "تمرّ أيام الطفولة بسرعة، لكن أجمل اللحظات تبقى محفورة في قلوبنا إلى الأبد.\n\nلهذا وُجدتُ، لأحوّل أحلام طفلك إلى قصة جميلة تشبهه وتخصّه وحده.\n\nباسمه، وأشيائه المفضّلة، ولمسة من السحر، يأخذه كل كتاب من مون بيتي هيرو إلى عالم جديد مليء بالمغامرات والمفاجآت.\n\nمع كل صفحة، يكتشف طفلك شيئًا جديدًا، ويكون هو بطل الحكاية.\n\nأنا أكثر من مجرد كتاب. أنا ذكرى جميلة من طفولته، يحبّها اليوم ويحتفظ بها في قلبه لسنوات طويلة.",
+  },
+} as const;
+
+const SHORT_FINAL_COVER_BODY = {
+  english: "Childhood passes quickly, but happy memories last forever.\n\nI turn your child’s dreams, name, and favorite things into a story of their own.\n\nEvery page is a new adventure with your child as the hero.\n\nA special book to love today and remember for years.",
+  french: "L’enfance passe vite, mais les beaux souvenirs restent pour toujours.\n\nJe transforme les rêves, le prénom et les choses préférées de votre enfant en une histoire unique.\n\nChaque page est une nouvelle aventure où votre enfant est le héros.\n\nUn livre à aimer aujourd’hui et à garder longtemps.",
+  arabic: "تمرّ الطفولة بسرعة، لكن لحظاتها الجميلة تبقى إلى الأبد.\n\nأحوّل أحلام طفلك واسمه وأشياءه المفضلة إلى قصة خاصة به.\n\nفي كل صفحة مغامرة جديدة، وطفلك هو البطل.\n\nكتاب جميل يحبه اليوم ويحتفظ به لسنوات طويلة.",
+} as const;
+
+function repairCoverText(value: string): string {
+  // Some older deployments persisted these strings after an accidental
+  // UTF-8 -> Latin-1 conversion (for example, "HÃ©ros"). Repair that data at
+  // the rendering boundary so all three language versions print correctly.
+  if (!/[ÃÂâ€¦ÙØ]/.test(value)) return value;
+  try {
+    return Buffer.from(value, "latin1").toString("utf8");
+  } catch {
+    return value;
+  }
+}
+
+function repairPdfText(value: string): string {
+  let repaired = value;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (!/[ÃÂÐÑØÙÛÜ]/.test(repaired)) break;
+    const next = Buffer.from(repaired, "latin1").toString("utf8");
+    if (next.includes("�")) break;
+    repaired = next;
+  }
+  return repaired;
+}
+
+/** Keep the same logical text the browser story reader receives. */
+function normalizeStoryReaderArabicText(value: string): string {
+  return repairPdfText(value)
+    // Browsers use these invisible direction controls for bidi punctuation;
+    // PDFKit/fontkit can otherwise emit them as visible missing-glyph boxes.
+    .replace(/[\u061C\u200B\u200C\u200D\u200E\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g, "")
+    .trim();
+}
+
+function getFinalCoverCopy(language?: string | null) {
+  const lang = (language || "").toLowerCase();
+  if (lang.startsWith("ar")) return FINAL_COVER_COPY.arabic;
+  if (lang.startsWith("en")) return FINAL_COVER_COPY.english;
+  return FINAL_COVER_COPY.french;
 }
 
 // --- Kid-friendly palette -------------------------------------------------
@@ -42,13 +105,13 @@ const STORY_TEXT_SHADOW = "#000000";
 const STORY_TEXT_OUTLINE = "#1A2235";
 
 
-// Exact A4 landscape page size in points (297 x 210 mm), shared with the
+// Exact square printed page size in points (140 x 140 mm), shared with the
 // contracts so the image pipeline and PDF layout stay in lockstep. Every
 // story ships as exactly 15 pages - page 1 is the full-bleed cover with a
 // PDF-rendered title, pages 2-13 carry the story, page 14 the emotional
 // ending and page 15 the closing.
-const PAGE_WIDTH = 595.28; // 210mm square
-const PAGE_HEIGHT = 595.28; // 210mm square
+const PAGE_WIDTH = STORYBOOK_PAGE_WIDTH_PT; // 140mm square
+const PAGE_HEIGHT = STORYBOOK_PAGE_HEIGHT_PT; // 140mm square
 
 // --- Web reader parity ------------------------------------------------------
 // `reader.css` and StoryBookCover.tsx express the cover in container query
@@ -60,14 +123,6 @@ const PAGE_HEIGHT = 595.28; // 210mm square
 const WEB_CQW = PAGE_WIDTH / 100; // 5.9528pt
 const WEB_PX = 0.75; // 1 CSS px, in points
 
-/** `.is-cover::after` - the white hairline border inset on the cover leaf. */
-const COVER_FRAME = {
-  inset: 0.02 * PAGE_WIDTH, // inset: 2% -> 11.9pt
-  lineWidth: Math.max(2 * WEB_PX, 0.4 * WEB_CQW), // max(2px, 0.4cqw) -> 2.38pt
-  opacity: 0.6, // rgba(255, 255, 255, 0.6)
-  radius: 3 * WEB_PX, // border-radius: 3px
-};
-
 /**
  * `StoryBookCover.tsx` - the outside-cover overlay. The generated artwork
  * stays the hero and this is drawn on top of it, exactly as the reader does,
@@ -76,13 +131,13 @@ const COVER_FRAME = {
 const COVER_TITLE = {
   top: 0.07 * PAGE_HEIGHT, // top-[7%]
   sidePad: 0.08 * PAGE_WIDTH, // px-[8%]
-  fontSize: 4.2 * WEB_CQW, // clamp(1rem, 4.2cqw, 2.2rem) -> 25.0pt
+  fontSize: 3.2 * WEB_CQW, // compact two-line cover title
   leading: 1.25, // leading-tight
   shadowOpacity: 0.7, // 0 2px 12px rgba(0, 0, 0, 0.7)
   shadowOffsetY: 2 * WEB_PX, // 2px
   shadowBlur: 12 * WEB_PX, // 12px
   starring: {
-    size: 1.5 * WEB_CQW, // clamp(0.45rem, 1.5cqw, 0.85rem) -> 8.93pt
+    size: 0.78 * WEB_CQW,
     marginTop: 1.4 * WEB_CQW, // mt-[1.4cqw]
     leading: 1.3,
     tracking: 0.28, // tracking-[0.28em]
@@ -91,9 +146,12 @@ const COVER_TITLE = {
   },
   footer: {
     bottom: 0.04 * PAGE_HEIGHT, // bottom-[4%]
-    dedicationSize: 1.8 * WEB_CQW, // clamp(0.55rem, 1.8cqw, 1rem) -> 10.7pt
+    whiteSpaceY: 167,
+    whiteSpaceSidePad: 87,
+    pillBottom: 28.35, // 1 cm above the bottom edge
+    dedicationSize: 0.9 * WEB_CQW,
     dedicationLeading: 1.375, // leading-snug
-    pillSize: 1.2 * WEB_CQW, // clamp(0.4rem, 1.2cqw, 0.75rem) -> 7.14pt
+    pillSize: 0.85 * WEB_CQW,
     pillTracking: 0.3, // tracking-[0.3em]
     pillPadX: 0.02 * PAGE_WIDTH, // px-[2%]
     pillPadY: 0.8 * WEB_CQW, // py-[0.8cqw]
@@ -130,6 +188,13 @@ const FONTS = {
   bodyBold: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
   bodyExtraBold: path.join(FONT_DIR, "FredokaOne-Regular.ttf"),
 };
+const ARABIC_FONT_PATH = [
+  path.join(FONT_DIR, "Arabic.ttf"),
+  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+  "C:\\Windows\\Fonts\\tahoma.ttf",
+].find(existsSync);
+
+
 
 // --- Page artwork download -------------------------------------------------
 // Story art lives on fal's CDN, which can be slow to reach from some networks:
@@ -235,36 +300,39 @@ async function fetchSplitPageImages(url: string): Promise<BookPageImage | null> 
 
 export class PDFService {
   private readonly customFontsAvailable = Object.values(FONTS).every(existsSync);
+  private readonly arabicFontAvailable = Boolean(ARABIC_FONT_PATH);
 
   async generateStorybookPdf(
     story: StoryPayload,
     pages: StoryPagePayload[],
-    onWarning?: (message: string) => void
+    onWarning?: (message: string) => void,
+    options?: { allowMissingArtwork?: boolean }
   ): Promise<Buffer> {
     // Render exactly the pages provided for this story: keep the first page for
     // each page number in order, ignore any duplicate/extra pages that may exist
     // in an old story, and pad any gaps with blank placeholders so the book layout
     // always matches the generated story page count.
     const byPageNumber = new Map<number, StoryPagePayload>();
-    [...pages]
-      .sort((a, b) => a.pageNumber - b.pageNumber)
-      .forEach((page) => {
-        if (!byPageNumber.has(page.pageNumber)) byPageNumber.set(page.pageNumber, page);
-      });
+    const orderedPages = [...pages].sort((a, b) => a.pageNumber - b.pageNumber);
+    orderedPages.forEach((page) => {
+      if (!byPageNumber.has(page.pageNumber)) byPageNumber.set(page.pageNumber, page);
+    });
 
     const sortedPages: StoryPagePayload[] = Array.from(
-      { length: Math.max(0, ...[...byPageNumber.keys()]) },
+      { length: Math.max(0, pages.length, ...[...byPageNumber.keys()]) },
       (_, index) => {
         const pageNumber = index + 1;
         return (
           byPageNumber.get(pageNumber) || {
+            ...(orderedPages[index] || { content: "", imageUrl: null }),
             pageNumber,
-            content: "",
-            imageUrl: null,
           }
         );
       }
     );
+    if (sortedPages.length === 0) {
+      throw new Error("PDF_GENERATION_NO_PAGES");
+    }
 
     const splitImages = await mapWithConcurrency(sortedPages, IMAGE_FETCH_CONCURRENCY, (page) =>
       page.imageUrl ? fetchSplitPageImages(page.imageUrl) : Promise.resolve(null)
@@ -284,7 +352,7 @@ export class PDFService {
         `The image host was unreachable; the book was rendered without those illustrations.`;
       console.error(message);
       onWarning?.(message);
-      throw new Error(message);
+      if (!options?.allowMissingArtwork) throw new Error(message);
     }
 
     // A 16:9 story page becomes two PDF leaves (left square, then right square).
@@ -294,8 +362,14 @@ export class PDFService {
     sortedPages.forEach((page, index) => {
       const split = splitImages[index];
       if (split?.left && split.right) {
+        // Covers are single square book leaves. If an old record contains a
+        // wide cover/closing image, keep one crop instead of creating a second
+        // apparent cover page.
+        const isSinglePageCover = page.pageNumber === 1 || page.pageNumber === sortedPages.length;
         leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.left, renderText: true });
-        leaves.push({ pageNumber: page.pageNumber, content: "", image: split.right, renderText: false });
+        if (!isSinglePageCover) {
+          leaves.push({ pageNumber: page.pageNumber, content: "", image: split.right, renderText: false });
+        }
       } else if (split?.full) {
         leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.full, renderText: true });
       } else {
@@ -305,7 +379,7 @@ export class PDFService {
 
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
-        size: [PAGE_WIDTH, PAGE_HEIGHT], // 210mm square page
+        size: [PAGE_WIDTH, PAGE_HEIGHT], // 148.5mm square page
         margin: 0,
         bufferPages: true,
         info: {
@@ -336,18 +410,13 @@ export class PDFService {
             this.renderCoverPage(doc, leaf, story);
             break;
           case "ending":
-            this.renderEndingPage(doc, leaf, totalBookPages);
+            this.renderEndingPage(doc, leaf, totalBookPages, story);
             break;
           case "closing":
-            this.renderClosingPage(doc, leaf, totalBookPages);
+            this.renderClosingPage(doc, leaf, story);
             break;
           default:
-            this.renderStoryPage(doc, leaf);
-        }
-        // The cover's hairline frame sits above the artwork, matching the
-        // reader's z-index. Nothing else is drawn over the interior pages.
-        if (pageType === "cover") {
-          this.drawCoverFrame(doc, PAGE_WIDTH, PAGE_HEIGHT);
+            this.renderStoryPage(doc, leaf, totalBookPages, story);
         }
       });
       doc.end();
@@ -357,7 +426,10 @@ export class PDFService {
   /**
    * Generate an empty/sample storybook PDF layout preview for admin testing
    */
-  async generateEmptyPreviewPdf(title = "Empty Storybook Layout Preview"): Promise<Buffer> {
+  async generateEmptyPreviewPdf(
+    title = "Empty Storybook Layout Preview",
+    language = "English"
+  ): Promise<Buffer> {
     const samplePages: StoryPagePayload[] = [
       {
         pageNumber: 1,
@@ -369,10 +441,17 @@ export class PDFService {
         content: "Opening page - text placed in the bottom-left text-safe area, white with a soft shadow.",
         imageUrl: null,
       },
-      {
-        pageNumber: 3,
-        content: "Story page - text placed in the bottom-right text-safe area, white with a soft shadow.",
+      ...Array.from({ length: 12 }, (_, index) => ({
+        pageNumber: index + 3,
+        content: index % 2 === 0
+          ? "Story page - text placed in the bottom-right text-safe area, white with a soft shadow."
+          : "Story page - text placed in the bottom-left text-safe area, white with a soft shadow.",
         imageUrl: null,
+      })),
+      {
+        pageNumber: 15,
+        content: "Closing page - a warm goodbye message centered over the closing artwork.",
+        imageUrl: "/assets/covers/GREEN-CO.png",
       },
     ];
 
@@ -380,20 +459,93 @@ export class PDFService {
       {
         title,
         dedication: "",
+        language,
       },
       samplePages
     );
   }
 
+  /** Generate a plain text-only PDF for checking language/font rendering. */
+  async generateTextOnlySamplePdf(
+    title = "Sample Story",
+    text = "Once upon a time, a little explorer discovered a wonderful new world.",
+    language = "English",
+  ): Promise<Buffer> {
+    const doc = new PDFDocument({
+      size: "A4",
+      margin: 56,
+      bufferPages: true,
+      info: { Title: title, Author: "Mon Petit Hero", Subject: "Text-only sample story" },
+    });
+    const buffers: Buffer[] = [];
+    const width = 595.28 - 112;
+    const bottom = 786;
+    let pageNumber = 1;
+    let y = 72;
+
+    return new Promise<Buffer>((resolve, reject) => {
+      doc.on("data", (chunk) => buffers.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(buffers)));
+      doc.on("error", reject);
+      this.registerFonts(doc);
+
+      const arabic = this.isArabicLanguage(language);
+      const normalizedTitle = arabic ? normalizeStoryReaderArabicText(title) : repairPdfText(title.trim());
+      const normalizedText = arabic ? normalizeStoryReaderArabicText(text) : repairPdfText(text.trim());
+      const align: PDFKit.Mixins.TextOptions["align"] = arabic ? "right" : "left";
+
+      const drawFooter = () => {
+        doc.font("Helvetica").fontSize(9).fillColor("#94a3b8")
+          .text(`Text-only sample · ${pageNumber}`, 56, 806, { width, align: "center" });
+      };
+      const addPage = () => {
+        drawFooter();
+        doc.addPage();
+        pageNumber += 1;
+        y = 72;
+      };
+
+      if (arabic) this.arabicFont(doc).fontSize(24);
+      else this.font(doc, "BodyExtraBold", "Helvetica-Bold").fontSize(24);
+      const titleText = normalizedTitle || "Sample Story";
+      if (arabic) {
+        this.drawRtlText(doc, titleText, 56, y, { width, align: "right", lineGap: 0 }, "#241b3b", 1);
+        y += this.rtlLineCount(doc, titleText, width) * 24 + 24;
+      } else {
+        doc.fillColor("#241b3b").text(titleText, 56, y, { width, align });
+        y += doc.heightOfString(titleText, { width, align }) + 24;
+      }
+
+      if (arabic) this.arabicFont(doc).fontSize(16);
+      else this.font(doc, "BodyRegular", "Helvetica").fontSize(16);
+      for (const paragraph of normalizedText.split(/\n\s*\n/).filter(Boolean)) {
+        const paragraphHeight = arabic
+          ? this.rtlLineCount(doc, paragraph, width) * 23
+          : doc.heightOfString(paragraph, { width, align, lineGap: 7 });
+        if (y + paragraphHeight > bottom) addPage();
+        if (arabic) {
+          this.drawRtlText(doc, paragraph, 56, y, { width, align: "right", lineGap: 7 }, "#334155", 1);
+        } else {
+          doc.fillColor("#334155").text(paragraph, 56, y, { width, align, lineGap: 7 });
+        }
+        y += paragraphHeight + 18;
+      }
+      drawFooter();
+      doc.end();
+    });
+  }
+
   private registerFonts(doc: PDFKit.PDFDocument) {
     // Font assets are optional in production deployments. The visual hierarchy
     // remains intact with PDFKit's bundled fonts if a deployment has not copied them.
-    if (!this.customFontsAvailable) return;
-    doc.registerFont("Title", FONTS.title);
-    doc.registerFont("BodyRegular", FONTS.bodyRegular);
-    doc.registerFont("BodySemiBold", FONTS.bodySemiBold);
-    doc.registerFont("BodyBold", FONTS.bodyBold);
-    doc.registerFont("BodyExtraBold", FONTS.bodyExtraBold);
+    if (this.customFontsAvailable) {
+      doc.registerFont("Title", FONTS.title);
+      doc.registerFont("BodyRegular", FONTS.bodyRegular);
+      doc.registerFont("BodySemiBold", FONTS.bodySemiBold);
+      doc.registerFont("BodyBold", FONTS.bodyBold);
+      doc.registerFont("BodyExtraBold", FONTS.bodyExtraBold);
+    }
+    if (ARABIC_FONT_PATH) doc.registerFont("Arabic", ARABIC_FONT_PATH);
   }
 
   /**
@@ -420,65 +572,122 @@ export class PDFService {
    */
   private renderStoryPage(
     doc: PDFKit.PDFDocument,
-    leaf: PdfLeaf
+    leaf: PdfLeaf,
+    totalPages: number,
+    story: StoryPayload
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
-      this.drawStoryText(doc, leaf.pageNumber, leaf.content);
+      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages, story.language);
     }
   }
 
   /**
-   * Emotional ending (page 15): full-bleed square illustration with the closing
-   * thought placed at the bottom-center text-safe area.
+   * Emotional ending: full-bleed illustration with the closing thought placed
+   * at the bottom-center text-safe area. Only the first leaf gets text when a
+   * legacy wide image is split into two PDF leaves.
    */
   private renderEndingPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    totalPages: number
+    totalPages: number,
+    story: StoryPayload
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
+    if (leaf.renderText) {
+      this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages, story.language);
+    }
   }
 
   /**
-   * Closing page (page 15): full-bleed square illustration with a short, warm
-   * goodbye centered in the lower middle of the page.
+   * Closing page: full-bleed illustration with one short, warm goodbye. The
+   * renderText guard prevents the closing cover overlay from being repeated on
+   * the second half of a legacy split image.
    */
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    totalPages: number
+    story: StoryPayload
   ) {
     const { width, height } = doc.page;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    this.drawStoryText(doc, leaf.pageNumber, leaf.content, totalPages);
+    if (leaf.renderText) {
+      this.drawFinalCoverMessage(doc, story, width, height);
+    }
   }
 
-  /**
-   * The cover's hairline frame, mirroring the `border` half of
-   * `.is-cover::after`: a white border inset 2% of the page.
-   */
-  private drawCoverFrame(doc: PDFKit.PDFDocument, width: number, height: number) {
-    const { inset, radius } = COVER_FRAME;
-    doc
-      .roundedRect(inset, inset, width - inset * 2, height - inset * 2, radius)
-      .lineWidth(COVER_FRAME.lineWidth)
-      .strokeColor("#FFFFFF")
-      .strokeOpacity(COVER_FRAME.opacity)
-      .stroke("#FFFFFF");
-    doc.strokeOpacity(0);
+  private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
+    const copy = getFinalCoverCopy(story.language);
+    const arabic = this.isArabicLanguage(story.language);
+    const coverTitle = arabic ? normalizeStoryReaderArabicText(copy.title) : copy.title;
+    const coverBody = arabic ? normalizeStoryReaderArabicText(copy.body) : copy.body;
+
+    // Layout: no panel/shape — text sits directly on the full-bleed cover image.
+    const sidePad = 85.04; // 3 cm from each side on the 14 cm PDF page
+    const textWidth = width - sidePad * 2;
+
+    const titleSize = 15;
+    const titleLineHeight = titleSize * 1.2;
+    const finalCoverDrop = 28.35; // 1 cm lower in PDF points
+    const titleY = height * 0.06 + finalCoverDrop;
+
+    let titleBottom: number;
+    if (arabic) {
+      this.arabicFont(doc).fontSize(titleSize);
+      titleBottom = this.drawCoverLine(doc, coverTitle, {
+        x: sidePad,
+        y: titleY,
+        width: textWidth,
+        align: "center",
+        fontSize: titleSize,
+        color: STORY_TEXT_COLOR,
+        lineHeight: titleLineHeight,
+        shadowOpacity: COVER_TITLE.shadowOpacity,
+        shadowOffsetY: COVER_TITLE.shadowOffsetY,
+        shadowBlur: COVER_TITLE.shadowBlur,
+        bold: true,
+        rtl: true,
+      });
+    } else {
+      titleBottom = this.drawGoofyTitle(doc, coverTitle, width, titleY, textWidth, titleSize, titleLineHeight);
+    }
+
+    // Body: black text, centered below the title
+    const bodySize = arabic ? 9.5 : 11;
+    const bodyLineHeight = bodySize * (arabic ? 1.38 : 1.28);
+    const gap = 16;
+    const bodyY = titleBottom + gap;
+
+    if (arabic) {
+      this.arabicFont(doc).fontSize(bodySize);
+    } else {
+      this.font(doc, "BodyBold", "Helvetica-Bold").fontSize(bodySize);
+    }
+    this.drawCoverLine(doc, coverBody, {
+      x: sidePad,
+      y: bodyY,
+      width: textWidth,
+      align: "center",
+      fontSize: bodySize,
+      color: "#000000",
+      lineHeight: bodyLineHeight,
+      shadowOpacity: 0,
+      shadowOffsetY: 0,
+      shadowBlur: 0,
+      bold: false,
+      rtl: arabic,
+    });
   }
 
   /**
    * Place the cover-cropped image so it fills every pixel of the page.
-   * The buffer is already cover-cropped to the exact A4 landscape aspect,
-   * so drawing it at 0,0 stretched to the page size never distorts it.
+   * The buffer is already cover-cropped to the exact square page aspect, so
+   * drawing it at 0,0 stretched to the 14 cm page never distorts it.
    */
   private drawPageImage(
     doc: PDFKit.PDFDocument,
@@ -490,13 +699,6 @@ export class PDFService {
       doc.image(image, 0, 0, { width, height });
       return;
     }
-
-    this.font(doc, "BodyRegular", "Helvetica").fontSize(16).fillColor(STORY_TEXT_COLOR).text(
-      " on its way!",
-      0,
-      height / 2 - 8,
-      { width, align: "center" }
-    );
   }
 
   /**
@@ -505,25 +707,74 @@ export class PDFService {
    * derived from the page number via the contracts, keeping the PDF layout
    * identical to the text-safe area the image generator was told to reserve.
    */
-  private drawStoryText(doc: PDFKit.PDFDocument, pageNumber: number, text: string, totalPages = 15) {
+  private drawStoryText(
+    doc: PDFKit.PDFDocument,
+    pageNumber: number,
+    text: string,
+    totalPages = 15,
+    language?: string | null,
+  ) {
     const layout = getPageTextLayout(pageNumber, totalPages);
-    const cleanText = (text || "").trim();
+    const cleanText = this.isArabicLanguage(language)
+      ? normalizeStoryReaderArabicText(text || "")
+      : repairPdfText((text || "").trim());
     if (!cleanText) return;
 
-    const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
-    this.font(doc, baseFont, "Helvetica").fontSize(layout.fontSize);
+    // Keep the cover and closing-page artwork exactly as designed. For normal
+    // story pages, move the caption slightly lower and make its text block
+    // narrower so it does not stretch too far across the illustration.
+    const isCoverOrClosing = getPageType(pageNumber, totalPages) === "cover" || getPageType(pageNumber, totalPages) === "closing";
+    const normalPageLayout = isCoverOrClosing
+      ? layout
+      : {
+        ...layout,
+        y: layout.y + 10,
+        // Let the story copy use almost the full safe-area width again. The
+        // vertical limit below is what keeps it 2 cm above the page edge.
+        width: layout.width * 0.96,
+        fontSize: layout.fontSize * 0.86,
+        lineHeight: layout.lineHeight * 0.86,
+        x: layout.x + layout.width > STORYBOOK_PAGE_WIDTH_PT * 0.82
+          ? layout.x + layout.width * 0.04
+          : layout.align === "center"
+            ? layout.x + layout.width * 0.02
+            : layout.x,
+        maxLines: Math.max(
+          1,
+          Math.floor((STORYBOOK_PAGE_HEIGHT_PT - 56.7 - (layout.y + 10)) / (layout.lineHeight * 0.86)),
+        ),
+      };
 
+    if (this.isArabicLanguage(language)) {
+      this.arabicFont(doc).fontSize(normalPageLayout.fontSize);
+    } else {
+      const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
+      this.font(doc, baseFont, "Helvetica").fontSize(normalPageLayout.fontSize);
+    }
+
+    const isArabic = this.isArabicLanguage(language);
     const options: PDFKit.Mixins.TextOptions = {
-      width: 500,
-      height: Math.round(layout.maxLines * layout.lineHeight),
-      align: layout.align,
-      lineGap: layout.lineHeight - layout.fontSize,
-      characterSpacing: 0.2,
-      ellipsis: true,
+      width: normalPageLayout.width,
+      height: Math.round(normalPageLayout.maxLines * normalPageLayout.lineHeight),
+      align: isArabic
+        ? (normalPageLayout.align === "center" ? "center" : "right")
+        : normalPageLayout.align,
+      lineGap: normalPageLayout.lineHeight - normalPageLayout.fontSize,
+      characterSpacing: isArabic ? 0 : 0.2,
+      // Let the copy wrap at the safe-area width without replacing the end
+      // of the phrase with an ellipsis in the generated PDF.
+      ellipsis: false,
       lineBreak: true,
     };
-
-    this.drawTextWithShadow(doc, cleanText, 50, layout.y, options, layout);
+    this.drawTextWithShadow(
+      doc,
+      cleanText,
+      normalPageLayout.x,
+      normalPageLayout.y,
+      options,
+      normalPageLayout,
+      this.isArabicLanguage(language),
+    );
   }
 
   /**
@@ -540,8 +791,39 @@ export class PDFService {
     x: number,
     y: number,
     options: PDFKit.Mixins.TextOptions,
-    layout: { glowOpacity: number; shadowOffsetX: number; shadowOffsetY: number; shadowOpacity: number }
+    layout: { glowOpacity: number; shadowOffsetX: number; shadowOffsetY: number; shadowOpacity: number },
+    arabic = false,
   ) {
+    if (arabic) {
+      if (layout.shadowOpacity > 0) {
+        this.drawRtlText(
+          doc,
+          text,
+          x + (layout.shadowOffsetX || 0) * 0.4,
+          y + Math.max(1, (layout.shadowOffsetY || 0) * 0.7 + 0.8),
+          options,
+          STORY_TEXT_SHADOW,
+          layout.shadowOpacity * 0.6,
+        );
+      }
+      const blurPasses = 6;
+      const blurSpread = 6;
+      for (let i = 1; i <= blurPasses; i += 1) {
+        const t = i / blurPasses;
+        this.drawRtlText(
+          doc,
+          text,
+          x + layout.shadowOffsetX * 0.4 * t,
+          y + blurSpread * t,
+          options,
+          STORY_TEXT_SHADOW,
+          layout.shadowOpacity * Math.pow(1 - t, 1.6),
+        );
+      }
+      this.drawRtlText(doc, text, x, y, options, STORY_TEXT_COLOR, 1);
+      return;
+    }
+
     // 8px of CSS blur at 96dpi is 6pt; the 1px y-offset is 0.75pt.
     const BLUR_PASSES = 6;
     const BLUR_SPREAD = 6;
@@ -570,9 +852,66 @@ export class PDFService {
   }
 
   /**
+   * Render Arabic/RTL text using the story reader's logical direction,
+   * caption alignment, shaping, and line wrapping.
+   */
+  private drawRtlText(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    x: number,
+    y: number,
+    options: PDFKit.Mixins.TextOptions,
+    color: string,
+    opacity = 1,
+  ) {
+    const fontSize = (doc as PDFKit.PDFDocument & { _fontSize?: number })._fontSize || 14;
+    const lineHeight = fontSize + (options.lineGap || 0);
+    const maxWidth = options.width || 500;
+    const lines = this.storyReaderArabicLines(doc, text, maxWidth);
+
+    lines.forEach((visualLine, index) => {
+      if (!visualLine) return;
+      doc
+        .fillColor(color)
+        .fillOpacity(opacity)
+        .text(visualLine, x, y + index * lineHeight, {
+          ...options,
+          align: options.align || "right",
+          width: maxWidth,
+          characterSpacing: 0,
+          features: ["calt"],
+          lineBreak: false,
+        });
+      doc.fillOpacity(1);
+    });
+  }
+
+  private storyReaderArabicLines(doc: PDFKit.PDFDocument, text: string, width: number): string[] {
+    const lines: string[] = [];
+    for (const paragraph of text.split(/\r?\n/)) {
+      if (!paragraph.trim()) {
+        lines.push("");
+        continue;
+      }
+      let logicalLine = "";
+      for (const word of paragraph.trim().split(/\s+/)) {
+        const candidate = logicalLine ? `${logicalLine} ${word}` : word;
+        if (logicalLine && doc.widthOfString(candidate, { features: ["calt"] }) > width) {
+          lines.push(logicalLine);
+          logicalLine = word;
+        } else {
+          logicalLine = candidate;
+        }
+      }
+      if (logicalLine) lines.push(logicalLine);
+    }
+    return lines;
+  }
+
+  /**
    * The outside-cover overlay, mirroring `StoryBookCover.tsx`: a top-to-bottom
-   * scrim so the type stays readable over any artwork, then the title, the
-   * "Starring ..." credit, and either the dedication or the Mon Petit Hero pill.
+   * scrim so the type stays readable over any artwork, then the title and
+   * either the dedication or the Mon Petit Hero pill.
    *
    * CSS reaches the scrim with `bg-gradient-to-b from-black/45 via-transparent
    * to-black/55`. PDFKit has no gradient fill, so it is approximated with
@@ -587,11 +926,15 @@ export class PDFService {
 
     const contentWidth = width - COVER_TITLE.sidePad * 2;
     let y = COVER_TITLE.top;
+    const arabic = this.isArabicLanguage(story.language);
 
     const title = (story.title ?? "").trim();
     if (title) {
-      this.font(doc, "Title", "Helvetica-Bold").fontSize(COVER_TITLE.fontSize);
-      y = this.drawCoverLine(doc, title, {
+      const coverTitle = this.isArabicLanguage(story.language)
+        ? normalizeStoryReaderArabicText(title)
+        : repairPdfText(title);
+      (arabic ? this.arabicFont(doc) : this.font(doc, "Title", "Helvetica-Bold")).fontSize(COVER_TITLE.fontSize);
+      y = this.drawCoverLine(doc, coverTitle, {
         x: COVER_TITLE.sidePad,
         y,
         width: contentWidth,
@@ -602,56 +945,41 @@ export class PDFService {
         shadowOpacity: COVER_TITLE.shadowOpacity,
         shadowOffsetY: COVER_TITLE.shadowOffsetY,
         shadowBlur: COVER_TITLE.shadowBlur,
-      });
-    }
-
-    const childName = (story.childName ?? "").trim();
-    if (childName) {
-      const star = COVER_TITLE.starring;
-      this.font(doc, "BodySemiBold", "Helvetica-Bold").fontSize(star.size);
-      y += star.marginTop;
-      y = this.drawCoverLine(doc, `STARRING ${childName.toUpperCase()}`, {
-        x: COVER_TITLE.sidePad,
-        y,
-        width: contentWidth,
-        align: "center",
-        fontSize: star.size,
-        color: star.color,
-        tracking: star.tracking,
-        lineHeight: star.size * star.leading,
-        shadowOpacity: star.shadowOpacity,
-        shadowOffsetY: 1 * WEB_PX,
-        shadowBlur: 6 * WEB_PX,
+        bold: arabic,
+        rtl: arabic,
       });
     }
 
     const dedication = (story.dedication ?? "").trim();
     const footer = COVER_TITLE.footer;
+    const footerSidePad = footer.whiteSpaceSidePad;
+    const footerWidth = width - footerSidePad * 2;
     if (dedication) {
       const quote = `\u201C${dedication}\u201D`;
-      this.font(doc, "Title", "Helvetica-Oblique").fontSize(footer.dedicationSize);
+      (arabic ? this.arabicFont(doc) : this.font(doc, "Title", "Helvetica-Oblique")).fontSize(footer.dedicationSize);
       const lineHeight = footer.dedicationSize * footer.dedicationLeading; // leading-snug
       // The reader pins this block with `bottom-[4%]`, so a dedication that
       // wraps grows *upward*. PDFKit text grows downward, so measure first and
       // lift the start point by the block's real height.
       const blockHeight = doc.heightOfString(quote, {
-        width: contentWidth,
+        width: footerWidth,
         align: "center",
         lineGap: lineHeight - footer.dedicationSize,
         lineBreak: true,
       });
       this.drawCoverLine(doc, quote, {
-        x: COVER_TITLE.sidePad,
-        y: height - footer.bottom - blockHeight,
-        width: contentWidth,
+        x: footerSidePad,
+        y: footer.whiteSpaceY,
+        width: footerWidth,
         align: "center",
         fontSize: footer.dedicationSize,
         color: STORY_TEXT_COLOR,
         opacity: 0.9,
         lineHeight,
-        shadowOpacity: 0.7,
+        shadowOpacity: arabic ? 0 : 0.7,
         shadowOffsetY: 1 * WEB_PX,
         shadowBlur: 8 * WEB_PX,
+        rtl: arabic,
       });
       return;
     }
@@ -666,7 +994,8 @@ export class PDFService {
     const boxWidth = textWidth + footer.pillPadX * 2;
     const boxHeight = footer.pillSize + footer.pillPadY * 2;
     const boxX = (width - boxWidth) / 2;
-    const boxY = height - footer.bottom - boxHeight;
+    // Keep the fallback label independent from the dedication text area.
+    const boxY = height - footer.pillBottom - boxHeight;
 
     doc.roundedRect(boxX, boxY, boxWidth, boxHeight, boxHeight / 2);
     doc.fillColor(footer.pillColor).fillOpacity(footer.pillOpacity).fill();
@@ -711,6 +1040,8 @@ export class PDFService {
       shadowOpacity?: number;
       shadowOffsetY?: number;
       shadowBlur?: number;
+      bold?: boolean;
+      rtl?: boolean;
     }
   ): number {
     const { x, y, width, align, fontSize, color, lineHeight } = options;
@@ -722,24 +1053,58 @@ export class PDFService {
       lineBreak: true,
     };
 
-    const height = doc.heightOfString(text, textOptions);
+    const rtl = options.rtl === true;
+    const height = rtl
+      ? this.rtlLineCount(doc, text, width) * lineHeight
+      : doc.heightOfString(text, textOptions);
     const steps = 6;
-    for (let i = 1; i <= steps; i += 1) {
-      const t = i / steps;
-      doc
-        .fillColor("#000000")
-        .fillOpacity((options.shadowOpacity ?? 0) * Math.pow(1 - t, 1.6))
-        .text(text, x, y + (options.shadowOffsetY ?? 0) * 0.4 * t + (options.shadowBlur ?? 0) * t, textOptions);
+    const shadowOpacity = options.shadowOpacity ?? 0;
+    if (shadowOpacity > 0 && !rtl) {
+      for (let i = 1; i <= steps; i += 1) {
+        const t = i / steps;
+        doc
+          .fillColor("#000000")
+          .fillOpacity(shadowOpacity * Math.pow(1 - t, 1.6))
+          .text(text, x, y + (options.shadowOffsetY ?? 0) * 0.4 * t + (options.shadowBlur ?? 0) * t, textOptions);
+      }
     }
     doc.fillOpacity(1);
 
-    doc
-      .fillColor(color)
-      .fillOpacity(options.opacity ?? 1)
-      .text(text, x, y, textOptions);
+    if (rtl) {
+      if (shadowOpacity > 0) {
+        const shadowPasses = 6;
+        const shadowSpread = options.shadowBlur ?? 0;
+        for (let i = 1; i <= shadowPasses; i += 1) {
+          const t = i / shadowPasses;
+          this.drawRtlText(
+            doc,
+            text,
+            x + (options.shadowOffsetY ?? 1) * 0.3 * t,
+            y + (options.shadowOffsetY ?? 2) * 0.4 * t + shadowSpread * t,
+            textOptions,
+            "#000000",
+            shadowOpacity * Math.pow(1 - t, 1.6),
+          );
+        }
+      }
+      if (options.bold) {
+        doc.lineWidth(0.65).strokeColor(color);
+        this.drawRtlText(doc, text, x, y, { ...textOptions, stroke: true }, color, options.opacity ?? 1);
+      }
+      this.drawRtlText(doc, text, x, y, textOptions, color, options.opacity ?? 1);
+    } else {
+      doc
+        .fillColor(color)
+        .fillOpacity(options.opacity ?? 1)
+        .text(text, x, y, textOptions);
+    }
     doc.fillOpacity(1);
 
     return y + Math.max(height, lineHeight);
+  }
+
+  private rtlLineCount(doc: PDFKit.PDFDocument, text: string, width: number): number {
+    return this.storyReaderArabicLines(doc, text, width).length;
   }
 
   private paintBackground(doc: PDFKit.PDFDocument, width: number, height: number, variant: "cover" | "page") {
@@ -797,6 +1162,123 @@ export class PDFService {
 
   private font(doc: PDFKit.PDFDocument, customFont: string, fallback: string) {
     return doc.font(this.customFontsAvailable ? customFont : fallback);
+  }
+
+  private arabicFont(doc: PDFKit.PDFDocument) {
+    return doc.font(this.arabicFontAvailable ? "Arabic" : "Helvetica");
+  }
+
+  private isArabicLanguage(language?: string | null) {
+    return (language || "").toLowerCase().startsWith("ar");
+  }
+
+  /**
+   * Draw the title text character-by-character with a playful wavy arc,
+   * per-character rotation, and subtle size wobble — giving it a bent,
+   * goofy, fun storybook feel. Returns the Y coordinate just below the
+   * last line so the caller can position content beneath it.
+   */
+  private drawGoofyTitle(
+    doc: PDFKit.PDFDocument,
+    text: string,
+    pageWidth: number,
+    baseY: number,
+    maxWidth: number,
+    fontSize: number,
+    lineHeight: number,
+  ): number {
+    this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
+
+    // Word-wrap into lines manually so we can draw each character individually.
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let currentLine = "";
+    for (const word of words) {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      if (doc.widthOfString(testLine) > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    // Keep the cover title contained within the single cover leaf. Long
+    // generated titles are reduced to a compact two-line cover treatment.
+    if (lines.length > 2) {
+      lines.length = 2;
+      const lastLine = lines[1].replace(/[.!,;:!?\s]+$/, "");
+      lines[1] = `${lastLine}…`;
+    }
+
+    // Wave / wobble parameters
+    const waveAmplitude = fontSize * 0.16;   // vertical bounce height
+    const maxRotation = 7;                   // degrees of tilt per character
+    const sizeWobble = 0.07;                 // ±7 % size variation
+    const shadowSteps = 4;
+
+    lines.forEach((line, lineIndex) => {
+      this.font(doc, "Title", "Helvetica-Bold").fontSize(fontSize);
+      const chars = line.split("");
+      const charWidths = chars.map((c) => doc.widthOfString(c));
+      const totalLineWidth = charWidths.reduce((s, w) => s + w, 0);
+
+      let cursorX = (pageWidth - totalLineWidth) / 2; // centre the line
+      const cursorY = baseY + lineIndex * lineHeight;
+
+      chars.forEach((char, i) => {
+        const charW = charWidths[i];
+
+        // Spaces just advance the cursor — nothing to draw.
+        if (char === " ") {
+          cursorX += charW;
+          return;
+        }
+
+        // Progress through the line drives the wave.
+        const t = chars.length > 1 ? i / (chars.length - 1) : 0.5;
+        const phase = t * Math.PI * 2.2 + lineIndex * 1.8; // offset per line
+        const yOff = Math.sin(phase) * waveAmplitude;
+        const rot = Math.cos(phase) * maxRotation;
+        const scale = 1 + Math.sin(t * Math.PI * 3.4 + lineIndex) * sizeWobble;
+        const charSize = fontSize * scale;
+
+        const cx = cursorX + charW / 2;
+        const cy = cursorY + yOff;
+
+        // --- shadow passes (soft dark halo) ---
+        for (let s = 1; s <= shadowSteps; s++) {
+          const st = s / shadowSteps;
+          doc.save();
+          doc.translate(cx, cy + 6 * st);
+          doc.rotate(rot, { origin: [0, 0] });
+          this.font(doc, "Title", "Helvetica-Bold")
+            .fontSize(charSize)
+            .fillColor("#000000")
+            .fillOpacity(0.7 * Math.pow(1 - st, 1.5));
+          doc.text(char, -charW / 2, 0, { lineBreak: false });
+          doc.fillOpacity(1);
+          doc.restore();
+        }
+
+        // --- solid white character on top ---
+        doc.save();
+        doc.translate(cx, cy);
+        doc.rotate(rot, { origin: [0, 0] });
+        this.font(doc, "Title", "Helvetica-Bold")
+          .fontSize(charSize)
+          .fillColor("#FFFFFF")
+          .fillOpacity(1);
+        doc.text(char, -charW / 2, 0, { lineBreak: false });
+        doc.restore();
+
+        cursorX += charW;
+      });
+    });
+
+    // Return y just below the last line, accounting for the wave overshoot.
+    return baseY + lines.length * lineHeight + waveAmplitude;
   }
 
   private drawSparkle(doc: PDFKit.PDFDocument, cx: number, cy: number, size: number, color: string) {

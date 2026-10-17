@@ -44,7 +44,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const router = useRouter();
   const { getToken } = useAuth();
 
-  const flipBookRef = useRef<{ pageFlip: () => any } | null>(null);
+  const flipBookRef = useRef<{
+    pageFlip: () => { flipPrev: () => void; flipNext: () => void };
+  } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,6 +63,8 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [slowGenerating, setSlowGenerating] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const [currentLeaf, setCurrentLeaf] = useState<FlipPageIndex>(startPage);
   const pendingStartRef = useRef<number | null>(null);
@@ -80,11 +84,21 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   useEffect(() => {
     const controller = new AbortController();
     const connect = async () => {
+      const loadPublicStory = async () => {
+        const publicResponse = await fetch(`${BACKEND_URL}/story/public/${storyId}`, { signal: controller.signal });
+        if (!publicResponse.ok) throw new Error(`Public story failed: ${publicResponse.status}`);
+        const payload = await publicResponse.json() as { story?: ReaderStory };
+        if (!payload.story) throw new Error("Shared story is unavailable");
+        setCanShare(false);
+        setStory(payload.story);
+        setLoading(false);
+        setError(false);
+      };
+
       try {
         const token = await getToken?.();
         if (!token) {
-          setLoading(false);
-          setError(true);
+          await loadPublicStory();
           return;
         }
 
@@ -92,7 +106,13 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
           signal: controller.signal,
         });
-        if (!response.ok || !response.body) throw new Error(`Story stream failed: ${response.status}`);
+        if (!response.ok || !response.body) {
+          // A signed-in visitor may still be viewing somebody else's public
+          // story, so fall back to the read-only public endpoint.
+          await loadPublicStory();
+          return;
+        }
+        setCanShare(true);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -169,9 +189,13 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
  *  square page. */
   const leafCount = useMemo(() => {
     if (!story) return 0;
+    // New personalized books persist every printed page as an already-square
+    // asset. Legacy stories persist one 16:9 source row per spread and still
+    // need the historical two-leaf calculation.
+    if (pages.length === 30 || sortedPages.length === 30) return pages.length;
     if (pages.length <= 1) return pages.length;
     return (pages.length - 2) * 2 + 2;
-  }, [story, pages]);
+  }, [story, pages, sortedPages.length]);
 
   /**
    * True once the reader has flipped onto the last free page in teaser mode.
@@ -185,11 +209,14 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     (leafIndex: number): number => {
       const n = pages.length;
       if (n <= 1) return 0;
+      if (pages.length === 30 || sortedPages.length === 30) {
+        return Math.max(0, Math.min(leafIndex, n - 1));
+      }
       if (leafIndex <= 0) return 0;
       if (leafIndex >= leafCount - 1) return n - 1;
       return 1 + Math.floor((leafIndex - 1) / 2);
     },
-    [pages.length, leafCount]
+    [pages.length, sortedPages.length, leafCount]
   );
 
   const showControls = useCallback(() => {
@@ -314,6 +341,29 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     }
   };
 
+  const handleShare = async () => {
+    if (!story) return;
+    try {
+      const token = await getToken?.();
+      if (!token) return;
+      const response = await axios.post(`${BACKEND_URL}/story/${story.id}/share`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const shareUrl = response.data?.shareUrl || `${window.location.origin}/stories/${story.id}`;
+      if (navigator.share) {
+        await navigator.share({ title: story.title, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        window.setTimeout(() => setShareCopied(false), 2200);
+      }
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        console.error("Story sharing failed", err);
+      }
+    }
+  };
+
   // ---- Rendering ----------------------------------------------------------
   /** Physical side within a spread follows the leaf position in the book:
    *  the cover sits alone, then leaves pair up as [left, right]. */
@@ -324,8 +374,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     if (!story) return [];
     const leaves: ReactNode[] = [];
     const n = pages.length;
+    const materializedSquareLayout = sortedPages.length === 30;
     pages.forEach((page, sourceIndex) => {
-      const isSingleSquare = sourceIndex === 0 || sourceIndex === n - 1;
+      const isSingleSquare = materializedSquareLayout || sourceIndex === 0 || sourceIndex === n - 1;
       const leafIndex = leaves.length;
       if (isSingleSquare) {
         leaves.push(
@@ -335,10 +386,12 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
             title={story.title}
             childName={story.childName}
             dedication={story.dedication}
+            language={story.language}
             squareFill
             side={leafSide(leafIndex)}
             isCover={sourceIndex === 0}
-            renderText={sourceIndex !== 0}
+            isClosing={sourceIndex === n - 1}
+            renderText={sourceIndex !== 0 && sourceIndex !== n - 1}
             leafNumber={leafIndex + 1}
           />
         );
@@ -351,7 +404,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           title={story.title}
           childName={story.childName}
           dedication={story.dedication}
-          squareHalf="left"
+          language={story.language}
+          squareHalf={materializedSquareLayout ? undefined : "left"}
+          squareFill={materializedSquareLayout}
           side={leafSide(leafIndex)}
           isCover={false}
           renderText
@@ -365,7 +420,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           title={story.title}
           childName={story.childName}
           dedication={story.dedication}
-          squareHalf="right"
+          language={story.language}
+          squareHalf={materializedSquareLayout ? undefined : "right"}
+          squareFill={materializedSquareLayout}
           side={leafSide(leafIndex + 1)}
           isCover={false}
           renderText={false}
@@ -374,7 +431,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       );
     });
     return leaves;
-  }, [pages, story]);
+  }, [pages, sortedPages.length, story]);
 
   useEffect(() => {
     return () => resetPreloadCache();
@@ -557,6 +614,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
         onClose={() => router.back()}
         onExportPdf={handleExportPdf}
         onOrderBook={() => setOrderOpen(true)}
+        onShare={handleShare}
+        canShare={canShare}
+        shareCopied={shareCopied}
         embedded={embedded}
       />
 

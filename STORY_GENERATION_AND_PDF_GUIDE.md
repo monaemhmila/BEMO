@@ -75,7 +75,7 @@ In [`pdf.service.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/
 
 ### Page Geometry & Document Setup
 In [`pdf.service.ts:L49-L60`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/services/pdf.service.ts#L49-L60):
-- **Document Size**: `A4` in `landscape` orientation (841.89 x 595.28 pt).
+- **Document Size**: Square 14.85 x 14.85 cm pages (420.94 x 420.94 pt).
 - **Background Ornaments**: Decorative translucent circles (`paintBackground()`) drawn in the top-left (`#F6BE7A`) and bottom-right (`#91C9B1`).
 
 ### Cover Page Design (`drawCover`)
@@ -234,6 +234,6 @@ Never render words, letters, speech bubbles, watermarks, logos, extra fingers, d
 ## 💡 Summary of Quick Modifications
 
 - **To change the font size or colors of the PDF**: Edit lines 15–18 and lines 87–97, 131–137 in [`pdf.service.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/services/pdf.service.ts).
-- **To change the page size or orientation of the PDF**: Edit line 50 in [`pdf.service.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/services/pdf.service.ts#L50) (e.g. change `"A4"` to `"letter"` or `"landscape"` to `"portrait"`).
+- **To change the printed page size**: Update `STORYBOOK_PAGE_WIDTH_PT` and `STORYBOOK_PAGE_HEIGHT_PT` in `apps/backend/src/contracts/storybook.ts`. The current square page is 14.85 x 14.85 cm.
 - **To change the story text tone or page counts**: Edit `AGE_GUIDANCE` and `getPageCount()` in [`story.service.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/services/story.service.ts).
 - **To change the image art style defaults**: Edit `buildStorybookPrompt()` in [`image-generation.service.ts`](file:///c:/Users/monem/OneDrive/Desktop/BEMO/StoryBook-AI/apps/backend/src/services/image-generation.service.ts#L261-L266).

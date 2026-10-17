@@ -1,11 +1,12 @@
 import path from "path";
+import { env } from "../config/env";
 
 export type StoryCoverColor = "blue" | "green" | "pink";
 
 const COVER_FILES: Record<StoryCoverColor, string> = {
-  blue: "BLUE-CO.jpg",
-  green: "GREEN-CO.jpg",
-  pink: "PINK-CO.jpg",
+  blue: "BLUE-CO.png",
+  green: "GREEN-CO.png",
+  pink: "PNK-CO.png",
 };
 
 const BLUE_WORDS = ["sea", "ocean", "water", "underwater", "beach", "island", "mermaid", "marine", "river", "lake", "sail"];
@@ -51,6 +52,7 @@ export function chooseStoryCover(input: {
   else if (pinkScore > greenScore && pinkScore > blueScore) color = "pink";
 
   const filename = COVER_FILES[color];
+  const publicBase = env.PUBLIC_ASSET_BASE_URL?.replace(/\/$/, "");
   const sourceCandidates = [
     path.join(process.cwd(), "src", "covers", filename),
     path.join(process.cwd(), "apps", "backend", "src", "covers", filename),
@@ -59,7 +61,7 @@ export function chooseStoryCover(input: {
 
   return {
     color,
-    url: `/assets/covers/${filename}`,
+    url: publicBase ? `${publicBase}/assets/covers/${filename}` : `/assets/covers/${filename}`,
     filePath: sourceCandidates[0],
   };
 }

@@ -12,7 +12,7 @@ const stepColors = ["bg-[#eee9ff] text-violet-ink", "bg-[#fff0d2] text-[#b87900]
 
 export function HowItWorks() {
   return (
-    <section className="relative overflow-hidden bg-paper py-16 lg:py-20">
+    <section id="how-it-works" className="relative scroll-mt-24 overflow-hidden bg-paper py-16 lg:py-20">
       <PlayfulShapes tone="paper" />
       <div className="shell relative">
         <div className="animate-reveal-up text-center">

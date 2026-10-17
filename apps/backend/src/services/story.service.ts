@@ -17,6 +17,7 @@ import {
 } from "../contracts/storybook";
 import { chooseStoryCover } from "./story-cover.service";
 import { GenerationQueue, PageGenerationJob } from "../lib/generation-queue";
+import { getPersonalizedPageSlot } from "../contracts/personalized-book-layout";
 
 /** The canonical 14-beat prompt document stored in `StoryTemplate.prompts`. */
 export interface StoryTemplatePrompts {
@@ -56,6 +57,8 @@ interface StoryPageInput {
   pageNumber: number;
   text: string;
   imageDescription: string;
+  childImageDescription?: string;
+  sceneImageDescription?: string;
   emotion?: string;
   pageType?: PageType;
   imageAspectRatio?: "16:9" | "1:1";
@@ -73,7 +76,7 @@ interface CharacterProfile {
 }
 
 const AGE_GUIDANCE = {
-  "2-8": {
+  "0-6": {
     language:
       "very simple words, short sentences, basic concepts",
     themes: "friendship, sharing, bedtime, animals, fun",
@@ -81,12 +84,19 @@ const AGE_GUIDANCE = {
     minPageWords: 15,
     targetPageWords: "15-20",
   },
-  "8-12": {
+  "6-9": {
     language: "simple and clear vocabulary, short complete sentences",
     themes: "adventure, problem-solving, friendship, family, nature",
     textLength: "2 short sentences per page",
     minPageWords: 20,
     targetPageWords: "20-25",
+  },
+  "9-12": {
+    language: "clear and engaging vocabulary, short sentence structures",
+    themes: "bravery, teamwork, moral lessons, discovery, mystery",
+    textLength: "3 sentences per page",
+    minPageWords: 25,
+    targetPageWords: "25-30",
   },
   "12-15": {
     language: "clear and engaging vocabulary, short sentence structures",
@@ -152,6 +162,7 @@ For each page:
 - Write a charming paragraph of 2 sentences of story text with heart and imagination.
 - Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES .
 - Keep the hero as the main character. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
+- In imageDescription, refer to the hero only as a boy or girl and describe the action and emotion. Never include the child's name, age, hair, face, skin tone, eye color, ethnicity, complexion, or other physical identity details.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never shorts).
 - Ensure there is no white space , no blank margins.
@@ -276,10 +287,7 @@ ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
 Beat plan (page 1 = beat 1, ... page ${pageCount} = beat ${pageCount}):
 ${beatPlan}
 
-${characterProfile?.appearance
-        ? `Character appearance: ${characterProfile.appearance}`
-        : "The uploaded reference image defines the character's real face and appearance."
-      }
+      The uploaded reference image supplies identity consistency only; never describe physical identity details in imageDescription.
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
@@ -291,7 +299,7 @@ For each page:
 - Build the imageDescription by covering the ENTIRE background in four consecutive zones, one after the other: describe what is on the RIGHT side, then the LEFT side, then the TOP, then the BOTTOM, so every part of the backdrop is fully described with absolutely no un-described area.
 - Keep all four zones part of ONE continuous, seamless background scene: same location, same time of day, same weather, same lighting and the same color palette across right/left/top/bottom. The zones must blend smoothly into each other where they meet (no hard seams, no abrupt color or style changes, no cut-off objects at any edge), so the whole frame reads as a single homogeneous environment rather than four separate panels.
 - Make the ENVIRONMENT and any SIDE CHARACTERS/CREATURES imaginative, and detailed.
-- The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
+- In imageDescription, refer to the hero only as a boy or girl and describe only the action, emotion, and setting. Never include the child's name, age, hair, face, skin tone, eye color, ethnicity, complexion, or other physical identity details. The uploaded reference image handles visual consistency.
 - The imageDescription must NEVER mention or imply any art style, illustration style, medium, or drawing technique - never use words like illustration, storybook, cartoon, anime, painting, watercolor, 3D, drawing, sketch, render, or any similar artistic term. Descriptions are purely about the scene CONTENT: the setting, time of day, weather, lighting, colors, characters, objects, and atmosphere. The artwork's visual style is applied separately and is not part of the description.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not render any story text inside the image.
@@ -322,6 +330,92 @@ Return ONLY valid JSON:
       ),
       pageCount
     );
+  }
+
+  /**
+   * Generate the text for the new printed layout. There are 29 story pages:
+   * fifteen child pages and fourteen scene-spread pages, followed by the
+   * existing reusable closing cover. The image pipeline decides which pages
+   * show the child; the prompt produces separate child and environment
+   * descriptions so scene spreads can safely use text-to-image without a
+   * child reference.
+   */
+  async generatePersonalizedPrintStoryScript(
+    characterName: string,
+    input: PersonalizedStoryInput,
+    characterProfile?: CharacterProfile,
+  ): Promise<StoryScript> {
+    const pageCount = 29;
+    const templateBeats = Array.isArray(input.template.prompts.beats)
+      ? input.template.prompts.beats
+      : [];
+    const beatPlan = Array.from({ length: pageCount }, (_, index) => {
+      const beatIndex = Math.min(templateBeats.length - 1, Math.floor((index * templateBeats.length) / pageCount));
+      return `  - Page ${index + 1}: ${templateBeats[beatIndex] || "Continue the warm adventure naturally."}`;
+    }).join("\n");
+    const appearance = characterProfile?.appearance
+      ? "The uploaded reference image supplies identity consistency only; do not copy physical appearance details into any image description."
+      : "The uploaded reference image supplies identity consistency only.";
+
+    const layoutPlan = Array.from({ length: pageCount }, (_, index) => {
+      const pageNumber = index + 1;
+      const slot = getPersonalizedPageSlot(pageNumber);
+      return `Page ${pageNumber}: ${slot.kind === "child" ? "child_page (1:1, child visible)" : `${slot.kind} (16:9 spread, no child or people)`}`;
+    }).join("\\n");
+
+    const prompt = `
+Create a personalized children's story for a ${input.childAge}-year-old child named "${characterName}".
+
+Return exactly ${pageCount} pages as valid JSON only. Keep one continuous story with a clear beginning,
+adventure, challenge, resolution, and gentle ending. Page 1 is a short cover hook. Page ${pageCount} is a
+short closing story page before the reusable final cover image.
+
+The story text may mention and feature the child on every page. Return TWO separate image prompts:
+- childImageDescription: for child_page pages only. Describe only the setting and what the ${input.gender || "child"} is doing or feeling. You may say "boy" or "girl", but never use the child's name, age, hair, face, skin, eyes, ethnicity, complexion, or any other physical identity detail.
+- sceneImageDescription: for scene-left and scene-right pages only. Describe the environment, objects,
+lighting, weather, and atmosphere ONLY. It must contain no child, no person, no people, no human figure,
+no face, no portrait, no character, no hero, no name, and no pronoun referring to a person.
+Never reuse childImageDescription as sceneImageDescription. Never put image style instructions, text,
+signs, logos, or story text inside either image prompt.
+
+Child identity for the prose only: ${appearance}
+${input.language ? `Write the title and story text in ${input.language}.` : "Write the title and story text in English."}
+${input.dedication ? `Dedication: "${input.dedication}"` : ""}
+
+Template beat plan:
+${beatPlan}
+
+Physical image layout (follow this exactly):
+${layoutPlan}
+
+For every page return 15-35 words of warm story text and both English image descriptions.
+Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "childImageDescription": "...", "sceneImageDescription": "...", "emotion": "..." }] }
+`;
+
+    const parsed = await this.invokeJsonLLM(
+      prompt,
+      "You are a professional children's story writer. Return valid JSON only, with no markdown.",
+      { maxTokens: 6500, temperature: 0.7 },
+    ) as unknown as StoryScript;
+    if (!parsed || !Array.isArray(parsed.pages) || parsed.pages.length !== pageCount) {
+      throw new Error(`Personalized print story must contain exactly ${pageCount} pages`);
+    }
+    const safeSceneFallback = "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
+    const forbiddenSceneWord = /\b(child|children|kid|kids|boy|girl|person|people|human|humans|face|faces|portrait|portraits|character|characters|hero|heroes|he|she|him|her|his|their|they|them)\b/i;
+
+    return {
+      title: parsed.title,
+      pages: parsed.pages.map((page, index) => ({
+        ...page,
+        pageNumber: index + 1,
+        text: page.text?.trim() || "",
+        childImageDescription: page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "",
+        sceneImageDescription: forbiddenSceneWord.test(page.sceneImageDescription?.trim() || "")
+          ? safeSceneFallback
+          : page.sceneImageDescription?.trim() || safeSceneFallback,
+        imageDescription: page.imageDescription?.trim() || page.childImageDescription?.trim() || page.text?.trim() || "",
+      })),
+    };
   }
 
   /**
@@ -431,7 +525,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
   /**
    * Turn a parent's idea into a reusable custom template.
    *
-   * The returned document is validated to contain exactly 14 beats so the
+   * The returned document is validated to contain exactly 15 beats so the
    * custom path produces the same book shape as the predefined templates. The
    * model occasionally returns the wrong number of beats, so one repair pass is
    * attempted before giving up; the beat count itself is never fudged.
@@ -441,7 +535,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
     setting?: string;
     extras?: string;
     message?: string;
-    ageRange: "3-5" | "6-8" | "9-12";
+    ageRange: "0-6" | "6-9" | "9-12";
   }): Promise<{
     name: string;
     description: string;
@@ -554,7 +648,12 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
         );
       }
 
-      if (beats.length !== pageCount) {
+      // Models occasionally append an extra closing beat despite the explicit
+      // count in the prompt. Keep the canonical page count deterministic while
+      // still rejecting responses that are too short.
+      const normalizedBeats = beats.slice(0, pageCount);
+
+      if (normalizedBeats.length !== pageCount) {
         throw new Error(
           `The generated template must contain exactly ${pageCount} beats, received ${beats.length}`
         );
@@ -573,7 +672,7 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
           worldContext: String(
             rawPrompts.worldContext ?? input.setting ?? ""
           ).trim(),
-          beats: beats.map((beat) => beat.trim()),
+          beats: normalizedBeats.map((beat) => beat.trim()),
         },
       };
     };
@@ -641,8 +740,9 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         category: normalizeStoryCategory(
           personalization?.template?.category
         ),
-        dedication: personalization?.dedication,
-        templateId: personalization?.template?.id,
+      dedication: personalization?.dedication,
+      language: personalization?.language || "en",
+      templateId: personalization?.template?.id,
         includeAudio: personalization?.includeAudio || false,
         voiceId: personalization?.voiceId || "sarah",
       },
@@ -792,9 +892,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         position = comp.characterSide === "left" ? "left" : "right";
       }
 
-      const scenePrompt = options?.childName
-        ? `${options.childName} ${prompt.trim()}`
-        : prompt;
+      const scenePrompt = `A ${options?.gender || "child"} is ${prompt.trim()}`;
 
       const { requestId } =
         await this.faceConsistency.generateFaceConsistentImage(
@@ -1099,8 +1197,9 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
   private getAgeRange(
     age: number
   ): keyof typeof AGE_GUIDANCE {
-    if (age <= 8) return "2-8";
-    if (age <= 12) return "8-12";
+    if (age <= 6) return "0-6";
+    if (age <= 9) return "6-9";
+    if (age <= 12) return "9-12";
 
     return "12-15";
   }
