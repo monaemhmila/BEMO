@@ -462,6 +462,64 @@ export class PDFService {
     );
   }
 
+  /** Generate a plain text-only PDF for checking language/font rendering. */
+  async generateTextOnlySamplePdf(
+    title = "Sample Story",
+    text = "Once upon a time, a little explorer discovered a wonderful new world.",
+    language = "English",
+  ): Promise<Buffer> {
+    const doc = new PDFDocument({
+      size: "A4",
+      margin: 56,
+      bufferPages: true,
+      info: { Title: title, Author: "Mon Petit Hero", Subject: "Text-only sample story" },
+    });
+    const buffers: Buffer[] = [];
+    const width = 595.28 - 112;
+    const bottom = 786;
+    let pageNumber = 1;
+    let y = 72;
+
+    return new Promise<Buffer>((resolve, reject) => {
+      doc.on("data", (chunk) => buffers.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(buffers)));
+      doc.on("error", reject);
+      this.registerFonts(doc);
+
+      const arabic = this.isArabicLanguage(language);
+      const normalizedTitle = arabic ? prepareArabicPdfText(title) : repairPdfText(title.trim());
+      const normalizedText = arabic ? prepareArabicPdfText(text) : repairPdfText(text.trim());
+      const align: PDFKit.Mixins.TextOptions["align"] = arabic ? "right" : "left";
+
+      const drawFooter = () => {
+        doc.font("Helvetica").fontSize(9).fillColor("#94a3b8")
+          .text(`Text-only sample · ${pageNumber}`, 56, 806, { width, align: "center" });
+      };
+      const addPage = () => {
+        drawFooter();
+        doc.addPage();
+        pageNumber += 1;
+        y = 72;
+      };
+
+      if (arabic) this.arabicFont(doc).fontSize(24);
+      else this.font(doc, "BodyExtraBold", "Helvetica-Bold").fontSize(24);
+      doc.fillColor("#241b3b").text(normalizedTitle || "Sample Story", 56, y, { width, align });
+      y += doc.heightOfString(normalizedTitle || "Sample Story", { width, align }) + 24;
+
+      if (arabic) this.arabicFont(doc).fontSize(16);
+      else this.font(doc, "BodyRegular", "Helvetica").fontSize(16);
+      for (const paragraph of normalizedText.split(/\n\s*\n/).filter(Boolean)) {
+        const paragraphHeight = doc.heightOfString(paragraph, { width, align, lineGap: 7 });
+        if (y + paragraphHeight > bottom) addPage();
+        doc.fillColor("#334155").text(paragraph, 56, y, { width, align, lineGap: 7 });
+        y += paragraphHeight + 18;
+      }
+      drawFooter();
+      doc.end();
+    });
+  }
+
   private registerFonts(doc: PDFKit.PDFDocument) {
     // Font assets are optional in production deployments. The visual hierarchy
     // remains intact with PDFKit's bundled fonts if a deployment has not copied them.

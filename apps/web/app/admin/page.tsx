@@ -128,7 +128,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "printer" | "printer-accounts" | "activity" | "analytics" | "test";
+type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "printer" | "printer-accounts" | "activity" | "analytics" | "test" | "sample-story";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -2939,6 +2939,10 @@ export default function AdminPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [pdfPreviewLanguage, setPdfPreviewLanguage] = useState("English");
+  const [sampleStoryLanguage, setSampleStoryLanguage] = useState("English");
+  const [sampleStoryTitle, setSampleStoryTitle] = useState("The Little Star");
+  const [sampleStoryText, setSampleStoryText] = useState("Once upon a time, a little star wanted to shine brighter.\n\nWith courage and kindness, the star discovered that its warm light was already enough to brighten the whole sky.");
+  const [sampleStoryLoading, setSampleStoryLoading] = useState(false);
   const [coloringStoryId, setColoringStoryId] = useState("");
   const [coloringBookLoading, setColoringBookLoading] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
@@ -2973,6 +2977,36 @@ export default function AdminPage() {
       console.error(error);
     } finally {
       setPdfPreviewLoading(false);
+    }
+  };
+
+  const handleCreateTextOnlySample = async () => {
+    if (!sampleStoryText.trim()) {
+      toast.error("Add some story text first");
+      return;
+    }
+    setSampleStoryLoading(true);
+    try {
+      const headers = await authHeaders();
+      const response = await axios.post(`${BACKEND_URL}/admin/sample-text-pdf`, {
+        title: sampleStoryTitle.trim() || "Sample Story",
+        text: sampleStoryText,
+        language: sampleStoryLanguage,
+      }, { headers, responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sample-story-${sampleStoryLanguage.toLowerCase()}-text-only.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Text-only sample PDF downloaded");
+    } catch (error) {
+      toast.error("Failed to create text-only sample PDF");
+      console.error(error);
+    } finally {
+      setSampleStoryLoading(false);
     }
   };
 
@@ -3192,6 +3226,7 @@ export default function AdminPage() {
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
     { id: "analytics", label: "Analytics", icon: <MousePointerClick className="w-4 h-4" /> },
     { id: "test", label: "Test", icon: <Sparkles className="w-4 h-4" /> },
+    { id: "sample-story", label: "Create Sample Story", icon: <FileText className="w-4 h-4" /> },
   ];
 
   return (
@@ -3382,6 +3417,8 @@ export default function AdminPage() {
                             ? "Analytics & Traffic"
                             : activeTab === "test"
                               ? "Pipeline Test"
+                            : activeTab === "sample-story"
+                              ? "Create Sample Story"
                             : activeTab}
                 </h1>
                 <p className="text-white/40 text-xs mt-0.5">Mon Petit Hero · Super Admin</p>
@@ -3753,6 +3790,49 @@ export default function AdminPage() {
             {activeTab === "analytics" && <AnalyticsTab authHeaders={authHeaders} />}
 
             {activeTab === "test" && <TestTab authHeaders={authHeaders} />}
+
+            {activeTab === "sample-story" && (
+              <div className="mx-auto w-full max-w-5xl space-y-6">
+                <section className="rounded-2xl border border-purple-400/25 bg-gradient-to-r from-purple-900/35 via-indigo-900/25 to-slate-900/30 p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-purple-300">PDF text rendering test</p>
+                      <h2 className="mt-1 text-2xl font-bold text-white">Create Sample Story</h2>
+                      <p className="mt-2 max-w-2xl text-sm text-white/55">Create and download a clean PDF containing only your story text. No photos, artwork, or image assets are used.</p>
+                    </div>
+                    <FileText className="h-8 w-8 shrink-0 text-purple-300" />
+                  </div>
+                </section>
+                <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+                  <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45" htmlFor="sample-story-language">Language</label>
+                      <select id="sample-story-language" value={sampleStoryLanguage} onChange={(event) => setSampleStoryLanguage(event.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white outline-none focus:border-purple-400/60">
+                        <option className="bg-[#17171a]" value="Arabic">العربية (Arabic)</option>
+                        <option className="bg-[#17171a]" value="English">English</option>
+                        <option className="bg-[#17171a]" value="French">Français</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45" htmlFor="sample-story-title">Title</label>
+                      <input id="sample-story-title" value={sampleStoryTitle} onChange={(event) => setSampleStoryTitle(event.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-purple-400/60" placeholder="Sample story title" />
+                    </div>
+                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-xs leading-5 text-emerald-100/75">The generated PDF uses a plain A4 text layout and the selected language font. It does not create or load any images.</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45" htmlFor="sample-story-text">Story text</label>
+                    <textarea id="sample-story-text" dir={sampleStoryLanguage === "Arabic" ? "rtl" : "ltr"} value={sampleStoryText} onChange={(event) => setSampleStoryText(event.target.value)} className="min-h-[260px] w-full resize-y rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-white/25 focus:border-purple-400/60" placeholder="Write or paste the story text here..." />
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-white/35">Separate paragraphs with a blank line.</p>
+                      <button type="button" onClick={() => void handleCreateTextOnlySample()} disabled={sampleStoryLoading || !sampleStoryText.trim()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-purple-400 disabled:cursor-not-allowed disabled:opacity-40">
+                        {sampleStoryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        {sampleStoryLoading ? "Creating PDF..." : "Create & Download PDF"}
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
 
             {/* ── ORDERS TAB ───────────────────────────────────────────────── */}
             {activeTab === "orders" && (

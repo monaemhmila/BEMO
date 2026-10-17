@@ -34,6 +34,12 @@ const AdminColoringBookInputSchema = z.object({
   childImage: z.string().trim().min(20).max(12_000_000),
 });
 
+const TextOnlySamplePdfSchema = z.object({
+  title: z.string().trim().max(160).default("Sample Story"),
+  text: z.string().trim().min(1).max(30_000),
+  language: z.enum(["Arabic", "English", "French"]).default("English"),
+});
+
 // Protect ALL admin routes
 router.use(authMiddleware);
 router.use(adminAuthMiddleware);
@@ -667,6 +673,20 @@ const TranslateTemplateSchema = z.object({
   description: z.string().trim().min(1).max(2000),
   tagline: z.string().trim().max(300).default(""),
   excerpt: z.string().trim().max(2000).default(""),
+});
+
+/** POST /admin/sample-text-pdf - generate a PDF without any image assets. */
+router.post("/sample-text-pdf", async (req, res) => {
+  try {
+    const input = TextOnlySamplePdfSchema.parse(req.body);
+    const pdfBuffer = await new PDFService().generateTextOnlySamplePdf(input.title, input.text, input.language);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="sample-story-text-only.pdf"');
+    res.send(pdfBuffer);
+  } catch (error) {
+    logger.error({ error }, "Failed to generate text-only sample PDF");
+    res.status(400).json({ message: "Failed to generate text-only sample PDF" });
+  }
 });
 
 /**
