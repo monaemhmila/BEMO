@@ -6,6 +6,7 @@ import {
   getPageTextLayout,
   STORYBOOK_PAGE_WIDTH_PT,
   STORYBOOK_PAGE_HEIGHT_PT,
+  StorybookPdfPageSize,
 } from "../contracts/storybook";
 import {
   splitForBookPage,
@@ -306,7 +307,7 @@ export class PDFService {
     story: StoryPayload,
     pages: StoryPagePayload[],
     onWarning?: (message: string) => void,
-    options?: { allowMissingArtwork?: boolean }
+    options?: { allowMissingArtwork?: boolean; pageSize?: StorybookPdfPageSize }
   ): Promise<Buffer> {
     // Render exactly the pages provided for this story: keep the first page for
     // each page number in order, ignore any duplicate/extra pages that may exist
@@ -377,9 +378,14 @@ export class PDFService {
       }
     });
 
+    const pageSize = options?.pageSize === "20x20"
+      ? STORYBOOK_PAGE_WIDTH_PT * (20 / 14)
+      : PAGE_WIDTH;
+    const renderScale = pageSize / PAGE_WIDTH;
+
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new PDFDocument({
-        size: [PAGE_WIDTH, PAGE_HEIGHT], // 148.5mm square page
+        size: [pageSize, pageSize],
         margin: 0,
         bufferPages: true,
         info: {
@@ -403,6 +409,10 @@ export class PDFService {
         if (index > 0) {
           doc.addPage();
         }
+        // Keep the existing 14 x 14 cm composition unchanged and scale it
+        // uniformly only for the explicit 20 x 20 cm PDF export.
+        doc.save();
+        doc.scale(renderScale, renderScale);
         const totalBookPages = sortedPages.length;
         const pageType = getPageType(leaf.pageNumber, totalBookPages);
         switch (pageType) {
@@ -418,6 +428,7 @@ export class PDFService {
           default:
             this.renderStoryPage(doc, leaf, totalBookPages, story);
         }
+        doc.restore();
       });
       doc.end();
     });

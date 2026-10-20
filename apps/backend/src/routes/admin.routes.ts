@@ -7,7 +7,7 @@ import { adminAuthMiddleware } from "../middleware/adminAuth";
 import { logger } from "../lib/logger";
 import { PDFService } from "../services/pdf.service";
 import { z } from "zod";
-import { STORYBOOK_PAGE_COUNT } from "../contracts/storybook";
+import { STORYBOOK_PAGE_COUNT, parseStorybookPdfPageSize } from "../contracts/storybook";
 import { env } from "../config/env";
 import {
   deleteTemplateImage,
@@ -380,6 +380,7 @@ router.delete("/story/:id", async (req, res) => {
 router.get("/story/:id/pdf", async (req, res) => {
   const storyId = req.params.id;
   try {
+    const pageSize = parseStorybookPdfPageSize(req.query.size);
     const story = await prismaClient.story.findUnique({
       where: { id: storyId },
       include: { pages: { orderBy: { pageNumber: "asc" } } },
@@ -390,7 +391,7 @@ router.get("/story/:id/pdf", async (req, res) => {
       return;
     }
 
-    if (story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
+    if (pageSize === "14x14" && story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }
@@ -412,12 +413,12 @@ router.get("/story/:id/pdf", async (req, res) => {
         missingArtWarning = message;
         logger.warn({ storyId, message }, "Story PDF rendered without some artwork");
       },
-      { allowMissingArtwork: true }
+      { allowMissingArtwork: true, pageSize }
     );
 
     const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}-${pageSize}.pdf"`);
     // The download itself still succeeds, but callers can see it came out
     // incomplete instead of mistaking it for a finished book.
     if (missingArtWarning) {

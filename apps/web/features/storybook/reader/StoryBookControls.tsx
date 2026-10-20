@@ -3,7 +3,6 @@
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
   Loader2,
   Maximize2,
   Minimize2,
@@ -39,7 +38,7 @@ interface StoryBookControlsProps {
   onNext: () => void;
   onToggleFullscreen: () => void;
   onClose: () => void;
-  onExportPdf: () => void;
+  onExportPdf: (pageSize: "14x14" | "20x20") => void;
   onOrderBook: () => void;
   onShare: () => void;
   canShare: boolean;
@@ -145,21 +144,23 @@ export function StoryBookControls({
               </>
             ) : null}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-full text-white hover:bg-white/20"
-              onClick={onExportPdf}
-              disabled={exporting}
-              aria-label="Download PDF"
-              title="Download PDF"
-            >
-              {exporting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Download className="size-4" />
-              )}
-            </Button>
+            <div className="flex items-center gap-0.5 rounded-full bg-white/10 p-0.5" aria-label="Download PDF size">
+              {(["14x14", "20x20"] as const).map((pageSize) => (
+                <Button
+                  key={pageSize}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 rounded-full px-2 text-[10px] font-semibold text-white hover:bg-white/20"
+                  onClick={() => onExportPdf(pageSize)}
+                  disabled={exporting}
+                  aria-label={`Download ${pageSize} cm PDF`}
+                  title={`Download ${pageSize} cm PDF`}
+                >
+                  {exporting && pageSize === "14x14" ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}
+                  {pageSize}
+                </Button>
+              ))}
+            </div>
 
             <Button
               variant="ghost"

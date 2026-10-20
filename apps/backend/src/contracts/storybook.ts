@@ -44,6 +44,13 @@ export const A4_LANDSCAPE_HEIGHT_PT = 595.28;
 export const STORYBOOK_PAGE_WIDTH_PT = 396.85;
 export const STORYBOOK_PAGE_HEIGHT_PT = 396.85;
 
+export const STORYBOOK_PDF_PAGE_SIZES = ["14x14", "20x20"] as const;
+export type StorybookPdfPageSize = (typeof STORYBOOK_PDF_PAGE_SIZES)[number];
+
+export function parseStorybookPdfPageSize(value: unknown): StorybookPdfPageSize {
+  return value === "20x20" ? "20x20" : "14x14";
+}
+
 // Approximate print resolution: A4 landscape at 300 DPI.
 export const A4_LANDSCAPE_WIDTH_PX = 3508;
 export const A4_LANDSCAPE_HEIGHT_PX = 2480;

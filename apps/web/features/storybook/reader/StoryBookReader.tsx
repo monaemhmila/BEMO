@@ -317,12 +317,12 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   }, [showControls]);
 
   // ---- Export PDF / ordering --------------------------------------------
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (pageSize: "14x14" | "20x20") => {
     if (!story) return;
     setExporting(true);
     try {
       const token = await getToken?.();
-      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf`, {
+      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf?size=${pageSize}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob",
       });
@@ -331,7 +331,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       );
       const download = document.createElement("a");
       download.href = pdfUrl;
-      download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}.pdf`;
+      download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}-${pageSize}.pdf`;
       download.click();
       URL.revokeObjectURL(pdfUrl);
     } catch (err) {

@@ -8,7 +8,7 @@ import { trialService } from "../services/trial.service";
 import { ImageGenerationService } from "../services/image-generation.service";
 import { PDFService } from "../services/pdf.service";
 import { guestGenerationIpLimiter, storyGenerationLimiter } from "../middleware/rateLimiter";
-import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT, toStorefrontTemplate } from "../contracts/storybook";
+import { getPageAspectRatio, isSquareBookPage, getPageComposition, STORYBOOK_PAGE_COUNT, toStorefrontTemplate, parseStorybookPdfPageSize } from "../contracts/storybook";
 import { logger } from "../lib/logger";
 import { z } from "zod";
 import { chooseStoryCover } from "../services/story-cover.service";
@@ -474,6 +474,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
  */
 router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
   try {
+    const pageSize = parseStorybookPdfPageSize(req.query.size);
     const story = await prismaClient.story.findFirst({
       where: { id: req.params.id, userId: req.userId! },
       include: { pages: { orderBy: { pageNumber: "asc" } } },
@@ -491,7 +492,7 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
     // PDF generation is expensive because it downloads and processes every
     // illustration. Reuse the completed export instead of rebuilding it for
     // every download request.
-    if (story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
+    if (pageSize === "14x14" && story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }
@@ -502,11 +503,13 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
         pageNumber: page.pageNumber,
         content: page.content,
         imageUrl: page.imageUrl,
-      }))
+      })),
+      undefined,
+      { pageSize }
     );
     const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}-${pageSize}.pdf"`);
     res.send(pdfBuffer);
   } catch (error) {
     logger.error({ error, storyId: req.params.id }, "Failed to export storybook PDF");
