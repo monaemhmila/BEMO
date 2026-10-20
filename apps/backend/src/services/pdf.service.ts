@@ -41,22 +41,22 @@ interface StoryPayload {
 const FINAL_COVER_COPY = {
   english: {
     title: "A Little Adventure to Remember Forever",
-    body: "Childhood goes by so quickly, but the happy moments can stay with us forever.\n\nThat's why I'm here. To turn your child's dreams into a beautiful story they can call their own.\n\nWith their name, their favorite things, and a little magic, every Mon Petit Héros book takes them somewhere new and exciting.\n\nEvery page brings a new surprise, with your little one as the star of the adventure.\n\nI'm more than just a book. I'm a special part of their childhood, made to be loved today and remembered for years to come.",
+    body: "Childhood goes by so quickly, but the happy moments can stay with us forever.\n\nThat's why I'm here. To turn your child's dreams into a beautiful story they can call their own.\n\nI'm more than just a book. I'm a special part of their childhood, made to be loved today and remembered for years to come.",
   },
   french: {
     title: "Une petite aventure, un souvenir pour toujours",
-    body: "L'enfance passe si vite, mais les plus beaux moments restent gravés dans nos cœurs.\n\nC'est pour cela que j'existe. Pour transformer les rêves de votre enfant en une belle histoire qui lui ressemble.\n\nAvec son prénom, ce qu'il aime et une touche de magie, chaque livre Mon Petit Héros l'emmène dans un nouvel univers plein de surprises.\n\nÀ chaque page, une nouvelle découverte, avec votre petit héros au cœur de l'aventure.\n\nJe suis bien plus qu'un simple livre. Je suis un petit morceau de son enfance, à aimer aujourd'hui et à garder précieusement pour les années à venir.",
+    body: "L'enfance passe si vite, mais les plus beaux moments restent gravés dans nos cœurs.\n\nC'est pour cela que j'existe. Pour transformer les rêves de votre enfant en une belle histoire qui lui ressemble.\n\nJe suis bien plus qu'un simple livre. Je suis un petit morceau de son enfance, à aimer aujourd'hui et à garder précieusement pour les années à venir.",
   },
   arabic: {
     title: "مغامرة صغيرة، وذكرى تبقى للأبد",
-    body: "تمرّ أيام الطفولة بسرعة، لكن أجمل اللحظات تبقى محفورة في قلوبنا إلى الأبد.\n\nلهذا وُجدتُ، لأحوّل أحلام طفلك إلى قصة جميلة تشبهه وتخصّه وحده.\n\nباسمه، وأشيائه المفضّلة، ولمسة من السحر، يأخذه كل كتاب من مون بيتي هيرو إلى عالم جديد مليء بالمغامرات والمفاجآت.\n\nمع كل صفحة، يكتشف طفلك شيئًا جديدًا، ويكون هو بطل الحكاية.\n\nأنا أكثر من مجرد كتاب. أنا ذكرى جميلة من طفولته، يحبّها اليوم ويحتفظ بها في قلبه لسنوات طويلة.",
+    body: "تمرّ أيام الطفولة بسرعة، لكن أجمل اللحظات تبقى محفورة في قلوبنا إلى الأبد.\n\nلهذا وُجدتُ، لأحوّل أحلام طفلك إلى قصة جميلة تشبهه وتخصّه وحده.\n\nأنا أكثر من مجرد كتاب. أنا ذكرى جميلة من طفولته، يحبّها اليوم ويحتفظ بها في قلبه لسنوات طويلة.",
   },
 } as const;
 
 const SHORT_FINAL_COVER_BODY = {
-  english: "Childhood passes quickly, but happy memories last forever.\n\nI turn your child’s dreams, name, and favorite things into a story of their own.\n\nEvery page is a new adventure with your child as the hero.\n\nA special book to love today and remember for years.",
-  french: "L’enfance passe vite, mais les beaux souvenirs restent pour toujours.\n\nJe transforme les rêves, le prénom et les choses préférées de votre enfant en une histoire unique.\n\nChaque page est une nouvelle aventure où votre enfant est le héros.\n\nUn livre à aimer aujourd’hui et à garder longtemps.",
-  arabic: "تمرّ الطفولة بسرعة، لكن لحظاتها الجميلة تبقى إلى الأبد.\n\nأحوّل أحلام طفلك واسمه وأشياءه المفضلة إلى قصة خاصة به.\n\nفي كل صفحة مغامرة جديدة، وطفلك هو البطل.\n\nكتاب جميل يحبه اليوم ويحتفظ به لسنوات طويلة.",
+  english: "Childhood passes quickly, but happy memories last forever.\n\nA special book to love today and remember for years.",
+  french: "L’enfance passe vite, mais les beaux souvenirs restent pour toujours.\n\nUn livre à aimer aujourd’hui et à garder longtemps.",
+  arabic: "تمرّ الطفولة بسرعة، لكن لحظاتها الجميلة تبقى إلى الأبد.\n\nكتاب جميل يحبه اليوم ويحتفظ به لسنوات طويلة.",
 } as const;
 
 function repairCoverText(value: string): string {
@@ -132,7 +132,7 @@ const COVER_TITLE = {
   // Mirrors BookFlipbook: top-8 (32px), inset-x-4 plus px-4 (32px total).
   top: 24,
   sidePad: 24,
-  fontSize: 27, // text-4xl at the desktop story-view breakpoint
+  fontSize: 13.5, // 50% smaller than the story-view-sized title
   leading: 1.25, // leading-tight
   shadowOpacity: 0.7, // 0 2px 12px rgba(0, 0, 0, 0.7)
   shadowOffsetY: 2 * WEB_PX, // 2px
@@ -648,7 +648,7 @@ export class PDFService {
 
     const titleSize = 15;
     const titleLineHeight = titleSize * 1.2;
-    const finalCoverDrop = 28.35; // 1 cm lower in PDF points
+    const finalCoverDrop = 0; // keep the final-cover title and body higher on the page
     const titleY = height * 0.06 + finalCoverDrop;
 
     let titleBottom: number;
