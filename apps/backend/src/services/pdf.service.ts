@@ -649,7 +649,7 @@ export class PDFService {
     const titleSize = 15;
     const titleLineHeight = titleSize * 1.2;
     const finalCoverDrop = 0; // keep the final-cover title and body higher on the page
-    const titleY = height * 0.06 + finalCoverDrop;
+    const titleY = height * 0.04 + finalCoverDrop;
 
     let titleBottom: number;
     if (arabic) {
@@ -675,7 +675,7 @@ export class PDFService {
     // Body: black text, centered below the title
     const bodySize = arabic ? 9.5 : 11;
     const bodyLineHeight = bodySize * (arabic ? 1.38 : 1.28);
-    const gap = 16;
+    const gap = 30;
     const bodyY = titleBottom + gap;
 
     if (arabic) {
