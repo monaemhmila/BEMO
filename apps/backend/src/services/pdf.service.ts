@@ -3,7 +3,6 @@ import path from "path";
 import fs, { existsSync } from "fs";
 import {
   getPageType,
-  getPageTextLayout,
   STORYBOOK_PAGE_WIDTH_PT,
   STORYBOOK_PAGE_HEIGHT_PT,
   StorybookPdfPageSize,
@@ -130,9 +129,10 @@ const WEB_PX = 0.75; // 1 CSS px, in points
  * so the printed book and the screen show the same title block.
  */
 const COVER_TITLE = {
-  top: 0.07 * PAGE_HEIGHT, // top-[7%]
-  sidePad: 0.08 * PAGE_WIDTH, // px-[8%]
-  fontSize: 3.2 * WEB_CQW, // compact two-line cover title
+  // Mirrors BookFlipbook: top-8 (32px), inset-x-4 plus px-4 (32px total).
+  top: 24,
+  sidePad: 24,
+  fontSize: 27, // text-4xl at the desktop story-view breakpoint
   leading: 1.25, // leading-tight
   shadowOpacity: 0.7, // 0 2px 12px rgba(0, 0, 0, 0.7)
   shadowOffsetY: 2 * WEB_PX, // 2px
@@ -569,7 +569,8 @@ export class PDFService {
     leaf: PdfLeaf,
     story: StoryPayload
   ) {
-    const { width, height } = doc.page;
+    const width = PAGE_WIDTH;
+    const height = PAGE_HEIGHT;
     this.paintBackground(doc, width, height, "cover");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
@@ -587,7 +588,8 @@ export class PDFService {
     totalPages: number,
     story: StoryPayload
   ) {
-    const { width, height } = doc.page;
+    const width = PAGE_WIDTH;
+    const height = PAGE_HEIGHT;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
@@ -606,7 +608,8 @@ export class PDFService {
     totalPages: number,
     story: StoryPayload
   ) {
-    const { width, height } = doc.page;
+    const width = PAGE_WIDTH;
+    const height = PAGE_HEIGHT;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
@@ -624,7 +627,8 @@ export class PDFService {
     leaf: PdfLeaf,
     story: StoryPayload
   ) {
-    const { width, height } = doc.page;
+    const width = PAGE_WIDTH;
+    const height = PAGE_HEIGHT;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
@@ -713,10 +717,9 @@ export class PDFService {
   }
 
   /**
-   * Render the story text for a page using the shared PageTextLayout:
-   * font size, position, wrapping width, alignment and line height are all
-   * derived from the page number via the contracts, keeping the PDF layout
-   * identical to the text-safe area the image generator was told to reserve.
+   * Render story text using the same geometry as BookFlipbook's story view:
+   * bottom-anchored text, 5px/10px page-side margins, natural wrapping, and
+   * no artificial line limit that can hide the end of a caption.
    */
   private drawStoryText(
     doc: PDFKit.PDFDocument,
@@ -725,66 +728,57 @@ export class PDFService {
     totalPages = 15,
     language?: string | null,
   ) {
-    const layout = getPageTextLayout(pageNumber, totalPages);
     const cleanText = this.isArabicLanguage(language)
       ? normalizeStoryReaderArabicText(text || "")
       : repairPdfText((text || "").trim());
     if (!cleanText) return;
 
-    // Keep the cover and closing-page artwork exactly as designed. For normal
-    // story pages, move the caption slightly lower and make its text block
-    // narrower so it does not stretch too far across the illustration.
-    const isCoverOrClosing = getPageType(pageNumber, totalPages) === "cover" || getPageType(pageNumber, totalPages) === "closing";
-    const normalPageLayout = isCoverOrClosing
-      ? layout
-      : {
-        ...layout,
-        y: layout.y + 10,
-        // Let the story copy use almost the full safe-area width again. The
-        // vertical limit below is what keeps it 2 cm above the page edge.
-        width: layout.width * 0.96,
-        fontSize: layout.fontSize * 0.86,
-        lineHeight: layout.lineHeight * 0.86,
-        x: layout.x + layout.width > STORYBOOK_PAGE_WIDTH_PT * 0.82
-          ? layout.x + layout.width * 0.04
-          : layout.align === "center"
-            ? layout.x + layout.width * 0.02
-            : layout.x,
-        maxLines: Math.max(
-          1,
-          Math.floor((STORYBOOK_PAGE_HEIGHT_PT - 56.7 - (layout.y + 10)) / (layout.lineHeight * 0.86)),
-        ),
-      };
+    const isArabic = this.isArabicLanguage(language);
+    const cssPx = 0.75;
+    const sideMargin = 5 * cssPx;
+    const outerMargin = 10 * cssPx;
+    const bottomOffset = 9 * cssPx;
+    const fontSize = 14 * cssPx;
+    const lineHeight = fontSize * 1.625; // leading-relaxed
+    const isOpeningPage = pageNumber === 2;
+    const isLeftPage = pageNumber % 2 === 0;
+    const x = isOpeningPage || isLeftPage ? sideMargin : outerMargin;
+    const width = PAGE_WIDTH - x - sideMargin;
+    const webText = cleanText.replace(/\s+/g, " ").trim();
 
-    if (this.isArabicLanguage(language)) {
-      this.arabicFont(doc).fontSize(normalPageLayout.fontSize);
+    if (isArabic) {
+      this.arabicFont(doc).fontSize(fontSize);
     } else {
       const baseFont = this.customFontsAvailable ? "BodyRegular" : "Helvetica";
-      this.font(doc, baseFont, "Helvetica").fontSize(normalPageLayout.fontSize);
+      this.font(doc, baseFont, "Helvetica").fontSize(fontSize);
     }
 
-    const isArabic = this.isArabicLanguage(language);
     const options: PDFKit.Mixins.TextOptions = {
-      width: normalPageLayout.width,
-      height: Math.round(normalPageLayout.maxLines * normalPageLayout.lineHeight),
-      align: isArabic
-        ? (normalPageLayout.align === "center" ? "center" : "right")
-        : normalPageLayout.align,
-      lineGap: normalPageLayout.lineHeight - normalPageLayout.fontSize,
+      width,
+      align: isArabic ? "right" : "left",
+      lineGap: lineHeight - fontSize,
       characterSpacing: isArabic ? 0 : 0.2,
-      // Let the copy wrap at the safe-area width without replacing the end
-      // of the phrase with an ellipsis in the generated PDF.
       ellipsis: false,
       lineBreak: true,
     };
+    const textHeight = isArabic
+      ? this.storyReaderArabicLines(doc, webText, width).length * lineHeight
+      : doc.heightOfString(webText, options);
+    const y = PAGE_HEIGHT - bottomOffset - textHeight;
+    const layout = {
+      glowOpacity: 0.34,
+      shadowOffsetX: 1.2,
+      shadowOffsetY: 1.6,
+      shadowOpacity: 0.75,
+    };
     this.drawTextWithShadow(
       doc,
-      cleanText,
-      normalPageLayout.x,
-      normalPageLayout.y,
+      webText,
+      x,
+      Math.max(0, y),
       options,
-      normalPageLayout,
-      this.isArabicLanguage(language),
+      layout,
+      isArabic,
     );
   }
 
