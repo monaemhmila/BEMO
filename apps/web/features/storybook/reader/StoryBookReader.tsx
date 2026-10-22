@@ -75,6 +75,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [isPortraitViewport, setIsPortraitViewport] = useState(false);
   const [showLandscapeHint, setShowLandscapeHint] = useState(false);
 
   useEffect(() => {
@@ -82,9 +83,15 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     if (!mobile) return;
 
     setIsMobileDevice(true);
+    const updateOrientation = () => setIsPortraitViewport(window.innerHeight > window.innerWidth);
+    updateOrientation();
+    window.addEventListener("resize", updateOrientation);
     setShowLandscapeHint(true);
     const timer = window.setTimeout(() => setShowLandscapeHint(false), 3000);
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", updateOrientation);
+    };
   }, []);
 
   if (isTouchRef.current === null && typeof window !== "undefined") {
@@ -587,13 +594,13 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
               size="stretch"
               width={BOOK_WIDTH}
               height={BOOK_HEIGHT}
-              minWidth={320}
-              maxWidth={640}
-              minHeight={320}
-              maxHeight={640}
+              minWidth={isMobileDevice && isPortraitViewport ? 170 : 320}
+              maxWidth={isMobileDevice && isPortraitViewport ? 360 : 640}
+              minHeight={isMobileDevice && isPortraitViewport ? 170 : 320}
+              maxHeight={isMobileDevice && isPortraitViewport ? 360 : 640}
               drawShadow
               flippingTime={900}
-              usePortrait={!isMobileDevice || showLandscapeHint}
+              usePortrait={false}
               startZIndex={1}
               autoSize
               maxShadowOpacity={0.5}
