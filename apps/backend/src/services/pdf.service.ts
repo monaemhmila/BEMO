@@ -676,7 +676,7 @@ export class PDFService {
     const bodySize = arabic ? 9.5 : 11;
     const bodyLineHeight = bodySize * (arabic ? 1.38 : 1.28);
     const gap = 40;
-    const bodyY = titleBottom + gap;
+    const bodyY = titleBottom + gap + (arabic ? 0 : 10);
 
     if (arabic) {
       this.arabicFont(doc).fontSize(bodySize);
@@ -873,16 +873,24 @@ export class PDFService {
     const lineHeight = fontSize + (options.lineGap || 0);
     const maxWidth = options.width || 500;
     const lines = this.storyReaderArabicLines(doc, text, maxWidth);
+    const { width: _width, align: _align, lineGap: _lineGap, ...singleLineOptions } = options;
 
     lines.forEach((visualLine, index) => {
       if (!visualLine) return;
+      const lineWidth = doc.widthOfString(visualLine, { features: ["calt"] });
+      const lineX = options.align === "center"
+        ? x + Math.max(0, (maxWidth - lineWidth) / 2)
+        : options.align === "left"
+          ? x
+          : x + Math.max(0, maxWidth - lineWidth);
       doc
         .fillColor(color)
         .fillOpacity(opacity)
-        .text(visualLine, x, y + index * lineHeight, {
-          ...options,
-          align: options.align || "right",
-          width: maxWidth,
+        // The line has already been wrapped above. Do not pass `width` here:
+        // PDFKit's wrapper can otherwise auto-add an overflow page when a
+        // shadow pass is near the bottom of the Arabic page.
+        .text(visualLine, lineX, y + index * lineHeight, {
+          ...singleLineOptions,
           characterSpacing: 0,
           features: ["calt"],
           lineBreak: false,
