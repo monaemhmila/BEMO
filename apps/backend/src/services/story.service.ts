@@ -66,6 +66,7 @@ interface StoryPageInput {
 
 interface StoryScript {
   title: string;
+  characterOutfit?: string;
   pages: StoryPageInput[];
 }
 
@@ -156,6 +157,8 @@ ${language ? `Language: ${language}` : ""}
 Tone & Style:
 - Storytelling: engaging, heartwarming, filled with wonder, adventure, and warmth.
 - Create a playful, kid-friendly title.
+- Define one specific, age-appropriate signature outfit for the hero in a separate `characterOutfit` field (for example: "a red hoodie with a gold star, navy trousers, and white sneakers").
+- Repeat that exact complete outfit description in every page's imageDescription. Never change its colors, clothing items, accessories, or footwear between pages.
 - Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
 
 For each page:
@@ -172,6 +175,7 @@ Return ONLY valid JSON:
 
 {
   "title": "Kid-friendly title featuring ${characterName}",
+  "characterOutfit": "The exact signature outfit used on every image page",
   "pages": [
     {
       "pageNumber": 1,
@@ -182,7 +186,17 @@ Return ONLY valid JSON:
   ]
 }
 `;
-    return this.withPageComposition(await this.invokeLLM(prompt));
+    const script = await this.invokeLLM(prompt);
+    const outfit = script.characterOutfit?.trim();
+    return this.withPageComposition({
+      ...script,
+      pages: outfit
+        ? script.pages.map((page) => ({
+            ...page,
+            imageDescription: this.withConsistentOutfit(page.imageDescription, outfit),
+          }))
+        : script.pages,
+    });
   }
 
   /**
@@ -291,7 +305,9 @@ ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
 Beat plan (page 1 = beat 1, ... page ${pageCount} = beat ${pageCount}):
 ${beatPlan}
 
-      The uploaded reference image supplies identity consistency only; never describe physical identity details in imageDescription.
+- The uploaded reference image supplies identity consistency only; never describe physical identity details in imageDescription.
+
+Choose one specific, age-appropriate signature outfit for the hero and return it in a separate `characterOutfit` field. Repeat the exact complete `characterOutfit` wording in every childImageDescription and every imageDescription for a child page. The outfit must remain identical in colors, clothing items, accessories, and footwear throughout the story. Scene-only pages must remain people-free and must not mention the outfit.
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
@@ -315,6 +331,7 @@ Return ONLY valid JSON:
 
 {
   "title": "Kid-friendly title featuring ${input.childName}",
+  "characterOutfit": "The exact signature outfit used on every child page",
   "pages": [
     {
       "pageNumber": 1,
@@ -407,19 +424,38 @@ Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "c
     const safeSceneFallback = "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
     const forbiddenSceneWord = /\b(child|children|kid|kids|boy|girl|person|people|human|humans|face|faces|portrait|portraits|character|characters|hero|heroes|he|she|him|her|his|their|they|them)\b/i;
 
+    const outfit = parsed.characterOutfit?.trim();
     return {
       title: parsed.title,
-      pages: parsed.pages.map((page, index) => ({
-        ...page,
-        pageNumber: index + 1,
-        text: page.text?.trim() || "",
-        childImageDescription: page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "",
-        sceneImageDescription: forbiddenSceneWord.test(page.sceneImageDescription?.trim() || "")
-          ? safeSceneFallback
-          : page.sceneImageDescription?.trim() || safeSceneFallback,
-        imageDescription: page.imageDescription?.trim() || page.childImageDescription?.trim() || page.text?.trim() || "",
-      })),
+      characterOutfit: outfit,
+      pages: parsed.pages.map((page, index) => {
+        const isChildPage = getPersonalizedPageSlot(index + 1).kind === "child";
+        const childImageDescription = page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "";
+        const imageDescription = page.imageDescription?.trim() || childImageDescription;
+        return {
+          ...page,
+          pageNumber: index + 1,
+          text: page.text?.trim() || "",
+          childImageDescription: outfit && isChildPage
+            ? this.withConsistentOutfit(childImageDescription, outfit)
+            : childImageDescription,
+          sceneImageDescription: forbiddenSceneWord.test(page.sceneImageDescription?.trim() || "")
+            ? safeSceneFallback
+            : page.sceneImageDescription?.trim() || safeSceneFallback,
+          imageDescription: outfit && isChildPage
+            ? this.withConsistentOutfit(imageDescription, outfit)
+            : imageDescription,
+        };
+      }),
     };
+  }
+
+  private withConsistentOutfit(description: string, outfit: string): string {
+    const cleanDescription = description.trim();
+    const cleanOutfit = outfit.trim();
+    if (!cleanOutfit) return cleanDescription;
+    if (cleanDescription.toLowerCase().includes(cleanOutfit.toLowerCase())) return cleanDescription;
+    return `${cleanDescription} The child wears the exact same signature outfit on every page: ${cleanOutfit}.`;
   }
 
   /**
