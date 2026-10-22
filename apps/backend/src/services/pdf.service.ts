@@ -963,7 +963,10 @@ export class PDFService {
       });
     }
 
-    const dedication = (story.dedication ?? "").trim();
+    const dedicationValue = (story.dedication ?? "").trim();
+    const dedication = arabic
+      ? normalizeStoryReaderArabicText(dedicationValue)
+      : dedicationValue;
     const footer = COVER_TITLE.footer;
     const footerSidePad = footer.whiteSpaceSidePad;
     const footerWidth = width - footerSidePad * 2;
