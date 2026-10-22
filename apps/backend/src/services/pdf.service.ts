@@ -877,24 +877,38 @@ export class PDFService {
 
     lines.forEach((visualLine, index) => {
       if (!visualLine) return;
-      const lineWidth = doc.widthOfString(visualLine, { features: ["calt"] });
+      const lineWidth = this.arabicWidthOfString(doc, visualLine);
       const lineX = options.align === "center"
         ? x + Math.max(0, (maxWidth - lineWidth) / 2)
         : options.align === "left"
           ? x
           : x + Math.max(0, maxWidth - lineWidth);
-      doc
-        .fillColor(color)
-        .fillOpacity(opacity)
-        // The line has already been wrapped above. Do not pass `width` here:
-        // PDFKit's wrapper can otherwise auto-add an overflow page when a
-        // shadow pass is near the bottom of the Arabic page.
-        .text(visualLine, lineX, y + index * lineHeight, {
-          ...singleLineOptions,
-          characterSpacing: 0,
-          features: ["calt"],
-          lineBreak: false,
-        });
+      const lineOptions = {
+        ...singleLineOptions,
+        characterSpacing: 0,
+        features: ["calt"],
+        lineBreak: false,
+      } as PDFKit.Mixins.TextOptions;
+      // The line has already been wrapped above. Do not pass `width` here:
+      // PDFKit's wrapper can otherwise auto-add an overflow page when a
+      // shadow pass is near the bottom of the Arabic page.
+      try {
+        doc
+          .fillColor(color)
+          .fillOpacity(opacity)
+          .text(visualLine, lineX, y + index * lineHeight, lineOptions);
+      } catch {
+        // Some deployed fontkit versions reject an optional Arabic feature
+        // for a rare glyph. Keep the same text and geometry, retrying without
+        // the optional feature rather than failing the whole PDF export.
+        doc
+          .fillColor(color)
+          .fillOpacity(opacity)
+          .text(visualLine, lineX, y + index * lineHeight, {
+            ...lineOptions,
+            features: [],
+          });
+      }
       doc.fillOpacity(1);
     });
   }
@@ -909,7 +923,7 @@ export class PDFService {
       let logicalLine = "";
       for (const word of paragraph.trim().split(/\s+/)) {
         const candidate = logicalLine ? `${logicalLine} ${word}` : word;
-        if (logicalLine && doc.widthOfString(candidate, { features: ["calt"] }) > width) {
+        if (logicalLine && this.arabicWidthOfString(doc, candidate) > width) {
           lines.push(logicalLine);
           logicalLine = word;
         } else {
@@ -919,6 +933,14 @@ export class PDFService {
       if (logicalLine) lines.push(logicalLine);
     }
     return lines;
+  }
+
+  private arabicWidthOfString(doc: PDFKit.PDFDocument, value: string): number {
+    try {
+      return doc.widthOfString(value, { features: ["calt"] });
+    } catch {
+      return doc.widthOfString(value);
+    }
   }
 
   /**

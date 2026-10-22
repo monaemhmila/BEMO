@@ -510,7 +510,11 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
       undefined,
       { pageSize }
     );
-    const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
+    const requestedFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
+    // Node rejects non-Latin-1 characters in response headers. Arabic titles
+    // need an ASCII fallback for Content-Disposition; keep existing French
+    // and English filenames unchanged.
+    const safeFilename = isArabicStory ? "storybook" : requestedFilename;
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}-${pageSize}.pdf"`);
     res.send(pdfBuffer);
