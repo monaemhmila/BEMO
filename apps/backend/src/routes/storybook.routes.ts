@@ -491,8 +491,11 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
 
     // PDF generation is expensive because it downloads and processes every
     // illustration. Reuse the completed export instead of rebuilding it for
-    // every download request.
-    if (pageSize === "14x14" && story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
+    // every download request. Arabic PDFs generated before the RTL page-wrap
+    // fix can contain extra blank pages, so regenerate Arabic 14x14 exports
+    // instead of serving that stale cached file.
+    const isArabicStory = (story.language || "").toLowerCase().startsWith("ar");
+    if (pageSize === "14x14" && !isArabicStory && story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }
@@ -512,12 +515,16 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}-${pageSize}.pdf"`);
     res.send(pdfBuffer);
   } catch (error) {
-    logger.error({ error, storyId: req.params.id }, "Failed to export storybook PDF");
-    if (error instanceof Error && error.message.startsWith("PDF for ")) {
+    const details = error instanceof Error ? error.message : String(error);
+    logger.error(
+      { error: details, storyId: req.params.id, stack: error instanceof Error ? error.stack : undefined },
+      "Failed to export storybook PDF"
+    );
+    if (details.startsWith("PDF for ")) {
       res.status(409).json({ message: "Some page artwork could not be downloaded. Please retry the failed pages." });
       return;
     }
-    res.status(500).json({ message: "Could not export the storybook PDF" });
+    res.status(500).json({ message: "Could not export the storybook PDF", details });
   }
 });
 
