@@ -919,6 +919,8 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
         referenceImageUrl: storyRef || childImage || "",
         prompt: personalizedPagePrompt(pageNumber, page),
         artStyle,
+        aspectRatio: pageNumber === 1 ? "1:1" : "16:9",
+        edgePlacementSide: pageNumber === 1 ? undefined : getPageComposition(pageNumber, PERSONALIZED_PRINT_PAGE_COUNT).characterSide,
       }).catch((err) => {
         logger.error({ err, pageNumber }, "Failed child image generation for preview page");
         return null;

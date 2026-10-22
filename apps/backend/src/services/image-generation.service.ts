@@ -34,6 +34,7 @@ interface ImageGenerationResult {
 
 export const GROK_IMAGINE_MODEL = "xai/grok-imagine-image";
 export const GROK_IMAGINE_EDIT_MODEL = "xai/grok-imagine-image/edit";
+export const FLUX_KLEIN_EDIT_MODEL = "fal-ai/flux-2/klein/9b/edit";
 
 /**
  * Dedicated storybook image configuration so storybook-specific values are
@@ -150,7 +151,7 @@ export class ImageGenerationService {
           requestId: request_id,
           hasReference: !!referenceUrl,
           model: referenceUrl
-            ? GROK_IMAGINE_EDIT_MODEL
+            ? FLUX_KLEIN_EDIT_MODEL
             : GROK_IMAGINE_MODEL,
         },
         "Storybook image queued"
@@ -267,18 +268,21 @@ export class ImageGenerationService {
    * Build Grok Imagine input.
    */
   private buildInput(request: ImageGenerationRequest, referenceUrl?: string) {
+    const usesFluxEdit = Boolean(referenceUrl);
     const input: Record<string, unknown> = {
       prompt: request.rawPrompt ? request.prompt.trim() : this.buildGrokPrompt(request),
 
       num_images: 1,
-
-      // Square 16:9 frame for the 148.5 x 148.5 mm printed page; rendered directly by the PDF service.
-      aspect_ratio: request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio,
-
-      resolution: STORYBOOK_IMAGE_CONFIG.resolution,
-
       output_format: STORYBOOK_IMAGE_CONFIG.outputFormat,
     };
+
+    if (usesFluxEdit) {
+      input.image_size = request.aspectRatio === "1:1" ? "square_hd" : "landscape_16_9";
+    } else {
+      // Square 16:9 frame for the 148.5 x 148.5 mm printed page; rendered directly by the PDF service.
+      input.aspect_ratio = request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio;
+      input.resolution = STORYBOOK_IMAGE_CONFIG.resolution;
+    }
 
     if (!request.rawPrompt) input.negative_prompt = STORYBOOK_NEGATIVE_PROMPT;
 
@@ -298,7 +302,7 @@ export class ImageGenerationService {
    */
   private getEndpoint(referenceUrl?: string) {
     return referenceUrl
-      ? GROK_IMAGINE_EDIT_MODEL
+      ? FLUX_KLEIN_EDIT_MODEL
       : GROK_IMAGINE_MODEL;
   }
 

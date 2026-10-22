@@ -83,13 +83,12 @@ export interface PageTextLayout {
 }
 
 /**
- * The cover (first page) and the closing (last page) render as a single 1:1
- * square page in the book; every intermediate page is a 16:9 illustration that
- * is printed as two square halves. Both the image pipeline and the reader use
- * this single source of truth so generated images always match the page layout.
+ * The cover (first page) renders as a single 1:1 square page. Story pages are
+ * landscape 16:9 illustrations printed as two square halves. The closing page
+ * remains a special reusable cover asset when one is present.
  */
-export function isSquareBookPage(pageNumber: number, totalPages: number): boolean {
-  return pageNumber === 1 || pageNumber === Math.max(1, totalPages);
+export function isSquareBookPage(pageNumber: number, _totalPages: number): boolean {
+  return pageNumber === 1;
 }
 
 export function getPageAspectRatio(
@@ -154,7 +153,7 @@ export function getPageComposition(
     pageType: getPageType(pageNumber, totalPages),
     textPosition,
     alignment: textPosition === "top-center" || textPosition === "bottom-center" || textPosition === "center" ? "center" : "left",
-    imageAspectRatio: STORYBOOK_IMAGE_ASPECT_RATIO,
+    imageAspectRatio: getPageAspectRatio(pageNumber, totalPages),
     textSafeArea: "",
     characterSide,
     sideCharacterArea: "",

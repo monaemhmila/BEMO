@@ -4,7 +4,7 @@ import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { FaceConsistencyService } from "./face-consistency.service";
 import { StoryCompletionService } from "./story-completion.service";
-import { GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
+import { FLUX_KLEIN_EDIT_MODEL, GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
 import { saveRemoteImageLocally, saveJsonLocally } from "../lib/storage";
 import {
   STORYBOOK_PAGE_COUNT,
@@ -354,19 +354,17 @@ Return ONLY valid JSON:
   }
 
   /**
-   * Generate the text for the new printed layout. There are 29 story pages:
-   * fifteen child pages and fourteen scene-spread pages, followed by the
-   * existing reusable closing cover. The image pipeline decides which pages
-   * show the child; the prompt produces separate child and environment
-   * descriptions so scene spreads can safely use text-to-image without a
-   * child reference.
+   * Generate the text for the printed layout. There are 15 generated story
+   * pages followed by the existing reusable closing cover. Every generated
+   * page contains the child so its 16:9 illustration can be edited from the
+   * same reference image and split into two printed leaves.
    */
   async generatePersonalizedPrintStoryScript(
     characterName: string,
     input: PersonalizedStoryInput,
     characterProfile?: CharacterProfile,
   ): Promise<StoryScript> {
-    const pageCount = 29;
+    const pageCount = 15;
     const templateBeats = Array.isArray(input.template.prompts.beats)
       ? input.template.prompts.beats
       : [];
@@ -380,8 +378,9 @@ Return ONLY valid JSON:
 
     const layoutPlan = Array.from({ length: pageCount }, (_, index) => {
       const pageNumber = index + 1;
-      const slot = getPersonalizedPageSlot(pageNumber);
-      return `Page ${pageNumber}: ${slot.kind === "child" ? "child_page (1:1, child visible)" : `${slot.kind} (16:9 spread, no child or people)`}`;
+      const aspect = pageNumber === 1 ? "1:1 square cover" : "16:9 landscape spread";
+      const side = pageNumber > 1 ? (pageNumber % 2 === 1 ? "child far left, text on right leaf" : "child far right, text on left leaf") : "child centered naturally";
+      return `Page ${pageNumber}: ${aspect}, child visible; ${side}`;
     }).join("\\n");
 
     const prompt = `
@@ -391,13 +390,7 @@ Return exactly ${pageCount} pages as valid JSON only. Keep one continuous story 
 adventure, challenge, resolution, and gentle ending. Page 1 is a short cover hook. Page ${pageCount} is a
 short closing story page before the reusable final cover image.
 
-The story text may mention and feature the child on every page. Return TWO separate image prompts:
-- childImageDescription: for child_page pages only. Describe only the setting and what the ${input.gender || "child"} is doing or feeling. You may say "boy" or "girl", but never use the child's name, age, hair, face, skin, eyes, ethnicity, complexion, or any other physical identity detail.
-- sceneImageDescription: for scene-left and scene-right pages only. Describe the environment, objects,
-lighting, weather, and atmosphere ONLY. It must contain no child, no person, no people, no human figure,
-no face, no portrait, no character, no hero, no name, and no pronoun referring to a person.
-Never reuse childImageDescription as sceneImageDescription. Never put image style instructions, text,
-signs, logos, or story text inside either image prompt.
+The story text may mention and feature the child on every page. Return a childImageDescription for every page. Describe the complete environment and what the ${input.gender || "child"} is doing or feeling. You may say "boy" or "girl", but never use the child's name, age, hair, face, skin, eyes, ethnicity, complexion, or any other physical identity detail. Keep the child on the far edge specified by the physical layout, leaving the opposite leaf open for text. Never put image style instructions, text, signs, logos, or story text inside the image prompt.
 
 Child identity for the prose only: ${appearance}
 ${input.language ? `Write the title and story text in ${input.language}.` : "Write the title and story text in English."}
@@ -409,7 +402,7 @@ ${beatPlan}
 Physical image layout (follow this exactly):
 ${layoutPlan}
 
-For every page return 15-35 words of warm story text and both English image descriptions.
+For every page return 15-35 words of warm story text and an English childImageDescription. Keep sceneImageDescription empty when no separate scene is needed.
 Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "childImageDescription": "...", "sceneImageDescription": "...", "emotion": "..." }] }
 `;
 
@@ -1349,7 +1342,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           // plain one. A wrong endpoint raises rather than resolving empty.
           let result: Awaited<ReturnType<typeof fal.queue.result>> | undefined;
 
-          for (const endpoint of [GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
+          for (const endpoint of [FLUX_KLEIN_EDIT_MODEL, GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
             try {
               result = await fal.queue.result(endpoint, {
                 requestId: page.falAiRequestId!,

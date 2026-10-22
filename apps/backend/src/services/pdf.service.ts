@@ -3,6 +3,7 @@ import path from "path";
 import fs, { existsSync } from "fs";
 import {
   getPageType,
+  getPageComposition,
   STORYBOOK_PAGE_WIDTH_PT,
   STORYBOOK_PAGE_HEIGHT_PT,
   StorybookPdfPageSize,
@@ -357,19 +358,18 @@ export class PDFService {
     }
 
     // A 16:9 story page becomes two PDF leaves (left square, then right square).
-    // A 1:1 source (cover / closing) is already the exact page shape and stays a
-    // single full-bleed leaf. Pages without an image collapse to one fallback leaf.
+    // The first cover stays a single full-bleed square leaf. Pages without an
+    // image collapse to one fallback leaf.
     const leaves: PdfLeaf[] = [];
     sortedPages.forEach((page, index) => {
       const split = splitImages[index];
       if (split?.left && split.right) {
-        // Covers are single square book leaves. If an old record contains a
-        // wide cover/closing image, keep one crop instead of creating a second
-        // apparent cover page.
-        const isSinglePageCover = page.pageNumber === 1 || page.pageNumber === sortedPages.length;
-        leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.left, renderText: true });
+        const isSinglePageCover = page.pageNumber === 1;
+        const composition = getPageComposition(page.pageNumber, sortedPages.length);
+        const textOnRightLeaf = composition.characterSide === "left";
+        leaves.push({ pageNumber: page.pageNumber, content: textOnRightLeaf ? "" : page.content, image: split.left, renderText: !textOnRightLeaf });
         if (!isSinglePageCover) {
-          leaves.push({ pageNumber: page.pageNumber, content: "", image: split.right, renderText: false });
+          leaves.push({ pageNumber: page.pageNumber, content: textOnRightLeaf ? page.content : "", image: split.right, renderText: textOnRightLeaf });
         }
       } else if (split?.full) {
         leaves.push({ pageNumber: page.pageNumber, content: page.content, image: split.full, renderText: true });

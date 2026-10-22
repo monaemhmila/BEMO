@@ -22,7 +22,7 @@ function genericChildScenePrompt(prompt: string, childName: string, gender?: "bo
   return `A ${gender || "child"} is ${withoutIdentity}`;
 }
 
-/** Image operations for the new personalized 30-page layout only. */
+/** Image operations for personalized story pages. */
 export class PersonalizedBookImageService {
   async generateChildSquare(input: {
     childName: string;
@@ -31,12 +31,15 @@ export class PersonalizedBookImageService {
     referenceImageUrl: string;
     prompt: string;
     artStyle?: string | null;
+    aspectRatio?: "1:1" | "16:9";
+    edgePlacementSide?: "left" | "right";
   }): Promise<string> {
     const imageUrl = await imageService.generateImageSync({
       prompt: `${genericChildScenePrompt(input.prompt, input.childName, input.gender)}. The child is happy, smiling, and clearly visible.`,
-      aspectRatio: "1:1",
+      aspectRatio: input.aspectRatio || "1:1",
       imageUrl: input.referenceImageUrl,
       artStyle: input.artStyle || undefined,
+      edgePlacementSide: input.edgePlacementSide,
     });
     return saveRemoteImageLocally(imageUrl, "generated", `personalized_child_${Date.now()}`);
   }

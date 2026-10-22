@@ -204,16 +204,17 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const hiddenPageCount = sortedPages.length - pages.length;
 
   /** Each source page produces two square leaves (left + right halves). The
- *  cover (first) and closing (last) pages are generated 1:1 and stay ONE
- *  square page. */
+   *  cover (first) page is generated 1:1 and stays ONE square page. */
   const leafCount = useMemo(() => {
     if (!story) return 0;
-    // New personalized books persist every printed page as an already-square
-    // asset. Legacy stories persist one 16:9 source row per spread and still
-    // need the historical two-leaf calculation.
     if (pages.length === 30 || sortedPages.length === 30) return pages.length;
     if (pages.length <= 1) return pages.length;
-    return (pages.length - 2) * 2 + 2;
+    // The reusable closing cover is a single square leaf; story pages between
+    // the covers are the two leaves of their 16:9 source image.
+    const includesClosingCover = pages.length === sortedPages.length;
+    return includesClosingCover
+      ? (pages.length - 2) * 2 + 2
+      : 1 + (pages.length - 1) * 2;
   }, [story, pages, sortedPages.length]);
 
   /**
@@ -407,8 +408,10 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     const leaves: ReactNode[] = [];
     const n = pages.length;
     const materializedSquareLayout = sortedPages.length === 30;
+    const includesClosingCover = pages.length === sortedPages.length;
     pages.forEach((page, sourceIndex) => {
-      const isSingleSquare = materializedSquareLayout || sourceIndex === 0 || sourceIndex === n - 1;
+      const isClosing = includesClosingCover && sourceIndex === n - 1;
+      const isSingleSquare = materializedSquareLayout || sourceIndex === 0 || isClosing;
       const leafIndex = leaves.length;
       if (isSingleSquare) {
         leaves.push(
@@ -422,13 +425,17 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
             squareFill
             side={leafSide(leafIndex)}
             isCover={sourceIndex === 0}
-            isClosing={sourceIndex === n - 1}
-            renderText={sourceIndex !== 0 && sourceIndex !== n - 1}
+            isClosing={isClosing}
+            renderText={materializedSquareLayout ? sourceIndex !== 0 && sourceIndex !== n - 1 : false}
             leafNumber={leafIndex + 1}
           />
         );
         return;
       }
+      // The shared composition alternates: odd story pages put the child on
+      // the far left, so their text belongs on the right leaf; even pages put
+      // the child on the far right, so their text belongs on the left leaf.
+      const textOnRightLeaf = page.pageNumber % 2 === 1;
       leaves.push(
         <StoryBookPage
           key={`${page.id}-l`}
@@ -441,7 +448,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           squareFill={materializedSquareLayout}
           side={leafSide(leafIndex)}
           isCover={false}
-          renderText
+          renderText={!textOnRightLeaf}
           leafNumber={leafIndex + 1}
         />
       );
@@ -457,7 +464,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           squareFill={materializedSquareLayout}
           side={leafSide(leafIndex + 1)}
           isCover={false}
-          renderText={false}
+          renderText={textOnRightLeaf}
           leafNumber={leafIndex + 2}
         />
       );

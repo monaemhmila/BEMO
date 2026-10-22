@@ -90,8 +90,8 @@ export function applyArtStyle(sceneDescription: string, artStyle?: string): stri
  */
 export function getCharacterEdgeDirective(side: "left" | "right"): string {
   const farSide = side === "left" ? "FAR LEFT" : "FAR RIGHT";
-  const otherSide = side === "left" ? "right" : "left";
-  return `Position the child at the ${farSide} of the composition naturally integrated into the scene.`;
+  const textSide = side === "left" ? "RIGHT" : "LEFT";
+  return `Position the child at the ${farSide} of the composition, naturally integrated into the scene. Keep the ${textSide} side visually calm and open for the story text.`;
 }
 
 /**
@@ -105,7 +105,7 @@ Use the supplied reference image only for visual consistency. Do not describe, i
 
 Do not reproduce the reference image's background, framing, crop, white areas, lighting setup, or camera composition. Do not stretch, squeeze, widen, or reshape the reference face.
 
-Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape. The child's body must remain narrow and anatomically natural; never use horizontal scaling, compression, or stretching. Choose a distinctive, age-appropriate costume or outfit for the child that clearly fits their role in the story. The costume should change according to the story and make the child visually feel like the protagonist of that particular adventure.
+Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape. The child's body must remain narrow and anatomically natural; never use horizontal scaling, compression, or stretching. Preserve the exact outfit described in the scene prompt on every page: the same clothing items, colors, accessories, and footwear. Never change the outfit between pages.
 
 Create the following scene:
 
@@ -113,7 +113,7 @@ Create the following scene:
 
 [EDGE_PLACEMENT][FILL_CANVAS] Create a completely new, rich, immersive environment around the child. The environment must naturally surround and integrate the child with detailed foreground, middle-ground, and background elements.
 
-The output canvas is landscape, but the landscape layout applies only to the environment and camera framing. Keep the child's geometry unchanged and use the environment to occupy the extra horizontal space. Keep the child at approximately 12-20% of the frame height, with generous natural space around them. The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings. The result must look like one cohesive scene, not a face pasted onto a generated body or background.
+[CANVAS_GUIDANCE] Keep the child at approximately 12-20% of the frame height, with generous natural space around them. The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings. The result must look like one cohesive scene, not a face pasted onto a generated body or background.
 
 Correct human anatomy, natural proportions, properly formed hands and feet, normal limbs, and age-appropriate clothing. The child must be fully clothed and wear full-length trousers and shoes.
 
@@ -130,7 +130,7 @@ export function buildStorybookImagePrompt(input: {
 }): string {
   const scene = applyArtStyle(input.sceneDescription, input.artStyle);
   const ratio = input.aspectRatio === "1:1"
-    ? "Use a square composition."
+    ? "Use a square 1:1 composition with the child naturally framed in the complete square canvas."
     : "Use a landscape 16:9 canvas for the environment; do not resize or reshape the child to match the canvas.";
   const edge = input.edgePlacementSide
     ? `${getCharacterEdgeDirective(input.edgePlacementSide)}\n\n`
@@ -139,7 +139,10 @@ export function buildStorybookImagePrompt(input: {
   return STORYBOOK_IMAGE_TEMPLATE
     .replace("[SCENE]", scene)
     .replace("[EDGE_PLACEMENT]", edge)
-    .replace("[FILL_CANVAS]", ratio);
+    .replace("[FILL_CANVAS]", ratio)
+    .replace("[CANVAS_GUIDANCE]", input.aspectRatio === "1:1"
+      ? "Use the complete square canvas with natural camera framing and no empty margins."
+      : "The output canvas is landscape, but the landscape layout applies only to the environment and camera framing. Keep the child's geometry unchanged and use the environment to occupy the extra horizontal space.");
 }
 
 export default {

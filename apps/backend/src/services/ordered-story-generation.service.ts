@@ -1,6 +1,6 @@
 import { prismaClient } from "../lib/prisma";
 import { logger } from "../lib/logger";
-import { getPersonalizedGenerationSlots } from "../contracts/personalized-book-layout";
+import { getPersonalizedGenerationSlots, PERSONALIZED_PRINT_PAGE_COUNT } from "../contracts/personalized-book-layout";
 import { personalizedBookImageService } from "./personalized-book-image.service";
 import { PDFService } from "./pdf.service";
 import { saveBufferAsset } from "../lib/storage";
@@ -10,7 +10,7 @@ import { ImageGenerationService } from "./image-generation.service";
 const inProgress = new Set<string>();
 const legacyImageService = ImageGenerationService.getInstance();
 
-/** Generate the held child pages and scene spreads after admin confirmation. */
+/** Generate the held personalized pages after admin confirmation. */
 export async function generateOrderedStory(orderId: string): Promise<void> {
   if (inProgress.has(orderId)) return;
   inProgress.add(orderId);
@@ -24,9 +24,9 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
     if (!order || order.status === "CANCELLED") return;
     storyId = order.storyId;
 
-    // Keep previously-created books printable. Only the new 30-square-page
-    // layout uses the generation-slot logic below.
-    if (order.story.pages.length !== 30) {
+    // Keep previously-created books printable. The current personalized
+    // layout uses the same landscape-spread generation path as legacy books.
+    if (order.story.pages.length !== PERSONALIZED_PRINT_PAGE_COUNT) {
       await generateLegacyOrderedStory(order);
       return;
     }
@@ -52,6 +52,10 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
           artStyle: order.story.artStyle,
           referenceImageUrl: order.story.referenceImageUrl,
           prompt: page.imagePrompt,
+          aspectRatio: page.pageNumber === 1 ? "1:1" : "16:9",
+          edgePlacementSide: page.pageNumber === 1
+            ? undefined
+            : getPageComposition(page.pageNumber, PERSONALIZED_PRINT_PAGE_COUNT).characterSide,
         });
         await prismaClient.storyPage.update({ where: { id: page.id }, data: { imageUrl, status: "Generated" } });
         continue;
@@ -73,7 +77,7 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
     }
 
     const pages = await prismaClient.storyPage.findMany({ where: { storyId }, orderBy: { pageNumber: "asc" } });
-    if (pages.length !== 30 || pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
+    if (pages.length !== PERSONALIZED_PRINT_PAGE_COUNT || pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
       throw new Error("PERSONALIZED_BOOK_ARTWORK_INCOMPLETE");
     }
 
@@ -83,7 +87,7 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
     );
     const pdfUrl = await saveBufferAsset(pdfBuffer, "pdfs", `${storyId}.pdf`, "application/pdf");
     await prismaClient.story.update({ where: { id: storyId }, data: { status: "Completed", completedAt: new Date(), pdfUrl } });
-    logger.info({ orderId, storyId }, "Personalized 30-page book artwork and PDF generated");
+    logger.info({ orderId, storyId }, "Personalized book artwork and PDF generated");
   } catch (error) {
     logger.error({ error, orderId, storyId }, "Failed to generate personalized book");
     if (storyId) await prismaClient.story.update({ where: { id: storyId }, data: { status: "Failed" } }).catch(() => undefined);
@@ -92,7 +96,7 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
   }
 }
 
-/** Compatibility path for orders created before the 30-page layout. */
+/** Generation path for the landscape-spread personalized layout. */
 async function generateLegacyOrderedStory(order: any): Promise<void> {
   const pages = order.story.pages as Array<{
     id: string;
