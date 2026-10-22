@@ -334,8 +334,21 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}-${pageSize}.pdf`;
       download.click();
       URL.revokeObjectURL(pdfUrl);
-    } catch (err) {
-      console.error("PDF export failed", err);
+    } catch (err: any) {
+      // PDF errors arrive as blobs because successful responses are PDFs.
+      // Decode JSON error blobs so the backend's actual failure is visible
+      // instead of only reporting AxiosError/reader-unmounted.
+      const responseData = err?.response?.data;
+      if (responseData instanceof Blob) {
+        try {
+          const errorBody = JSON.parse(await responseData.text());
+          console.error("PDF export failed", errorBody);
+        } catch {
+          console.error("PDF export failed", err);
+        }
+      } else {
+        console.error("PDF export failed", err);
+      }
     } finally {
       setExporting(false);
     }
