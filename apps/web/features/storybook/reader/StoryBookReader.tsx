@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import axios from "axios";
 import HTMLFlipBook from "react-pageflip";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Lock, RefreshCw, ShoppingBag } from "lucide-react";
+import { AlertTriangle, Lock, RefreshCw, RotateCw, ShoppingBag, Smartphone } from "lucide-react";
 
 import { BACKEND_URL } from "../../../app/config";
 import { cn } from "@/lib/utils";
@@ -74,6 +74,18 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const [muted, setMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [showLandscapeHint, setShowLandscapeHint] = useState(false);
+
+  useEffect(() => {
+    const mobile = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
+    if (!mobile) return;
+
+    setIsMobileDevice(true);
+    setShowLandscapeHint(true);
+    const timer = window.setTimeout(() => setShowLandscapeHint(false), 3000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   if (isTouchRef.current === null && typeof window !== "undefined") {
     isTouchRef.current =
@@ -504,6 +516,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       ref={rootRef}
       className={cn(
         "relative flex w-full flex-col overflow-hidden bg-paper",
+        isMobileDevice && !showLandscapeHint && "story-reader-mobile-horizontal",
         embedded
           ? "h-[70vh] min-h-[420px]"
           : isFullscreen
@@ -514,6 +527,23 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       onPointerMove={showControls}
       onTouchStart={showControls}
     >
+      {showLandscapeHint && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-violet-deep/95 px-6 text-center text-white backdrop-blur-sm">
+          <div className="max-w-xs animate-in fade-in zoom-in duration-500">
+            <div className="relative mx-auto mb-6 grid size-20 place-items-center rounded-3xl border-2 border-white/40 bg-white/10 shadow-2xl">
+              <Smartphone className="size-10 animate-pulse" aria-hidden="true" />
+              <RotateCw className="absolute -right-5 -top-4 size-8 animate-spin text-buttercup [animation-duration:1.8s]" aria-hidden="true" />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-buttercup">Your story is ready</p>
+            <h2 className="mt-3 font-display text-2xl font-bold">Turn your phone sideways</h2>
+            <p className="mt-3 text-sm leading-6 text-white/75">Rotate your phone horizontally for the best storybook experience.</p>
+            <div className="mx-auto mt-6 h-1.5 w-32 overflow-hidden rounded-full bg-white/15">
+              <div className="h-full origin-left animate-[landscape-hint-progress_3s_linear_forwards] rounded-full bg-buttercup" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Soft stage wash behind the book */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -544,7 +574,10 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           />
         </div>
       ) : (
-        <main className="relative flex flex-1 items-center justify-center px-3 pb-20 pt-16 sm:px-12 sm:pb-16 sm:pt-20">
+        <main className={cn(
+          "relative flex flex-1 items-center justify-center px-3 pb-20 pt-16 sm:px-12 sm:pb-16 sm:pt-20",
+          isMobileDevice && !showLandscapeHint && "overflow-x-auto px-1 pt-3 pb-16"
+        )}>
           <div className="relative w-full max-w-5xl xl:max-w-6xl">
             <HTMLFlipBook
               ref={flipBookRef}
@@ -560,7 +593,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
               maxHeight={640}
               drawShadow
               flippingTime={900}
-              usePortrait
+              usePortrait={!isMobileDevice || showLandscapeHint}
               startZIndex={1}
               autoSize
               maxShadowOpacity={0.5}

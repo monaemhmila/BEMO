@@ -258,6 +258,10 @@ Return ONLY valid JSON:
       } pronouns and gendered details consistently on every page, and describe the hero's clothing and presentation as a ${input.gender}'s.\n`
       : "";
 
+    const arabicTitleRule = input.language?.toLowerCase().startsWith("arabic")
+      ? `- Arabic title rule: write the title entirely in Modern Standard Arabic. Do not copy or append the template name, and do not include French or English words such as "et", "le", "the", or "and". Keep only proper names when they are intentionally supplied by the parent.\n`
+      : "";
+
     const prompt = `
 Create a personalized children's story for a ${heroDescription}.
 
@@ -281,7 +285,7 @@ Story:
 - HEART & LESSON: weave the template's moral lesson and educational focus into the story naturally and never preachy.
 ${genderRule}- Themes: ${guidance.themes}
 ${input.language ? `- Language: ${input.language}. Write the story text and title in ${input.language}.` : ""}
-- The imageDescription field must ALWAYS be written in English (it is used to generate the illustrations); only the story text and title are written in the selected language.
+${arabicTitleRule}- The imageDescription field must ALWAYS be written in English (it is used to generate the illustrations); only the story text and title are written in the selected language.
 ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
 
 Beat plan (page 1 = beat 1, ... page ${pageCount} = beat ${pageCount}):

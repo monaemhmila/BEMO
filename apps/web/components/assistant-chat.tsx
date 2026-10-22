@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ArrowRight, Bot, ChevronDown, Compass, ExternalLink, RotateCcw, Send, Sparkles, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -101,6 +102,9 @@ function detectLanguageSafe(message: string, selected: ChatLanguage): ChatLangua
 }
 
 export function AssistantChat({ mode }: AssistantChatProps) {
+  const pathname = usePathname();
+  const hideBubble = pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/stories/");
+
   const [open, setOpen] = useState(mode === "section");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -293,6 +297,8 @@ export function AssistantChat({ mode }: AssistantChatProps) {
       </div>
     </motion.div>
   );
+
+  if (mode === "bubble" && hideBubble) return null;
 
   if (mode === "section") {
     return (

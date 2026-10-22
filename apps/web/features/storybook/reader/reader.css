@@ -110,6 +110,16 @@
   padding-right: 16cqw;
 }
 
+@keyframes landscape-hint-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Keep the same two-page book treatment as desktop after the mobile hint. */
+.story-reader-mobile-horizontal .story-book-flip {
+  flex: 0 0 auto;
+}
+
 /* The opening page is a full-width narrative introduction, while staying
  * anchored to the bottom-left text-safe area. */
 .story-book-page.is-opening .story-book-caption.align-left {
