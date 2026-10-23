@@ -19,9 +19,11 @@ function genericChildScenePrompt(prompt: string, childName: string, gender?: "bo
     .replace(/\s{2,}/g, " ")
     .replace(/\s+([,.!?;])/g, "$1")
     .trim();
-  const startsWithCopula = /^(?:the|a)\s+(?:child|boy|girl)\s+is\b/i.test(withoutIdentity);
+  const subjectPattern = /^(?:the|a)\s+(?:(?:cheerful|happy|brave|young|little|curious|smiling|excited)\s+)*(?:child|boy|girl)\s+/i;
+  const startsWithCopula = /^(?:the|a)\s+(?:(?:cheerful|happy|brave|young|little|curious|smiling|excited)\s+)*(?:child|boy|girl)\s+is\b/i.test(withoutIdentity);
   const action = withoutIdentity
-    .replace(/^(?:the|a)\s+(?:child|boy|girl)\s+(?:is\s+)?/i, "")
+    .replace(subjectPattern, "")
+    .replace(/^is\s+/i, "")
     .trim();
   return startsWithCopula
     ? `A ${gender || "child"} is ${action}`

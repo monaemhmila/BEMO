@@ -159,7 +159,7 @@ Tone & Style:
 - Create a playful, kid-friendly title.
 - Weave the child's exact name "${characterName}" naturally into the title, never as a detached "For:" label or an awkward suffix. For example: "Sarah and Her Magical Garden" or, in French, "L'aventure d'Amine avec l'alphabet".
 - First determine the hero's role in this story, then define one specific, age-appropriate costume that belongs to that role in a separate characterOutfit field. For a prince or princess, use a consistent royal costume; for a jungle explorer, use a consistent explorer outfit and equipment; for a diver, use a consistent diving suit and diving equipment; adapt the costume to the story's world, job, and role.
-- Repeat that exact complete costume description in every page's imageDescription. Never change its colors, clothing items, accessories, equipment, or footwear between pages.
+- Describe the complete costume only once in characterOutfit. Do not repeat or rewrite the costume in each imageDescription; the server will append the exact characterOutfit after every scene. Never change its colors, clothing items, accessories, equipment, or footwear between pages.
 - Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
 
 For each page:
@@ -310,7 +310,7 @@ ${beatPlan}
 
 - The uploaded reference image supplies identity consistency only; never describe physical identity details in imageDescription.
 
-First determine the hero's role in the template story, then define one specific, age-appropriate costume that belongs to that role and return it in a separate characterOutfit field. For a prince or princess, use a consistent royal costume; for a jungle explorer, use a consistent explorer outfit and equipment; for a diver, use a consistent diving suit and diving equipment; adapt the costume to the story's world, job, and role. Repeat the exact complete characterOutfit wording in every childImageDescription and every imageDescription for a child page. The costume must remain identical in colors, clothing items, accessories, equipment, and footwear throughout the story. Scene-only pages must remain people-free and must not mention the costume.
+First determine the hero's role in the template story, then define one specific, age-appropriate costume that belongs to that role and return it only once in characterOutfit. For a prince or princess, use a consistent royal costume; for a jungle explorer, use a consistent explorer outfit and equipment; for a diver, use a consistent diving suit and diving equipment; adapt the costume to the story's world, job, and role. Do not repeat or rewrite the costume in each childImageDescription or imageDescription; the server will append the exact characterOutfit after every child scene. The costume must remain identical in colors, clothing items, accessories, equipment, and footwear throughout the story. Scene-only pages must remain people-free and must not mention the costume.
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
@@ -351,10 +351,17 @@ Return ONLY valid JSON:
       guidance,
       pageCount
     );
+    const outfit = script.characterOutfit?.trim();
     return this.withPageComposition(
       {
         ...script,
         title: this.ensureTitleIncludesChildName(script.title, input.childName, input.language),
+        pages: outfit
+          ? script.pages.map((page) => ({
+              ...page,
+              imageDescription: this.withConsistentOutfit(page.imageDescription, outfit),
+            }))
+          : script.pages,
       },
       pageCount
     );
