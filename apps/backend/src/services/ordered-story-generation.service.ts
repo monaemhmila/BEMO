@@ -135,7 +135,7 @@ async function generateLegacyOrderedStory(order: any): Promise<void> {
     if (page.status === "Generated" && page.imageUrl) continue;
     if (page.pageNumber === totalPages) throw new Error("LEGACY_CLOSING_COVER_MISSING");
     const imageUrl = await legacyImageService.generateImageSync({
-      prompt: `${order.story.childName || "The child"} ${page.imagePrompt}`,
+      prompt: `${order.story.childName || "The child"}, a ${order.story.childAge}-year-old child, ${page.imagePrompt}`,
       aspectRatio: getPageAspectRatio(page.pageNumber, totalPages),
       imageUrl: order.story.referenceImageUrl || undefined,
       childName: order.story.childName || undefined,

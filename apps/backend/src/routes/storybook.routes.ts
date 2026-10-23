@@ -394,7 +394,7 @@ router.post("/generate", authMiddleware, storyGenerationLimiter, async (req, res
     // Step 5: Trigger every page with the child reference portrait through Fal Grok Imagine edit model
     const generationResults = await Promise.allSettled(
       pages.map((page) =>
-        storyService.triggerPageGeneration(page.id, page.imagePrompt, childImage, { childName, artStyle, gender })
+        storyService.triggerPageGeneration(page.id, page.imagePrompt, childImage, { childName, childAge, artStyle, gender })
       )
     );
 
@@ -784,7 +784,7 @@ router.post("/:id/retry-failed", authMiddleware, async (req, res) => {
           page.id,
           page.imagePrompt,
           undefined,
-          { childName: story.childName || undefined }
+          { childName: story.childName || undefined, childAge: story.childAge }
         )
       )
     );

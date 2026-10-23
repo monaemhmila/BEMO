@@ -8,7 +8,7 @@ export type PageGenerationJob = {
   pageId: string;
   prompt: string;
   referenceImageUrl?: string | null;
-  options?: { childName?: string; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" };
+  options?: { childName?: string; childAge?: number | null; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" };
 };
 
 const QUEUE_KEY = "mon-petit-hero:generation:pages";

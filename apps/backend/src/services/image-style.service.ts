@@ -24,7 +24,8 @@ export const ART_STYLES: ArtStyleOption[] = [
   {
     id: "photo-realistic",
     name: "Photo Realistic",
-    prompt: "",
+    prompt:
+      "photorealistic live-action photograph of a real child, natural skin texture, realistic facial proportions, natural eyes, real fabric and hair, authentic photographic lighting, no cartoon or animation styling",
   },
   {
     id: "disney-pixar",

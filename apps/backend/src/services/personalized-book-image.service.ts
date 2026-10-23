@@ -34,7 +34,7 @@ function genericChildScenePrompt(prompt: string, childName: string, gender?: "bo
 export class PersonalizedBookImageService {
   async generateChildSquare(input: {
     childName: string;
-    childAge?: number | null;
+    childAge: number;
     gender?: "boy" | "girl" | null;
     referenceImageUrl: string;
     prompt: string;
@@ -43,7 +43,7 @@ export class PersonalizedBookImageService {
     edgePlacementSide?: "left" | "right";
   }): Promise<string> {
     const imageUrl = await imageService.generateImageSync({
-      prompt: `${genericChildScenePrompt(input.prompt, input.childName, input.gender)}. Show the child in a clear, energetic physical action, actively interacting with the environment or nearby objects, with a dynamic natural pose and visible movement. The child is happy, smiling, and clearly visible.`,
+      prompt: `${genericChildScenePrompt(input.prompt, input.childName, input.gender)}. The child is exactly ${input.childAge} years old. Show the child in a clear, energetic physical action, actively interacting with the environment or nearby objects, with a dynamic natural pose and visible movement. The child is happy, smiling, and clearly visible.`,
       aspectRatio: input.aspectRatio || "1:1",
       imageUrl: input.referenceImageUrl,
       artStyle: input.artStyle || undefined,

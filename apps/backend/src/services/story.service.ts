@@ -945,7 +945,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
+    options?: { childName?: string; childAge?: number | null; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
   ) {
     const job = {
       pageId,
@@ -967,7 +967,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
+    options?: { childName?: string; childAge?: number | null; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
   ) {
     try {
       const page = await prismaClient.storyPage.findUnique({
@@ -978,6 +978,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           story: {
             select: {
               title: true,
+              childAge: true,
               category: true,
               pages: { select: { imagePrompt: true } },
               template: { select: { name: true, description: true, prompts: true } },
@@ -1022,7 +1023,13 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         position = comp.characterSide === "left" ? "left" : "right";
       }
 
-      const scenePrompt = `A ${options?.gender || "child"} is ${prompt.trim()}`;
+      const childAge = Number.isFinite(options?.childAge)
+        ? options?.childAge
+        : page.story.childAge;
+      const ageDescription = Number.isFinite(childAge)
+        ? `, exactly ${childAge} years old`
+        : "";
+      const scenePrompt = `A ${options?.gender || "child"}${ageDescription} is ${prompt.trim()}`;
 
       const { requestId } =
         await this.faceConsistency.generateFaceConsistentImage(
