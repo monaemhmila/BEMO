@@ -675,7 +675,7 @@ export class PDFService {
     // Body: black text, centered below the title
     const bodySize = arabic ? 9.5 : 11;
     const bodyLineHeight = bodySize * (arabic ? 1.38 : 1.28);
-    const gap = 20;
+    const gap = 40;
     const bodyY = titleBottom + gap;
 
     if (arabic) {
