@@ -583,6 +583,177 @@ router.get("/story/:id", async (req, res) => {
 });
 
 /**
+ * POST /admin/story/:id/translate-clone
+ * Create a translated copy while reusing the original artwork verbatim.
+ * This never queues image generation and is protected by the admin router.
+ */
+router.post("/story/:id/translate-clone", async (req, res) => {
+  const parsed = TranslateStoryCloneSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Choose French or Arabic as the target language." });
+    return;
+  }
+
+  if (!env.OPENAI_API_KEY) {
+    res.status(503).json({ message: "Automatic translation is not configured on the server." });
+    return;
+  }
+
+  const source = await prismaClient.story.findUnique({
+    where: { id: req.params.id },
+    include: { pages: { orderBy: { pageNumber: "asc" } } },
+  });
+  if (!source) {
+    res.status(404).json({ message: "Story not found" });
+    return;
+  }
+  if (source.language.toLowerCase() === parsed.data.targetLanguage.toLowerCase()) {
+    res.status(400).json({ message: "The story is already in that language." });
+    return;
+  }
+  if (source.pages.length === 0) {
+    res.status(409).json({ message: "This story has no pages to translate." });
+    return;
+  }
+  if (source.pages.some((page) => !page.imageUrl)) {
+    res.status(409).json({ message: "Wait until every source page has artwork before creating a translated clone." });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60_000);
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You translate children's storybooks into ${parsed.data.targetLanguage}. Return only valid JSON. Translate only human-readable text. Preserve names, numbers, page order, warmth, and age-appropriate meaning. Do not translate image prompts or URLs. Keep empty text values empty.`,
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              outputShape: {
+                title: "translated title",
+                dedication: "translated dedication or empty string",
+                pages: [{ pageNumber: 1, text: "translated page text" }],
+              },
+              source: {
+                title: source.title,
+                dedication: source.dedication || "",
+                pages: source.pages.map((page) => ({ pageNumber: page.pageNumber, text: page.content })),
+              },
+            }),
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      logger.warn({ status: response.status }, "OpenAI story translation failed");
+      res.status(502).json({ message: "The translation service could not complete this request." });
+      return;
+    }
+
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) {
+      res.status(502).json({ message: "The translation service returned an empty response." });
+      return;
+    }
+
+    let generated: unknown;
+    try {
+      generated = JSON.parse(content);
+    } catch {
+      res.status(502).json({ message: "The translation service returned invalid JSON." });
+      return;
+    }
+
+    const translated = GeneratedStoryTranslationSchema.safeParse(generated);
+    if (!translated.success) {
+      res.status(502).json({ message: "The translation service returned incomplete story text." });
+      return;
+    }
+
+    const translatedByPage = new Map(translated.data.pages.map((page) => [page.pageNumber, page.text]));
+    const expectedPageNumbers = source.pages.map((page) => page.pageNumber);
+    if (
+      translated.data.pages.length !== source.pages.length ||
+      expectedPageNumbers.some((pageNumber) => !translatedByPage.has(pageNumber))
+    ) {
+      res.status(502).json({ message: "The translation service changed the story page structure." });
+      return;
+    }
+
+    const clone = await prismaClient.$transaction(async (tx) => {
+      const created = await tx.story.create({
+        data: {
+          title: translated.data.title,
+          userId: source.userId,
+          status: "Completed",
+          childName: source.childName,
+          childAge: source.childAge,
+          gender: source.gender,
+          clothesGenerated: source.clothesGenerated,
+          artStyle: source.artStyle,
+          referenceImageUrl: source.referenceImageUrl,
+          storyLength: source.storyLength,
+          category: source.category,
+          dedication: translated.data.dedication || null,
+          templateId: source.templateId,
+          includeAudio: false,
+          voiceId: null,
+          isPublic: false,
+          tags: source.tags,
+          language: parsed.data.targetLanguage,
+          completedAt: new Date(),
+          pdfUrl: null,
+        },
+      });
+
+      await tx.storyPage.createMany({
+        data: source.pages.map((page) => ({
+          storyId: created.id,
+          pageNumber: page.pageNumber,
+          content: translatedByPage.get(page.pageNumber) ?? "",
+          imageUrl: page.imageUrl,
+          imagePrompt: page.imagePrompt,
+          status: "Generated",
+          audioUrl: null,
+          falAiRequestId: null,
+        })),
+      });
+
+      return created;
+    });
+
+    logger.info({ sourceStoryId: source.id, cloneStoryId: clone.id, language: parsed.data.targetLanguage }, "Created translated story clone");
+    res.status(201).json({ story: clone, sourceStoryId: source.id });
+  } catch (error) {
+    const message = error instanceof Error && error.name === "AbortError"
+      ? "Translation timed out. Please try again."
+      : "The translation service is unavailable. Please try again.";
+    logger.warn({ error, storyId: source.id }, "Admin story translation failed");
+    res.status(502).json({ message });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
+
+/**
  * PUT /admin/story/:id
  * Update story-level fields from the admin editor.
  */
@@ -674,6 +845,19 @@ const TranslateTemplateSchema = z.object({
   description: z.string().trim().min(1).max(2000),
   tagline: z.string().trim().max(300).default(""),
   excerpt: z.string().trim().max(2000).default(""),
+});
+
+const TranslateStoryCloneSchema = z.object({
+  targetLanguage: z.enum(["French", "Arabic"]),
+});
+
+const GeneratedStoryTranslationSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  dedication: z.string().max(500),
+  pages: z.array(z.object({
+    pageNumber: z.number().int().min(1).max(64),
+    text: z.string().max(5000),
+  })).min(1).max(64),
 });
 
 /** POST /admin/sample-text-pdf - generate a PDF without any image assets. */

@@ -737,6 +737,8 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState("");
+  const [translationTarget, setTranslationTarget] = useState<"French" | "Arabic">("French");
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -812,6 +814,28 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
     }
   };
 
+  const translateClone = async () => {
+    if (!story) return;
+    if (!window.confirm(`Create a ${translationTarget} copy with the exact same images?`)) return;
+    setTranslating(true);
+    try {
+      const headers = await authHeaders();
+      const response = await axios.post(
+        `${BACKEND_URL}/admin/story/${story.id}/translate-clone`,
+        { targetLanguage: translationTarget },
+        { headers }
+      );
+      toast.success(`Created ${translationTarget} story clone: ${response.data?.story?.title || "ready"}`);
+      onChanged();
+      onClose();
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      toast.error(message || "Failed to create translated story clone");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-[#17171a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -844,14 +868,34 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-white text-sm">Story Details</h4>
-                  <button
-                    onClick={saveMeta}
-                    disabled={saving === "meta"}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    <Save className={`w-3.5 h-3.5 ${saving === "meta" ? "animate-pulse" : ""}`} />
-                    {saving === "meta" ? "Saving..." : "Save Details"}
-                  </button>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <select
+                      value={translationTarget}
+                      onChange={(event) => setTranslationTarget(event.target.value as "French" | "Arabic")}
+                      disabled={translating}
+                      className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none"
+                      aria-label="Translation language"
+                    >
+                      <option value="French" className="bg-[#17171a]">French</option>
+                      <option value="Arabic" className="bg-[#17171a]">Arabic</option>
+                    </select>
+                    <button
+                      onClick={() => void translateClone()}
+                      disabled={translating || loading}
+                      className="inline-flex items-center gap-2 rounded-lg bg-cyan-600/25 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition-colors hover:bg-cyan-600/40 disabled:opacity-40"
+                    >
+                      <Languages className={`h-3.5 w-3.5 ${translating ? "animate-pulse" : ""}`} />
+                      {translating ? "Translating..." : "Translate clone"}
+                    </button>
+                    <button
+                      onClick={saveMeta}
+                      disabled={saving === "meta"}
+                      className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-purple-500 disabled:opacity-40"
+                    >
+                      <Save className={`h-3.5 w-3.5 ${saving === "meta" ? "animate-pulse" : ""}`} />
+                      {saving === "meta" ? "Saving..." : "Save Details"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

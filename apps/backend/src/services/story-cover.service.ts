@@ -45,7 +45,11 @@ export function chooseStoryCover(input: {
 
   const blueScore = countMatches(text, BLUE_WORDS) * 5;
   const greenScore = countMatches(text, GREEN_WORDS) * 3;
-  const pinkScore = countMatches(text, PINK_WORDS) * 4 + (input.gender === "girl" ? 2 : 0);
+  // A boy must never receive the pink closing-cover palette, even when the
+  // story theme contains words such as princess, fairy, or rainbow.
+  const pinkScore = input.gender === "boy"
+    ? Number.NEGATIVE_INFINITY
+    : countMatches(text, PINK_WORDS) * 4 + (input.gender === "girl" ? 2 : 0);
 
   let color: StoryCoverColor = "green";
   if (blueScore > greenScore && blueScore >= pinkScore) color = "blue";

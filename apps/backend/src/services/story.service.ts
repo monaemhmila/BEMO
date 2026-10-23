@@ -979,6 +979,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
             select: {
               title: true,
               childAge: true,
+              gender: true,
               category: true,
               pages: { select: { imagePrompt: true } },
               template: { select: { name: true, description: true, prompts: true } },
@@ -1006,7 +1007,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           templateDescription: page.story.template?.description,
           templatePrompts: page.story.template?.prompts,
           pagePrompts: page.story.pages.map((item) => item.imagePrompt),
-          gender: options?.gender,
+          gender: options?.gender ?? (page.story.gender === "boy" || page.story.gender === "girl" ? page.story.gender : undefined),
         });
         await prismaClient.storyPage.update({
           where: { id: pageId },
