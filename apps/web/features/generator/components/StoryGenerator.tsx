@@ -103,6 +103,8 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
   // Form data
   const [childName, setChildName] = useState("");
+  const [latinChildName, setLatinChildName] = useState("");
+  const [arabicChildName, setArabicChildName] = useState("");
   const [childAge, setChildAge] = useState(5);
   // A photo tells the illustrator who the hero is; the gender tells the writer
   // which pronouns and details to use for that same hero.
@@ -643,8 +645,13 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                   <Label>Hero&apos;s Name *</Label>
                   <Input
                     value={childName}
-                    onChange={(e) => setChildName(e.target.value)}
-                    placeholder="Emma"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setChildName(value);
+                      if (storyLanguage === "arabic") setArabicChildName(value);
+                      else setLatinChildName(value);
+                    }}
+                    placeholder={storyLanguage === "arabic" ? "اكتب اسم الطفل بالعربية" : "Emma"}
                     className="mt-1"
                   />
                 </div>
@@ -878,7 +885,22 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 <Label>Story Language</Label>
                 <Select
                   value={storyLanguage}
-                  onValueChange={(v) => setStoryLanguage(v as "english" | "french" | "arabic")}
+                  onValueChange={(v) => {
+                    const nextLanguage = v as "english" | "french" | "arabic";
+                    if (nextLanguage === "arabic") {
+                      const entered = window.prompt(
+                        "Please write your child's name in Arabic. This will replace the English or French name in the Arabic story.",
+                        arabicChildName || "",
+                      )?.trim();
+                      if (!entered) return;
+                      setLatinChildName((current) => current || childName);
+                      setArabicChildName(entered);
+                      setChildName(entered);
+                    } else if (storyLanguage === "arabic") {
+                      setChildName(latinChildName || childName);
+                    }
+                    setStoryLanguage(nextLanguage);
+                  }}
                 >
                   <SelectTrigger className="mt-1 w-full">
                     <SelectValue />
