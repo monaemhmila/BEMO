@@ -72,7 +72,9 @@ export async function generateOrderedStory(orderId: string): Promise<void> {
         if (!page || page.status === "Generated") continue;
         const imageUrl = await personalizedBookImageService.generateChildSquare({
           childName: order.story.childName || "the child",
-          childAge: order.story.childAge,
+          // Older records may have a null age; retain a safe age for image
+          // prompting while newer stories always use the stored value.
+          childAge: order.story.childAge ?? 5,
           gender: order.story.gender === "boy" || order.story.gender === "girl" ? order.story.gender : null,
           artStyle: order.story.artStyle,
           referenceImageUrl: order.story.referenceImageUrl,
