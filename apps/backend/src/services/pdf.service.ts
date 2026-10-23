@@ -657,7 +657,9 @@ export class PDFService {
 
     const titleSize = 15;
     const titleLineHeight = titleSize * 1.2;
-    const finalCoverDrop = 0; // keep the final-cover title and body higher on the page
+    // Arabic final-cover text needs a little more breathing room below the
+    // artwork; keep every other language and page position unchanged.
+    const finalCoverDrop = arabic ? 20 : 0;
     const titleY = height * 0.04 + finalCoverDrop;
 
     let titleBottom: number;
