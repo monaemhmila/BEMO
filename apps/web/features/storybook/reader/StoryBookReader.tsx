@@ -342,7 +342,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     setExporting(true);
     try {
       const token = await getToken?.();
-      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf?size=${pageSize}`, {
+      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf?size=${pageSize}&v=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob",
       });

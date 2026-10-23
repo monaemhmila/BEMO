@@ -525,6 +525,10 @@ router.get("/:id/pdf", authOrGuestMiddleware, async (req, res) => {
     // need an ASCII fallback for Content-Disposition; keep existing French
     // and English filenames unchanged.
     const safeFilename = isArabicStory ? "storybook" : requestedFilename;
+    // PDF layout changes must be visible immediately; never reuse an older
+    // generated file for the same story and size URL.
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}-${pageSize}.pdf"`);
     res.send(pdfBuffer);

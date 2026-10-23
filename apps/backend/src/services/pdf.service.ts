@@ -423,7 +423,9 @@ export class PDFService {
             this.renderEndingPage(doc, leaf, totalBookPages, story);
             break;
           case "closing":
-            this.renderClosingPage(doc, leaf, story);
+            // The 20 x 20 closing cover needs extra separation below its
+            // title; keep the established 14 x 14 position unchanged.
+            this.renderClosingPage(doc, leaf, story, pageSize > PAGE_WIDTH ? 32 : 0);
             break;
           default:
             this.renderStoryPage(doc, leaf, totalBookPages, story);
@@ -625,18 +627,25 @@ export class PDFService {
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    story: StoryPayload
+    story: StoryPayload,
+    bodyDrop = 0,
   ) {
     const width = PAGE_WIDTH;
     const height = PAGE_HEIGHT;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
     if (leaf.renderText) {
-      this.drawFinalCoverMessage(doc, story, width, height);
+      this.drawFinalCoverMessage(doc, story, width, height, bodyDrop);
     }
   }
 
-  private drawFinalCoverMessage(doc: PDFKit.PDFDocument, story: StoryPayload, width: number, height: number) {
+  private drawFinalCoverMessage(
+    doc: PDFKit.PDFDocument,
+    story: StoryPayload,
+    width: number,
+    height: number,
+    bodyDrop = 0,
+  ) {
     const copy = getFinalCoverCopy(story.language);
     const arabic = this.isArabicLanguage(story.language);
     const coverTitle = arabic ? normalizeStoryReaderArabicText(copy.title) : copy.title;
@@ -676,7 +685,7 @@ export class PDFService {
     const bodySize = arabic ? 9.5 : 11;
     const bodyLineHeight = bodySize * (arabic ? 1.38 : 1.28);
     const gap = 40;
-    const bodyY = titleBottom + gap;
+    const bodyY = titleBottom + gap + bodyDrop;
 
     if (arabic) {
       this.arabicFont(doc).fontSize(bodySize);
