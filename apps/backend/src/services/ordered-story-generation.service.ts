@@ -134,8 +134,11 @@ async function generateLegacyOrderedStory(order: any): Promise<void> {
   for (const page of pages) {
     if (page.status === "Generated" && page.imageUrl) continue;
     if (page.pageNumber === totalPages) throw new Error("LEGACY_CLOSING_COVER_MISSING");
+    // Older stories may not have stored an age; keep those printable while
+    // ensuring every new image prompt still carries an explicit age.
+    const childAge = order.story.childAge ?? 5;
     const imageUrl = await legacyImageService.generateImageSync({
-      prompt: `${order.story.childName || "The child"}, a ${order.story.childAge}-year-old child, ${page.imagePrompt}`,
+      prompt: `${order.story.childName || "The child"}, a ${childAge}-year-old child, ${page.imagePrompt}`,
       aspectRatio: getPageAspectRatio(page.pageNumber, totalPages),
       imageUrl: order.story.referenceImageUrl || undefined,
       childName: order.story.childName || undefined,
