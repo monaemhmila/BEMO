@@ -425,7 +425,7 @@ export class PDFService {
           case "closing":
             // The 20 x 20 closing cover needs extra separation below its
             // title; keep the established 14 x 14 position unchanged.
-            this.renderClosingPage(doc, leaf, story, pageSize > PAGE_WIDTH ? 32 : 0);
+            this.renderClosingPage(doc, leaf, story, pageSize > PAGE_WIDTH ? 20 : 0);
             break;
           default:
             this.renderStoryPage(doc, leaf, totalBookPages, story);
