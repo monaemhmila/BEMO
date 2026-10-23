@@ -718,10 +718,10 @@ router.post("/story/:id/translate-clone", async (req, res) => {
 
     const translatedByPage = new Map(translated.data.pages.map((page) => [page.pageNumber, page.text]));
     const expectedPageNumbers = source.pages.map((page) => page.pageNumber);
+    const expectedPageSet = new Set(expectedPageNumbers);
     if (
-      translated.data.pages.length !== source.pages.length ||
-      expectedPageNumbers.some((pageNumber) => !translatedByPage.has(pageNumber)) ||
-      new Set(translated.data.pages.map((page) => page.pageNumber)).size !== source.pages.length ||
+      translated.data.pages.some((page) => !expectedPageSet.has(page.pageNumber)) ||
+      new Set(translated.data.pages.map((page) => page.pageNumber)).size !== translated.data.pages.length ||
       source.pages.some((page) => page.content.trim() && !translatedByPage.get(page.pageNumber)?.trim())
     ) {
       res.status(502).json({ message: "The translation service changed the story page structure." });
