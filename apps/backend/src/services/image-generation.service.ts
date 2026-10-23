@@ -34,7 +34,7 @@ interface ImageGenerationResult {
 
 export const GROK_IMAGINE_MODEL = "xai/grok-imagine-image";
 export const GROK_IMAGINE_EDIT_MODEL = "xai/grok-imagine-image/edit";
-export const FLUX_KLEIN_EDIT_MODEL = "fal-ai/flux-2/klein/9b/edit";
+export const FLUX_EDIT_MODEL = "fal-ai/flux-2/edit";
 
 /**
  * Dedicated storybook image configuration so storybook-specific values are
@@ -151,7 +151,7 @@ export class ImageGenerationService {
           requestId: request_id,
           hasReference: !!referenceUrl,
           model: referenceUrl
-            ? FLUX_KLEIN_EDIT_MODEL
+            ? FLUX_EDIT_MODEL
             : GROK_IMAGINE_MODEL,
         },
         "Storybook image queued"
@@ -284,7 +284,7 @@ export class ImageGenerationService {
       input.resolution = STORYBOOK_IMAGE_CONFIG.resolution;
     }
 
-    if (!request.rawPrompt) input.negative_prompt = STORYBOOK_NEGATIVE_PROMPT;
+    if (!request.rawPrompt && !usesFluxEdit) input.negative_prompt = STORYBOOK_NEGATIVE_PROMPT;
 
     if (request.seed !== undefined) {
       input.seed = request.seed;
@@ -302,7 +302,7 @@ export class ImageGenerationService {
    */
   private getEndpoint(referenceUrl?: string) {
     return referenceUrl
-      ? FLUX_KLEIN_EDIT_MODEL
+      ? FLUX_EDIT_MODEL
       : GROK_IMAGINE_MODEL;
   }
 

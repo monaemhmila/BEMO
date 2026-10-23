@@ -4,7 +4,7 @@ import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { FaceConsistencyService } from "./face-consistency.service";
 import { StoryCompletionService } from "./story-completion.service";
-import { FLUX_KLEIN_EDIT_MODEL, GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
+import { FLUX_EDIT_MODEL, GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
 import { saveRemoteImageLocally, saveJsonLocally } from "../lib/storage";
 import {
   STORYBOOK_PAGE_COUNT,
@@ -1342,7 +1342,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           // plain one. A wrong endpoint raises rather than resolving empty.
           let result: Awaited<ReturnType<typeof fal.queue.result>> | undefined;
 
-          for (const endpoint of [FLUX_KLEIN_EDIT_MODEL, GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
+          for (const endpoint of [FLUX_EDIT_MODEL, GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
             try {
               result = await fal.queue.result(endpoint, {
                 requestId: page.falAiRequestId!,
