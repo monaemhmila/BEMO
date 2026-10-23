@@ -157,6 +157,7 @@ ${language ? `Language: ${language}` : ""}
 Tone & Style:
 - Storytelling: engaging, heartwarming, filled with wonder, adventure, and warmth.
 - Create a playful, kid-friendly title.
+- Weave the child's exact name "${characterName}" naturally into the title, never as a detached "For:" label or an awkward suffix. For example: "Sarah and Her Magical Garden" or, in French, "L'aventure d'Amine avec l'alphabet".
 - First determine the hero's role in this story, then define one specific, age-appropriate costume that belongs to that role in a separate characterOutfit field. For a prince or princess, use a consistent royal costume; for a jungle explorer, use a consistent explorer outfit and equipment; for a diver, use a consistent diving suit and diving equipment; adapt the costume to the story's world, job, and role.
 - Repeat that exact complete costume description in every page's imageDescription. Never change its colors, clothing items, accessories, equipment, or footwear between pages.
 - Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
@@ -190,6 +191,7 @@ Return ONLY valid JSON:
     const outfit = script.characterOutfit?.trim();
     return this.withPageComposition({
       ...script,
+      title: this.ensureTitleIncludesChildName(script.title, characterName, language),
       pages: outfit
         ? script.pages.map((page) => ({
           ...page,
@@ -289,6 +291,7 @@ Story:
 - Exactly ${pageCount} pages (pageNumber 1 through ${pageCount}). Every book has the same number of pages.
 - Follow the template beat plan EXACTLY, one beat per page, in order. Do not skip, merge, reorder or add beats.
 - Page 1 is the cover: it shows the hero at the very start of the adventure, its text is a single short hook line (the book title is printed on the page separately).
+- Weave the child's exact name "${input.childName}" naturally into the title while keeping the selected language and title style. Never use a detached "For:" label or an awkward suffix. For example: "Sarah and Her Magical Garden" or, in French, "L'aventure d'Amine avec l'alphabet".
 - Page 2 is the opening page: introduce the hero, the world and what puts the adventure in motion.
 - Page ${pageCount - 1} resolves the problem and shows the lesson lived out, not just explained.
 - Page ${pageCount} is the closing page: a warm, gentle farewell that echoes the opening. Keep its text very short (about 8-12 words).
@@ -342,13 +345,17 @@ Return ONLY valid JSON:
   ]
 }
 `;
+    const script = await this.expandThinPages(
+      await this.invokeLLM(prompt),
+      input,
+      guidance,
+      pageCount
+    );
     return this.withPageComposition(
-      await this.expandThinPages(
-        await this.invokeLLM(prompt),
-        input,
-        guidance,
-        pageCount
-      ),
+      {
+        ...script,
+        title: this.ensureTitleIncludesChildName(script.title, input.childName, input.language),
+      },
       pageCount
     );
   }
@@ -419,7 +426,7 @@ Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "c
 
     const outfit = parsed.characterOutfit?.trim();
     return {
-      title: parsed.title,
+      title: this.ensureTitleIncludesChildName(parsed.title, input.childName, input.language),
       characterOutfit: outfit,
       pages: parsed.pages.map((page, index) => {
         const isChildPage = getPersonalizedPageSlot(index + 1).kind === "child";
@@ -450,6 +457,22 @@ Return exactly: { "title": "...", "pages": [{ "pageNumber": 1, "text": "...", "c
     const continuityLock = `The child wears the exact same story-role costume on every page: ${cleanOutfit}.`;
     if (cleanDescription.toLowerCase().includes(continuityLock.toLowerCase())) return cleanDescription;
     return `${cleanDescription} ${continuityLock}`;
+  }
+
+  private ensureTitleIncludesChildName(title: string, childName: string, language?: string): string {
+    const cleanTitle = title.trim();
+    const cleanName = childName.trim();
+    if (!cleanName || cleanTitle.toLocaleLowerCase().includes(cleanName.toLocaleLowerCase())) {
+      return cleanTitle;
+    }
+    const normalizedLanguage = language?.toLocaleLowerCase() || "";
+    if (normalizedLanguage.startsWith("french") || normalizedLanguage.startsWith("fr")) {
+      return `${cleanName} et ${cleanTitle}`;
+    }
+    if (normalizedLanguage.startsWith("arabic") || normalizedLanguage.startsWith("ar")) {
+      return `${cleanTitle} مع ${cleanName}`;
+    }
+    return `${cleanName} and ${cleanTitle}`;
   }
 
   /**
