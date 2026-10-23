@@ -19,7 +19,13 @@ function genericChildScenePrompt(prompt: string, childName: string, gender?: "bo
     .replace(/\s{2,}/g, " ")
     .replace(/\s+([,.!?;])/g, "$1")
     .trim();
-  return `A ${gender || "child"} is ${withoutIdentity}`;
+  const startsWithCopula = /^(?:the|a)\s+(?:child|boy|girl)\s+is\b/i.test(withoutIdentity);
+  const action = withoutIdentity
+    .replace(/^(?:the|a)\s+(?:child|boy|girl)\s+(?:is\s+)?/i, "")
+    .trim();
+  return startsWithCopula
+    ? `A ${gender || "child"} is ${action}`
+    : `A ${gender || "child"} ${action}`;
 }
 
 /** Image operations for personalized story pages. */
@@ -35,7 +41,7 @@ export class PersonalizedBookImageService {
     edgePlacementSide?: "left" | "right";
   }): Promise<string> {
     const imageUrl = await imageService.generateImageSync({
-      prompt: `${genericChildScenePrompt(input.prompt, input.childName, input.gender)}. The child is happy, smiling, and clearly visible.`,
+      prompt: `${genericChildScenePrompt(input.prompt, input.childName, input.gender)}. Show the child in a clear, energetic physical action, actively interacting with the environment or nearby objects, with a dynamic natural pose and visible movement. The child is happy, smiling, and clearly visible.`,
       aspectRatio: input.aspectRatio || "1:1",
       imageUrl: input.referenceImageUrl,
       artStyle: input.artStyle || undefined,

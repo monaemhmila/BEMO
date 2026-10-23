@@ -101,7 +101,7 @@ export function getCharacterEdgeDirective(side: "left" | "right"): string {
  */
 export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference.
 
-Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape.  Preserve the exact outfit described in the scene prompt on every page: the same clothing items, colors, accessories, and footwear.
+Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. The child must be actively doing something specific in every scene: running, jumping, climbing, reaching, carrying, dancing, exploring, helping, or physically interacting with a story object. Use an energetic but natural action pose with visible movement, not a passive standing portrait. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape. Preserve the exact outfit described in the scene prompt on every page: the same clothing items, colors, accessories, and footwear.
 
 Create the following scene:
 
