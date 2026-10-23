@@ -10,6 +10,31 @@ import { ImageGenerationService } from "./image-generation.service";
 const inProgress = new Set<string>();
 const legacyImageService = ImageGenerationService.getInstance();
 
+/** Resume confirmed orders that were interrupted by a backend restart. */
+export async function resumePendingOrderedStories(): Promise<void> {
+  const orders = await prismaClient.order.findMany({
+    where: {
+      status: { in: ["PROCESSING", "SHIPPED", "DELIVERED"] },
+    },
+    select: {
+      id: true,
+      story: { select: { status: true } },
+    },
+  });
+
+  const pendingOrders = orders.filter((order) => order.story.status !== "Completed");
+  if (pendingOrders.length === 0) return;
+
+  logger.info(
+    { orderCount: pendingOrders.length, orderIds: pendingOrders.map((order) => order.id) },
+    "Resuming incomplete confirmed story orders"
+  );
+
+  await Promise.allSettled(
+    pendingOrders.map((order) => generateOrderedStory(order.id))
+  );
+}
+
 /** Generate the held personalized pages after admin confirmation. */
 export async function generateOrderedStory(orderId: string): Promise<void> {
   if (inProgress.has(orderId)) return;
