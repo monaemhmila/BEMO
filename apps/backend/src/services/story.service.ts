@@ -157,7 +157,7 @@ ${language ? `Language: ${language}` : ""}
 Tone & Style:
 - Storytelling: engaging, heartwarming, filled with wonder, adventure, and warmth.
 - Create a playful, kid-friendly title.
-- Define one specific, age-appropriate signature outfit for the hero in a separate `characterOutfit` field (for example: "a red hoodie with a gold star, navy trousers, and white sneakers").
+- Define one specific, age-appropriate signature outfit for the hero in a separate characterOutfit field (for example: "a red hoodie with a gold star, navy trousers, and white sneakers").
 - Repeat that exact complete outfit description in every page's imageDescription. Never change its colors, clothing items, accessories, or footwear between pages.
 - Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
 
@@ -307,7 +307,7 @@ ${beatPlan}
 
 - The uploaded reference image supplies identity consistency only; never describe physical identity details in imageDescription.
 
-Choose one specific, age-appropriate signature outfit for the hero and return it in a separate `characterOutfit` field. Repeat the exact complete `characterOutfit` wording in every childImageDescription and every imageDescription for a child page. The outfit must remain identical in colors, clothing items, accessories, and footwear throughout the story. Scene-only pages must remain people-free and must not mention the outfit.
+Choose one specific, age-appropriate signature outfit for the hero and return it in a separate characterOutfit field. Repeat the exact complete characterOutfit wording in every childImageDescription and every imageDescription for a child page. The outfit must remain identical in colors, clothing items, accessories, and footwear throughout the story. Scene-only pages must remain people-free and must not mention the outfit.
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
