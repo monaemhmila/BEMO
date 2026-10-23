@@ -37,6 +37,16 @@ function personalizedPagePrompt(pageNumber: number, page: {
   return page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "";
 }
 
+function injectGeneratedClothes(prompt: string, clothesGenerated?: string | null): string {
+  const scene = prompt.trim();
+  const clothes = clothesGenerated?.trim();
+  if (!scene || !clothes) return scene;
+  const continuity = `The child wears the exact same story-role costume on every page: ${clothes}.`;
+  return scene.toLowerCase().includes(continuity.toLowerCase())
+    ? scene
+    : `${scene} ${continuity}`;
+}
+
 // Validation schemas
 const GenerateStorybookSchema = z.object({
   childName: z.string().min(1),
@@ -909,15 +919,39 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       pagePrompts: script.pages.map((page) => page.imageDescription),
       gender,
     });
+    // Store the one-time costume before any child image is generated. Every
+    // image prompt below reads this persisted value, never a new GPT result.
+    const story = await prismaClient.story.create({
+      data: {
+        title: script.title,
+        userId: req.userId!,
+        status: "Generating",
+        childName,
+        childAge,
+        gender,
+        artStyle,
+        clothesGenerated: script.clothesGenerated?.trim() || null,
+        category: template.category,
+        dedication,
+        language,
+        templateId: template.id,
+        referenceImageUrl: storyRef,
+      },
+    });
+
     // Only the first two child-focused square images are generated for the preview.
     const previewPages = await Promise.all([1, 2].map(async (pageNumber) => {
       const page = script.pages[pageNumber - 1];
+      const imagePrompt = injectGeneratedClothes(
+        personalizedPagePrompt(pageNumber, page),
+        story.clothesGenerated,
+      );
       const imageUrl = await personalizedBookImageService.generateChildSquare({
         childName,
         childAge,
         gender,
         referenceImageUrl: storyRef || childImage || "",
-        prompt: personalizedPagePrompt(pageNumber, page),
+        prompt: imagePrompt,
         artStyle,
         aspectRatio: pageNumber === 1 ? "1:1" : "16:9",
         edgePlacementSide: pageNumber === 1 ? undefined : getPageComposition(pageNumber, PERSONALIZED_PRINT_PAGE_COUNT).characterSide,
@@ -928,30 +962,10 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       return {
         pageNumber,
         content: page.text,
-        imagePrompt: personalizedPagePrompt(pageNumber, page),
+        imagePrompt,
         imageUrl,
       };
     }));
-
-    // Step 3: Save story in database (initially with pages 1 & 2 ready)
-    const story = await prismaClient.story.create({
-      data: {
-        title: script.title,
-        userId: req.userId!,
-        status: "Generating",
-        childName,
-        childAge,
-        gender,
-        artStyle,
-        // Every book is 14 pages, so the legacy storyLength column is left at
-        // its default and the template row is the source of truth.
-        category: template.category,
-        dedication,
-        language,
-        templateId: template.id,
-        referenceImageUrl: storyRef,
-      },
-    });
 
     // Consume one free generation now that the story was successfully created
     const consumeResult = await trialService.consumeGeneration(
@@ -986,7 +1000,12 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
           storyId: story.id,
           pageNumber,
           content: finalCover ? "" : scriptPage?.text || "",
-          imagePrompt: finalCover ? "Printed closing cover" : personalizedPagePrompt(pageNumber, scriptPage || {}),
+          imagePrompt: finalCover
+            ? "Printed closing cover"
+            : injectGeneratedClothes(
+                personalizedPagePrompt(pageNumber, scriptPage || {}),
+                story.clothesGenerated,
+              ),
           imageUrl: finalCover ? closingCover.url : preview?.imageUrl || null,
           status: (finalCover || preview?.imageUrl ? "Generated" : "Pending") as "Generated" | "Pending",
         };
