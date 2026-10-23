@@ -688,31 +688,53 @@ router.post("/story/:id/translate-clone", async (req, res) => {
     // Models sometimes omit an empty dedication, emit page numbers as JSON
     // strings, or call the translated field `content`. Normalize those
     // harmless variations before validating the structure.
-    const rawTranslation = generated && typeof generated === "object"
-      ? generated as { title?: unknown; dedication?: unknown; pages?: unknown }
+    const rawObject = generated && typeof generated === "object"
+      ? generated as {
+        title?: unknown;
+        dedication?: unknown;
+        pages?: unknown;
+        translation?: unknown;
+        result?: unknown;
+      }
       : {};
+    const nestedObject = rawObject.translation && typeof rawObject.translation === "object"
+      ? rawObject.translation as { title?: unknown; dedication?: unknown; pages?: unknown }
+      : rawObject.result && typeof rawObject.result === "object"
+        ? rawObject.result as { title?: unknown; dedication?: unknown; pages?: unknown }
+        : rawObject;
+    const rawTranslation = nestedObject;
+    const rawPages = rawTranslation.pages;
     const normalizedTranslation = {
-      title: rawTranslation.title,
+      title: typeof rawTranslation.title === "string" && rawTranslation.title.trim()
+        ? rawTranslation.title
+        : source.title,
       dedication: typeof rawTranslation.dedication === "string" ? rawTranslation.dedication : "",
-      pages: Array.isArray(rawTranslation.pages)
-        ? rawTranslation.pages.map((page, index) => {
+      pages: Array.isArray(rawPages)
+        ? rawPages.map((page, index) => {
           const item = page && typeof page === "object"
-            ? page as { pageNumber?: unknown; text?: unknown; content?: unknown }
+            ? page as { pageNumber?: unknown; number?: unknown; text?: unknown; content?: unknown; translatedText?: unknown; translation?: unknown }
             : {};
+          const translatedText = item.translation && typeof item.translation === "string"
+            ? item.translation
+            : undefined;
           return {
-            pageNumber: Number(item.pageNumber ?? index + 1),
+            pageNumber: Number(item.pageNumber ?? item.number ?? index + 1),
             text: typeof item.text === "string"
               ? item.text
               : typeof item.content === "string"
                 ? item.content
-                : "",
+                : typeof item.translatedText === "string"
+                  ? item.translatedText
+                  : translatedText || "",
           };
         })
         : [],
     };
     const translated = GeneratedStoryTranslationSchema.safeParse(normalizedTranslation);
     if (!translated.success) {
-      res.status(502).json({ message: "The translation service returned incomplete story text." });
+      const issues = translated.error.issues.map((issue) => `${issue.path.join(".") || "response"}: ${issue.message}`);
+      logger.warn({ storyId: source.id, issues, returnedKeys: Object.keys(rawObject) }, "Translated story response failed validation");
+      res.status(502).json({ message: "The translation service returned incomplete story text.", issues });
       return;
     }
 
