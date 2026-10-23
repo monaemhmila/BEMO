@@ -217,7 +217,16 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         setCustomTemplateError("Your sign-in session needs to be refreshed. Please sign in again.");
         return null;
       }
-      const ageRange = childAge <= 6 ? "0-6" : childAge <= 9 ? "6-9" : "9-12";
+      // Keep the wire format compatible with older API containers during a
+      // rolling deployment. The current API normalizes these legacy bands to
+      // 0-6 and 6-9, while older containers only accept the legacy values.
+      const ageRange = childAge <= 6 ? "3-5" : childAge <= 9 ? "6-8" : "9-12";
+
+      if (idea.length > 500 || customSetting.trim().length > 200 ||
+        customExtras.trim().length > 200 || customMessage.trim().length > 200) {
+        setCustomTemplateError("Please keep your idea under 500 characters and each optional field under 200 characters.");
+        return null;
+      }
 
       const response = await axios.post(
         `${BACKEND_URL}/storybook/templates/custom`,
