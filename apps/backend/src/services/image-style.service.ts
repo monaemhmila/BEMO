@@ -91,7 +91,7 @@ export function applyArtStyle(sceneDescription: string, artStyle?: string): stri
 export function getCharacterEdgeDirective(side: "left" | "right"): string {
   const farSide = side === "left" ? "LEFT" : " RIGHT";
   const textSide = side === "left" ? "RIGHT" : "LEFT";
-  return `Position the child at the ${farSide} of the composition, naturally integrated into the scene. Keep the ${textSide} side visually calm and open for the story text.`;
+  return `Position the child at the ${farSide} of the composition, naturally integrated into the scene.`;
 }
 
 /**
@@ -101,8 +101,6 @@ export function getCharacterEdgeDirective(side: "left" | "right"): string {
  */
 export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference.
 
-Do not reproduce the reference image's background, framing, crop, lighting setup, or camera composition.
-
 Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape.  Preserve the exact outfit described in the scene prompt on every page: the same clothing items, colors, accessories, and footwear.
 
 Create the following scene:
@@ -111,7 +109,7 @@ Create the following scene:
 
 [EDGE_PLACEMENT][FILL_CANVAS] Create a completely new, rich, immersive environment around the child. The environment must naturally surround and integrate the child with detailed foreground, middle-ground, and background elements.
 
-[CANVAS_GUIDANCE] Keep the child at approximately 12-20% of the frame height, with generous natural space around them. The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings. The result must look like one cohesive scene, not a face pasted onto a generated body or background.
+[CANVAS_GUIDANCE] Keep the child at approximately 12-20% of the frame height, with generous natural space around them. The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings.
 
 Correct human anatomy, natural proportions, properly formed hands and feet, normal limbs, and age-appropriate clothing. The child must be fully clothed and wear full-length trousers and shoes.
 
@@ -128,8 +126,8 @@ export function buildStorybookImagePrompt(input: {
 }): string {
   const scene = applyArtStyle(input.sceneDescription, input.artStyle);
   const ratio = input.aspectRatio === "1:1"
-    ? "Use a square 1:1 composition with the child naturally framed in the complete square canvas."
-    : "Use a landscape 16:9 canvas for the environment; do not resize or reshape the child to match the canvas.";
+    ? "Use a square 1:1 composition with the child naturally framed in ."
+    : "";
   const edge = input.edgePlacementSide
     ? `${getCharacterEdgeDirective(input.edgePlacementSide)}\n\n`
     : "";
