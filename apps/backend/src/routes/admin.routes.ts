@@ -682,7 +682,32 @@ router.post("/story/:id/translate-clone", async (req, res) => {
       return;
     }
 
-    const translated = GeneratedStoryTranslationSchema.safeParse(generated);
+    // Models sometimes omit an empty dedication, emit page numbers as JSON
+    // strings, or call the translated field `content`. Normalize those
+    // harmless variations before validating the structure.
+    const rawTranslation = generated && typeof generated === "object"
+      ? generated as { title?: unknown; dedication?: unknown; pages?: unknown }
+      : {};
+    const normalizedTranslation = {
+      title: rawTranslation.title,
+      dedication: typeof rawTranslation.dedication === "string" ? rawTranslation.dedication : "",
+      pages: Array.isArray(rawTranslation.pages)
+        ? rawTranslation.pages.map((page, index) => {
+          const item = page && typeof page === "object"
+            ? page as { pageNumber?: unknown; text?: unknown; content?: unknown }
+            : {};
+          return {
+            pageNumber: Number(item.pageNumber ?? index + 1),
+            text: typeof item.text === "string"
+              ? item.text
+              : typeof item.content === "string"
+                ? item.content
+                : "",
+          };
+        })
+        : [],
+    };
+    const translated = GeneratedStoryTranslationSchema.safeParse(normalizedTranslation);
     if (!translated.success) {
       res.status(502).json({ message: "The translation service returned incomplete story text." });
       return;
@@ -692,7 +717,9 @@ router.post("/story/:id/translate-clone", async (req, res) => {
     const expectedPageNumbers = source.pages.map((page) => page.pageNumber);
     if (
       translated.data.pages.length !== source.pages.length ||
-      expectedPageNumbers.some((pageNumber) => !translatedByPage.has(pageNumber))
+      expectedPageNumbers.some((pageNumber) => !translatedByPage.has(pageNumber)) ||
+      new Set(translated.data.pages.map((page) => page.pageNumber)).size !== source.pages.length ||
+      source.pages.some((page) => page.content.trim() && !translatedByPage.get(page.pageNumber)?.trim())
     ) {
       res.status(502).json({ message: "The translation service changed the story page structure." });
       return;
