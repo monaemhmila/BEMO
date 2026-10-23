@@ -4,7 +4,7 @@ import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { FaceConsistencyService } from "./face-consistency.service";
 import { StoryCompletionService } from "./story-completion.service";
-import { FLUX_EDIT_MODEL, GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
+import { SEEDREAM_EDIT_MODEL, GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
 import { saveRemoteImageLocally, saveJsonLocally } from "../lib/storage";
 import {
   STORYBOOK_PAGE_COUNT,
@@ -192,9 +192,9 @@ Return ONLY valid JSON:
       ...script,
       pages: outfit
         ? script.pages.map((page) => ({
-            ...page,
-            imageDescription: this.withConsistentOutfit(page.imageDescription, outfit),
-          }))
+          ...page,
+          imageDescription: this.withConsistentOutfit(page.imageDescription, outfit),
+        }))
         : script.pages,
     });
   }
@@ -379,7 +379,7 @@ Return ONLY valid JSON:
     const layoutPlan = Array.from({ length: pageCount }, (_, index) => {
       const pageNumber = index + 1;
       const aspect = pageNumber === 1 ? "1:1 square cover" : "16:9 landscape spread";
-      const side = pageNumber > 1 ? (pageNumber % 2 === 1 ? "child far left, text on right leaf" : "child far right, text on left leaf") : "child centered naturally";
+      const side = pageNumber > 1 ? (pageNumber % 2 === 1 ? "child left, text on right leaf" : "child right, text on left leaf") : "child centered naturally";
       return `Page ${pageNumber}: ${aspect}, child visible; ${side}`;
     }).join("\\n");
 
@@ -773,9 +773,9 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         category: normalizeStoryCategory(
           personalization?.template?.category
         ),
-      dedication: personalization?.dedication,
-      language: personalization?.language || "en",
-      templateId: personalization?.template?.id,
+        dedication: personalization?.dedication,
+        language: personalization?.language || "en",
+        templateId: personalization?.template?.id,
         includeAudio: personalization?.includeAudio || false,
         voiceId: personalization?.voiceId || "sarah",
       },
@@ -1342,7 +1342,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           // plain one. A wrong endpoint raises rather than resolving empty.
           let result: Awaited<ReturnType<typeof fal.queue.result>> | undefined;
 
-          for (const endpoint of [FLUX_EDIT_MODEL, GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
+          for (const endpoint of [SEEDREAM_EDIT_MODEL, GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
             try {
               result = await fal.queue.result(endpoint, {
                 requestId: page.falAiRequestId!,

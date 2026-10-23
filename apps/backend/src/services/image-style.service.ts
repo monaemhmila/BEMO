@@ -89,7 +89,7 @@ export function applyArtStyle(sceneDescription: string, artStyle?: string): stri
  * with a smaller subject.
  */
 export function getCharacterEdgeDirective(side: "left" | "right"): string {
-  const farSide = side === "left" ? "FAR LEFT" : "FAR RIGHT";
+  const farSide = side === "left" ? "LEFT" : " RIGHT";
   const textSide = side === "left" ? "RIGHT" : "LEFT";
   return `Position the child at the ${farSide} of the composition, naturally integrated into the scene. Keep the ${textSide} side visually calm and open for the story text.`;
 }
@@ -99,13 +99,11 @@ export function getCharacterEdgeDirective(side: "left" | "right"): string {
  * scene description, `[FILL_CANVAS]` with the canvas-ratio sentence and
  * `[EDGE_PLACEMENT]` with the per-page edge rule (middle pages only).
  */
-export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference. It is a square face crop, not a body or composition reference.
+export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference.
 
-Use the supplied reference image only for visual consistency. Do not describe, infer, or add physical identity details in the scene prompt; the reference image is the source of the child's appearance.
+Do not reproduce the reference image's background, framing, crop, lighting setup, or camera composition.
 
-Do not reproduce the reference image's background, framing, crop, white areas, lighting setup, or camera composition. Do not stretch, squeeze, widen, or reshape the reference face.
-
-Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape. The child's body must remain narrow and anatomically natural; never use horizontal scaling, compression, or stretching. Preserve the exact outfit described in the scene prompt on every page: the same clothing items, colors, accessories, and footwear. Never change the outfit between pages.
+Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape.  Preserve the exact outfit described in the scene prompt on every page: the same clothing items, colors, accessories, and footwear.
 
 Create the following scene:
 
@@ -142,7 +140,7 @@ export function buildStorybookImagePrompt(input: {
     .replace("[FILL_CANVAS]", ratio)
     .replace("[CANVAS_GUIDANCE]", input.aspectRatio === "1:1"
       ? "Use the complete square canvas with natural camera framing and no empty margins."
-      : "The output canvas is landscape, but the landscape layout applies only to the environment and camera framing. Keep the child's geometry unchanged and use the environment to occupy the extra horizontal space.");
+      : "");
 }
 
 export default {

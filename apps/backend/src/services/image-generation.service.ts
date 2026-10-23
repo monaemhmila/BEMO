@@ -34,7 +34,7 @@ interface ImageGenerationResult {
 
 export const GROK_IMAGINE_MODEL = "xai/grok-imagine-image";
 export const GROK_IMAGINE_EDIT_MODEL = "xai/grok-imagine-image/edit";
-export const FLUX_EDIT_MODEL = "fal-ai/flux-2/edit";
+export const SEEDREAM_EDIT_MODEL = "fal-ai/bytedance/seedream/v4.5/edit";
 
 /**
  * Dedicated storybook image configuration so storybook-specific values are
@@ -151,7 +151,7 @@ export class ImageGenerationService {
           requestId: request_id,
           hasReference: !!referenceUrl,
           model: referenceUrl
-            ? FLUX_EDIT_MODEL
+            ? SEEDREAM_EDIT_MODEL
             : GROK_IMAGINE_MODEL,
         },
         "Storybook image queued"
@@ -273,7 +273,6 @@ export class ImageGenerationService {
       prompt: request.rawPrompt ? request.prompt.trim() : this.buildGrokPrompt(request),
 
       num_images: 1,
-      output_format: STORYBOOK_IMAGE_CONFIG.outputFormat,
     };
 
     if (usesFluxEdit) {
@@ -282,6 +281,7 @@ export class ImageGenerationService {
       // Square 16:9 frame for the 148.5 x 148.5 mm printed page; rendered directly by the PDF service.
       input.aspect_ratio = request.aspectRatio || STORYBOOK_IMAGE_CONFIG.aspectRatio;
       input.resolution = STORYBOOK_IMAGE_CONFIG.resolution;
+      input.output_format = STORYBOOK_IMAGE_CONFIG.outputFormat;
     }
 
     if (!request.rawPrompt && !usesFluxEdit) input.negative_prompt = STORYBOOK_NEGATIVE_PROMPT;
@@ -302,7 +302,7 @@ export class ImageGenerationService {
    */
   private getEndpoint(referenceUrl?: string) {
     return referenceUrl
-      ? FLUX_EDIT_MODEL
+      ? SEEDREAM_EDIT_MODEL
       : GROK_IMAGINE_MODEL;
   }
 
