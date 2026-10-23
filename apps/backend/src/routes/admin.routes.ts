@@ -621,7 +621,8 @@ router.post("/story/:id/translate-clone", async (req, res) => {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60_000);
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+  let failurePhase = "translation";
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -634,6 +635,7 @@ router.post("/story/:id/translate-clone", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         temperature: 0.2,
+        max_tokens: 6000,
         response_format: { type: "json_object" },
         messages: [
           {
@@ -660,7 +662,8 @@ router.post("/story/:id/translate-clone", async (req, res) => {
     });
 
     if (!response.ok) {
-      logger.warn({ status: response.status }, "OpenAI story translation failed");
+      const detail = await response.text();
+      logger.warn({ status: response.status, detail: detail.slice(0, 1000) }, "OpenAI story translation failed");
       res.status(502).json({ message: "The translation service could not complete this request." });
       return;
     }
@@ -725,6 +728,7 @@ router.post("/story/:id/translate-clone", async (req, res) => {
       return;
     }
 
+    failurePhase = "saving clone";
     const clone = await prismaClient.$transaction(async (tx) => {
       const created = await tx.story.create({
         data: {
@@ -770,11 +774,18 @@ router.post("/story/:id/translate-clone", async (req, res) => {
     logger.info({ sourceStoryId: source.id, cloneStoryId: clone.id, language: parsed.data.targetLanguage }, "Created translated story clone");
     res.status(201).json({ story: clone, sourceStoryId: source.id });
   } catch (error) {
-    const message = error instanceof Error && error.name === "AbortError"
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    const message = isTimeout
       ? "Translation timed out. Please try again."
-      : "The translation service is unavailable. Please try again.";
-    logger.warn({ error, storyId: source.id }, "Admin story translation failed");
-    res.status(502).json({ message });
+      : failurePhase === "saving clone"
+        ? "The translated story could not be saved. Please try again."
+        : "The translation service is unavailable. Please try again.";
+    logger.warn({
+      error: error instanceof Error ? error.message : String(error),
+      storyId: source.id,
+      phase: failurePhase,
+    }, "Admin story translation failed");
+    res.status(failurePhase === "saving clone" ? 500 : 502).json({ message });
   } finally {
     clearTimeout(timeout);
   }
