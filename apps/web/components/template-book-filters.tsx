@@ -196,7 +196,7 @@ export function TemplateBookFilters({ templates }: { templates: StoryTemplate[] 
   return (
     <div>
       {/* Primary category segments stay above the secondary filters. */}
-      <div className="mb-5 grid w-full grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+      <div className="mb-5 grid w-full grid-cols-3 gap-1.5 rounded-2xl border border-violet-100 bg-paper p-1.5 shadow-sm sm:gap-2 sm:p-2">
         {CATEGORY_OPTIONS.map((option) => {
           const active = categories.includes(option.value);
           return (
@@ -206,10 +206,10 @@ export function TemplateBookFilters({ templates }: { templates: StoryTemplate[] 
               aria-pressed={active}
               onClick={() => toggle(setCategories, option.value)}
               className={cn(
-                "flex min-h-12 w-full items-center justify-center rounded-xl border px-2 py-3 text-center text-[11px] font-bold uppercase tracking-wide transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 sm:px-4 sm:text-xs md:min-h-14 md:text-sm",
+                "flex min-h-12 w-full items-center justify-center rounded-xl border px-2 py-3 text-center text-[11px] font-bold uppercase tracking-wide transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:px-4 sm:text-xs md:min-h-14 md:text-sm",
                 active
-                  ? "border-amber-500 bg-amber-400 text-amber-950 shadow-md hover:bg-amber-300"
-                  : "border-blue-300 bg-blue-50 text-blue-700 shadow-sm hover:border-blue-500 hover:bg-blue-100 hover:text-blue-900",
+                  ? "border-violet-deep bg-gradient-to-r from-violet-deep to-primary text-white shadow-md hover:from-primary hover:to-violet-600"
+                  : "border-violet-200 bg-white text-violet-deep shadow-sm hover:border-primary/50 hover:bg-violet-50 hover:text-primary",
               )}
             >
               {option.label}
