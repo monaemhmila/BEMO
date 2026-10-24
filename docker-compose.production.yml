@@ -35,8 +35,7 @@ services:
       - -c
       - >-
         npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma &&
-        npx ts-node --skip-project --compiler-options
-        '{"module":"CommonJS","moduleResolution":"node","target":"ES2022","esModuleInterop":true}'
+        npx ts-node --project packages/db/prisma/tsconfig.runtime.json
         packages/db/prisma/seed-templates.ts
 
   backend:
