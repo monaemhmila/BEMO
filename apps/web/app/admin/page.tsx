@@ -17,7 +17,7 @@ import {
   Languages,
   MousePointerClick,
   Plus, BookCopy, Power, Copy, ExternalLink, AlertTriangle,
-  Loader2, ChevronLeft, ChevronRight,
+  Loader2, ChevronLeft, ChevronRight, Printer,
 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 import { handleImageError } from "../../components/ui/image-fallback";
@@ -87,6 +87,10 @@ interface AdminOrder {
   paymentStatus: string;
   paymentMethod: string;
   totalAmount: number;
+  subtotalAmount: number;
+  quantity: number;
+  discountPercent: number;
+  gameDiscountPercent?: number;
   currency: string;
   customerName: string;
   phone: string;
@@ -95,8 +99,25 @@ interface AdminOrder {
   postalCode?: string | null;
   createdAt: string;
   updatedAt: string;
+  printedAt?: string | null;
+  printedBy?: string | null;
   user: { id: string; email: string; name?: string | null };
   story: { id: string; title: string; childName?: string | null; pdfUrl?: string | null };
+}
+
+interface PrinterQueueOrder {
+  id: string;
+  orderNumber: string;
+  printedAt?: string | null;
+  story: { id: string; title: string };
+}
+
+interface PrinterAccount {
+  id: string;
+  email: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 interface OrdersSummary {
@@ -107,7 +128,7 @@ interface OrdersSummary {
   CANCELLED: number;
 }
 
-type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "activity" | "analytics";
+type TabType = "overview" | "users" | "stories" | "templates" | "orders" | "printer" | "printer-accounts" | "activity" | "analytics" | "test" | "sample-story";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -716,6 +737,8 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState("");
+  const [translationTarget, setTranslationTarget] = useState<"French" | "Arabic">("French");
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -791,6 +814,28 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
     }
   };
 
+  const translateClone = async () => {
+    if (!story) return;
+    if (!window.confirm(`Create a ${translationTarget} copy with the exact same images?`)) return;
+    setTranslating(true);
+    try {
+      const headers = await authHeaders();
+      const response = await axios.post(
+        `${BACKEND_URL}/admin/story/${story.id}/translate-clone`,
+        { targetLanguage: translationTarget },
+        { headers }
+      );
+      toast.success(`Created ${translationTarget} story clone: ${response.data?.story?.title || "ready"}`);
+      onChanged();
+      onClose();
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      toast.error(message || "Failed to create translated story clone");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-[#17171a] border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -823,14 +868,34 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
               <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-white text-sm">Story Details</h4>
-                  <button
-                    onClick={saveMeta}
-                    disabled={saving === "meta"}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    <Save className={`w-3.5 h-3.5 ${saving === "meta" ? "animate-pulse" : ""}`} />
-                    {saving === "meta" ? "Saving..." : "Save Details"}
-                  </button>
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <select
+                      value={translationTarget}
+                      onChange={(event) => setTranslationTarget(event.target.value as "French" | "Arabic")}
+                      disabled={translating}
+                      className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none"
+                      aria-label="Translation language"
+                    >
+                      <option value="French" className="bg-[#17171a]">French</option>
+                      <option value="Arabic" className="bg-[#17171a]">Arabic</option>
+                    </select>
+                    <button
+                      onClick={() => void translateClone()}
+                      disabled={translating || loading}
+                      className="inline-flex items-center gap-2 rounded-lg bg-cyan-600/25 px-3 py-1.5 text-xs font-semibold text-cyan-200 transition-colors hover:bg-cyan-600/40 disabled:opacity-40"
+                    >
+                      <Languages className={`h-3.5 w-3.5 ${translating ? "animate-pulse" : ""}`} />
+                      {translating ? "Translating..." : "Translate clone"}
+                    </button>
+                    <button
+                      onClick={saveMeta}
+                      disabled={saving === "meta"}
+                      className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-purple-500 disabled:opacity-40"
+                    >
+                      <Save className={`h-3.5 w-3.5 ${saving === "meta" ? "animate-pulse" : ""}`} />
+                      {saving === "meta" ? "Saving..." : "Save Details"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1105,7 +1170,8 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
                     <p className="text-white/30 text-xs mt-0.5">{o.user?.email}</p>
                   </td>
                   <td className="py-3.5 px-4 text-white font-semibold text-xs">
-                    {o.currency} {o.totalAmount.toFixed(2)}
+                    <div>{o.currency} {o.totalAmount.toFixed(2)}</div>
+                    <div className="text-white/40 font-normal">{o.quantity} {o.quantity === 1 ? "copy" : "copies"}{o.discountPercent > 0 ? ` · ${o.discountPercent}% off` : ""}{o.gameDiscountPercent ? ` · ${o.gameDiscountPercent}% game reward` : ""}</div>
                   </td>
                   <td className="py-3.5 px-4">
                     <PaymentBadge status={o.paymentStatus} />
@@ -1131,7 +1197,7 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
                             disabled={updatingId === o.id}
                             className="px-2.5 py-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded-lg text-[10px] font-bold transition-colors disabled:opacity-40"
                           >
-                            Process
+                            Confirm &amp; generate
                           </button>
                           <button
                             onClick={() => setOrderState(o.id, { status: "CANCELLED" })}
@@ -1184,6 +1250,238 @@ function OrdersTab({ orders, summary, authHeaders, onChanged, onDownloadPdf }: {
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PrinterQueueTab({ orders, authHeaders, onChanged, onDownloadPdf }: {
+  orders: PrinterQueueOrder[];
+  authHeaders: () => Promise<Record<string, string>>;
+  onChanged: () => void;
+  onDownloadPdf: (id: string, title: string) => void;
+}) {
+  const [view, setView] = useState<"ready" | "printed">("ready");
+  const [search, setSearch] = useState("");
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const queue = orders
+    .filter((order) => (view === "printed" ? Boolean(order.printedAt) : !order.printedAt))
+    .filter((order) => {
+      const query = search.trim().toLowerCase();
+      if (!query) return true;
+      return [order.orderNumber, order.story.title].some((value) => value.toLowerCase().includes(query));
+    });
+
+  const setPrinted = async (order: PrinterQueueOrder, printed: boolean) => {
+    if (printed && !confirm(`Mark order ${order.orderNumber} as printed?`)) return;
+    setUpdatingId(order.id);
+    try {
+      const headers = await authHeaders();
+      await axios.patch(`${BACKEND_URL}/admin/order/${order.id}/print`, { printed }, { headers });
+      toast.success(printed ? "Order marked as printed" : "Order returned to the print queue");
+      onChanged();
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      toast.error(message || "Failed to update print status");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const readyCount = orders.filter((order) => !order.printedAt).length;
+  const printedCount = orders.filter((order) => order.printedAt).length;
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-r from-purple-500/10 to-blue-500/10 p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <Printer className="h-5 w-5 text-purple-300" />
+              <h2 className="text-lg font-bold text-white">Printer queue</h2>
+            </div>
+            <p className="mt-1 max-w-2xl text-sm text-white/50">
+              Download each confirmed book, print it, then mark it complete.
+              No customer or delivery information is shown here.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-center">
+            <div className="rounded-xl bg-white/10 px-4 py-2">
+              <p className="text-xl font-bold text-white">{readyCount}</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/50">Ready</p>
+            </div>
+            <div className="rounded-xl bg-emerald-500/10 px-4 py-2">
+              <p className="text-xl font-bold text-emerald-300">{printedCount}</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/50">Printed</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-2">
+          {(["ready", "printed"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setView(option)}
+              className={`rounded-xl px-4 py-2 text-xs font-semibold transition-all ${view === option ? "bg-purple-600 text-white" : "bg-white/5 text-white/50 hover:bg-white/10"}`}
+            >
+              {option === "ready" ? `Ready to print (${readyCount})` : `Printed history (${printedCount})`}
+            </button>
+          ))}
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/30" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search order number or book"
+            className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+      </div>
+
+      {queue.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 py-16 text-center">
+          <Printer className="mx-auto h-8 w-8 text-white/20" />
+          <p className="mt-3 text-sm text-white/40">{view === "ready" ? "No confirmed orders are waiting to print." : "No printed orders yet."}</p>
+          {view === "ready" && <p className="mt-1 text-xs text-white/25">Move an order to Processing from the Orders tab first.</p>}
+        </div>
+      ) : (
+        <div className="grid gap-4 xl:grid-cols-2">
+          {queue.map((order) => (
+            <article key={order.id} className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-mono text-xs font-bold text-purple-300">{order.orderNumber}</p>
+                  <h3 className="mt-1 truncate text-base font-bold text-white">{order.story.title}</h3>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+                <button
+                  type="button"
+                  onClick={() => onDownloadPdf(order.story.id, order.story.title)}
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/20 px-3 py-2 text-xs font-bold text-emerald-300 transition-colors hover:bg-emerald-500/30"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download PDF
+                </button>
+                {view === "ready" ? (
+                  <button
+                    type="button"
+                    onClick={() => setPrinted(order, true)}
+                    disabled={updatingId === order.id}
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-purple-500 disabled:opacity-40"
+                  >
+                    {updatingId === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    Mark printed
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setPrinted(order, false)}
+                    disabled={updatingId === order.id}
+                    className="rounded-lg bg-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition-colors hover:bg-white/15 disabled:opacity-40"
+                  >
+                    Undo printed
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PrinterAccountsTab({ printers, authHeaders, onChanged }: {
+  printers: PrinterAccount[];
+  authHeaders: () => Promise<Record<string, string>>;
+  onChanged: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const addPrinter = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    try {
+      const headers = await authHeaders();
+      await axios.post(`${BACKEND_URL}/admin/printers`, { name, email }, { headers });
+      toast.success("Printer account added");
+      setName("");
+      setEmail("");
+      onChanged();
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? error.response?.data?.message : undefined;
+      toast.error(message || "Could not add printer account");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updatePrinter = async (printer: PrinterAccount, isActive: boolean) => {
+    try {
+      const headers = await authHeaders();
+      await axios.patch(`${BACKEND_URL}/admin/printers/${printer.id}`, { isActive }, { headers });
+      onChanged();
+    } catch {
+      toast.error("Could not update printer account");
+    }
+  };
+
+  const removePrinter = async (printer: PrinterAccount) => {
+    if (!confirm(`Remove printer access for ${printer.email}?`)) return;
+    try {
+      const headers = await authHeaders();
+      await axios.delete(`${BACKEND_URL}/admin/printers/${printer.id}`, { headers });
+      toast.success("Printer account removed");
+      onChanged();
+    } catch {
+      toast.error("Could not remove printer account");
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Printer className="h-5 w-5 text-purple-300" />
+          <div>
+            <h2 className="font-bold text-white">Printer accounts</h2>
+            <p className="text-xs text-white/40">Printers sign in with this exact email through Clerk and only see the printer portal.</p>
+          </div>
+        </div>
+        <form onSubmit={addPrinter} className="grid gap-3 md:grid-cols-[1fr_1.4fr_auto]">
+          <input value={name} onChange={(event) => setName(event.target.value)} required placeholder="Printer name" className={adminInputCls} />
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required placeholder="printer@example.com" className={adminInputCls} />
+          <button disabled={saving} className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-500 disabled:opacity-40">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add printer
+          </button>
+        </form>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+        {printers.length === 0 ? (
+          <p className="py-12 text-center text-sm text-white/35">No printer accounts configured.</p>
+        ) : (
+          <div className="divide-y divide-white/10">
+            {printers.map((printer) => (
+              <div key={printer.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${printer.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white/30"}`}><Printer className="h-4 w-4" /></div>
+                  <div><p className="text-sm font-semibold text-white">{printer.name}</p><p className="text-xs text-white/40">{printer.email}</p></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => updatePrinter(printer, !printer.isActive)} className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${printer.isActive ? "bg-emerald-500/20 text-emerald-300" : "bg-white/10 text-white/50"}`}>{printer.isActive ? "Active" : "Disabled"}</button>
+                  <button onClick={() => removePrinter(printer)} className="rounded-lg bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/20">Remove</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1862,7 +2160,7 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
                           onClick={() => set("coverImage", "")}
                           className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 transition-all text-xs font-semibold"
                         >
-                          Clear
+                          Delete image
                         </button>
                       )}
                     </div>
@@ -1889,7 +2187,8 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
 
             <p className="text-xs text-white/40">
               These fill the carousel on the book detail page. Leave empty and the page
-              shows neutral &ldquo;Preview N&rdquo; placeholders instead.
+              shows neutral &ldquo;Preview N&rdquo; placeholders instead. Removed images are
+              deleted from storage when you save the template.
             </p>
 
             <input
@@ -1973,7 +2272,8 @@ function TemplateEditor({ template, authHeaders, onClose, onSaved }: {
                       <button
                         type="button"
                         onClick={() => removePreview(index)}
-                        aria-label={`Remove preview ${index + 1}`}
+                        aria-label={`Delete preview ${index + 1}`}
+                        title="Delete this image when the template is saved"
                         className="ml-auto p-1 rounded bg-white/5 hover:bg-red-500/30 transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -2482,6 +2782,188 @@ function TemplatesTab({ templates, authHeaders, onChanged, onEdit }: {
   );
 }
 
+function TestTab({ authHeaders }: { authHeaders: () => Promise<{ Authorization: string }> }) {
+  const [childPhoto, setChildPhoto] = useState<File | null>(null);
+  const [childName, setChildName] = useState("");
+  const [age, setAge] = useState("6");
+  const [gender, setGender] = useState("");
+  const [category, setCategory] = useState("adventure");
+  const [language, setLanguage] = useState("English");
+  const [audience, setAudience] = useState("4-8");
+  const [theme, setTheme] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  const testPayload = {
+    inputs: {
+      child_name: childName || "Child name",
+      age: Number(age) || 6,
+      gender: gender || null,
+      category,
+      language,
+      audience_age_range: audience,
+      style: "simple animated",
+      interior_pages: 14,
+      cover_pages: 1,
+      child_photo: childPhoto?.name || null,
+      theme: theme || null,
+    },
+    pipeline: [
+      "Generate structured story JSON (title, cover, and exactly 14 pages)",
+      "Create a reusable animated child reference from the uploaded photo",
+      "Generate one full-color cover",
+      "Generate 14 black-and-white coloring pages using the same reference",
+      "Validate identity consistency and assemble print-ready assets",
+    ],
+    output: {
+      story: "title, cover_summary, cover_scene_description, 14 page objects",
+      images: "1 full-color cover + 14 black-and-white coloring pages",
+      print_ready: true,
+    },
+  };
+
+  const copyPayload = async () => {
+    await navigator.clipboard.writeText(JSON.stringify(testPayload, null, 2));
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
+  };
+
+  const generateColoringBook = async () => {
+    if (!childPhoto || !childName.trim()) {
+      toast.error("Add the child name and photo first");
+      return;
+    }
+    setGenerating(true);
+    try {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(childPhoto.type) || childPhoto.size > 3 * 1024 * 1024) {
+        toast.error("Use a JPG, PNG, or WebP photo smaller than 3 MB");
+        return;
+      }
+      const childImage = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read the child photo"));
+        reader.readAsDataURL(childPhoto);
+      });
+      const response = await axios.post(
+        `${BACKEND_URL}/admin/testing/coloring-book/generate`,
+        { childName: childName.trim(), childAge: Number(age), gender: gender || undefined, category, language, theme: theme || undefined, childImage },
+        { headers: await authHeaders(), responseType: "blob" },
+      );
+      const url = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${childName.trim().replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-coloring-book-a4.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("A4 coloring book generated and downloaded");
+    } catch (error) {
+      let message = "Failed to generate coloring book";
+      if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+        try {
+          const body = JSON.parse(await error.response.data.text()) as { message?: string };
+          message = body.message || message;
+        } catch { /* keep the friendly fallback */ }
+      }
+      toast.error(message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const reset = () => {
+    setChildPhoto(null);
+    setChildName("");
+    setAge("6");
+    setGender("");
+    setCategory("adventure");
+    setLanguage("English");
+    setAudience("4-8");
+    setTheme("");
+  };
+
+  const fieldClass = "w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/25 focus:border-purple-400/60 focus:ring-1 focus:ring-purple-400/40";
+  const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45";
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl border border-purple-400/25 bg-gradient-to-r from-purple-900/35 via-indigo-900/25 to-slate-900/30 p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-purple-300">Pipeline test workspace</p>
+            <h2 className="mt-1 text-xl font-bold text-white">Personalized coloring book test</h2>
+            <p className="mt-1 max-w-2xl text-sm text-white/55">Prepare one test payload from the recommended workflow. This tab is intentionally isolated from customer generation.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/60">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Admin generation
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-white">Book inputs</h3>
+              <p className="mt-1 text-xs text-white/40">These values will be injected into the story and image prompts.</p>
+            </div>
+            <button type="button" onClick={reset} className="text-xs font-semibold text-white/40 hover:text-white">Reset</button>
+          </div>
+
+          <div className="mb-5 rounded-xl border border-dashed border-white/15 bg-black/15 p-4">
+            <label className="flex cursor-pointer items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl bg-white/10 text-2xl">
+                {childPhoto ? "🖼️" : "📷"}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">Child photo</p>
+                <p className="mt-1 text-xs text-white/40">Used only as the identity reference for the character.</p>
+                <p className="mt-2 text-xs font-semibold text-purple-300">{childPhoto?.name || "Choose an image"}</p>
+              </div>
+              <input type="file" accept="image/*" className="sr-only" onChange={(event) => setChildPhoto(event.target.files?.[0] || null)} />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label><span className={labelClass}>Child name</span><input className={fieldClass} value={childName} onChange={(e) => setChildName(e.target.value)} placeholder="e.g. Jasser" /></label>
+            <label><span className={labelClass}>Age</span><input className={fieldClass} type="number" min="1" max="12" value={age} onChange={(e) => setAge(e.target.value)} /></label>
+            <label><span className={labelClass}>Gender (optional)</span><input className={fieldClass} value={gender} onChange={(e) => setGender(e.target.value)} placeholder="Optional" /></label>
+            <label><span className={labelClass}>Audience age range</span><input className={fieldClass} value={audience} onChange={(e) => setAudience(e.target.value)} placeholder="4-8" /></label>
+            <label><span className={labelClass}>Story category</span><select className={fieldClass} value={category} onChange={(e) => setCategory(e.target.value)}><option value="adventure">Adventure</option><option value="friendship">Friendship</option><option value="fantasy">Fantasy</option><option value="animals">Animals</option><option value="space">Space</option></select></label>
+            <label><span className={labelClass}>Language</span><select className={fieldClass} value={language} onChange={(e) => setLanguage(e.target.value)}><option>English</option><option>French</option><option>Arabic</option></select></label>
+          </div>
+          <label className="mt-4 block"><span className={labelClass}>Theme or extra direction</span><textarea className={`${fieldClass} min-h-[92px] resize-y`} value={theme} onChange={(e) => setTheme(e.target.value)} placeholder="Optional: kindness unlocks a magical forest..." /></label>
+        </section>
+
+        <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div><h3 className="font-bold text-white">Test payload</h3><p className="mt-1 text-xs text-white/40">Live preview of the planned pipeline request.</p></div>
+            <button type="button" onClick={() => void copyPayload()} className="rounded-lg bg-purple-500/20 px-3 py-2 text-xs font-semibold text-purple-200 hover:bg-purple-500/30">{copied ? "Copied" : "Copy JSON"}</button>
+          </div>
+          <pre className="max-h-[530px] overflow-auto rounded-xl border border-white/10 bg-[#09090b] p-4 text-xs leading-5 text-emerald-300/90">{JSON.stringify(testPayload, null, 2)}</pre>
+        </section>
+      </div>
+
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+        <div className="mb-4 flex items-center justify-between"><div><h3 className="font-bold text-white">Expected output</h3><p className="mt-1 text-xs text-white/40">The test is structured for the recommended 14-page book workflow.</p></div><span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-300">15 image assets</span></div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {["Story JSON · 14 pages", "Animated child reference", "Full-color cover", "14 B&W coloring pages"].map((item, index) => <div key={item} className="rounded-xl border border-white/10 bg-white/[0.03] p-4"><p className="text-xs font-bold text-purple-300">0{index + 1}</p><p className="mt-2 text-sm font-semibold text-white">{item}</p></div>)}
+        </div>
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-emerald-100/80"><span className="font-bold text-emerald-200">Ready to generate.</span> This creates the story, generates the cover and 14 interiors, then downloads the A4 PDF.</div>
+          <button type="button" onClick={() => void generateColoringBook()} disabled={generating || !childName.trim() || !childPhoto} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-bold text-emerald-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-40">
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookCopy className="h-4 w-4" />}
+            {generating ? "Generating book..." : "Generate A4 coloring book"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const { getToken } = useAuth();
   const { user, isLoaded } = useUser();
@@ -2500,11 +2982,20 @@ export default function AdminPage() {
   const [grantAmount, setGrantAmount] = useState(3);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
+  const [pdfPreviewLanguage, setPdfPreviewLanguage] = useState("English");
+  const [sampleStoryLanguage, setSampleStoryLanguage] = useState("English");
+  const [sampleStoryTitle, setSampleStoryTitle] = useState("The Little Star");
+  const [sampleStoryText, setSampleStoryText] = useState("Once upon a time, a little star wanted to shine brighter.\n\nWith courage and kindness, the star discovered that its warm light was already enough to brighten the whole sky.");
+  const [sampleStoryLoading, setSampleStoryLoading] = useState(false);
+  const [coloringStoryId, setColoringStoryId] = useState("");
+  const [coloringBookLoading, setColoringBookLoading] = useState(false);
   const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
   const [templates, setTemplates] = useState<AdminTemplate[]>([]);
   const [editingTemplate, setEditingTemplate] = useState<AdminTemplate | null>(null);
   const [templateEditorOpen, setTemplateEditorOpen] = useState(false);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [printerQueue, setPrinterQueue] = useState<PrinterQueueOrder[]>([]);
+  const [printerAccounts, setPrinterAccounts] = useState<PrinterAccount[]>([]);
   const [orderSummary, setOrderSummary] = useState<OrdersSummary | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -2517,19 +3008,49 @@ export default function AdminPage() {
     setPdfPreviewLoading(true);
     try {
       const headers = await authHeaders();
-      const response = await axios.get(`${BACKEND_URL}/admin/preview-pdf`, {
+      const response = await axios.get(`${BACKEND_URL}/admin/preview-pdf?language=${encodeURIComponent(pdfPreviewLanguage)}`, {
         headers,
         responseType: "blob",
       });
       const blob = new Blob([response.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
       setPdfPreviewUrl(url);
-      toast.success("Empty PDF layout preview generated!");
+      toast.success(`${pdfPreviewLanguage} PDF layout preview generated!`);
     } catch (error) {
       toast.error("Failed to generate PDF preview");
       console.error(error);
     } finally {
       setPdfPreviewLoading(false);
+    }
+  };
+
+  const handleCreateTextOnlySample = async () => {
+    if (!sampleStoryText.trim()) {
+      toast.error("Add some story text first");
+      return;
+    }
+    setSampleStoryLoading(true);
+    try {
+      const headers = await authHeaders();
+      const response = await axios.post(`${BACKEND_URL}/admin/sample-text-pdf`, {
+        title: sampleStoryTitle.trim() || "Sample Story",
+        text: sampleStoryText,
+        language: sampleStoryLanguage,
+      }, { headers, responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sample-story-${sampleStoryLanguage.toLowerCase()}-text-only.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Text-only sample PDF downloaded");
+    } catch (error) {
+      toast.error("Failed to create text-only sample PDF");
+      console.error(error);
+    } finally {
+      setSampleStoryLoading(false);
     }
   };
 
@@ -2555,11 +3076,38 @@ export default function AdminPage() {
     }
   };
 
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
+  const handleDownloadColoringBook = async (storyId: string, title: string) => {
+    setColoringBookLoading(true);
     try {
       const headers = await authHeaders();
-      const [statsRes, usersRes, storiesRes, activityRes, ordersRes, templatesRes] =
+      const response = await axios.post(`${BACKEND_URL}/admin/testing/coloring-book`, { storyId, pageCount: 14 }, {
+        headers,
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${title.replace(/[\\/:*?"<>|]+/g, "-").trim() || "coloring-book"}-coloring-book.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("Coloring book generated");
+    } catch (error) {
+      toast.error("Failed to generate coloring book");
+      console.error(error);
+    } finally {
+      setColoringBookLoading(false);
+    }
+  };
+
+  const fetchAll = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) setLoading(true);
+    try {
+      const headers = await authHeaders();
+      const [statsRes, usersRes, storiesRes, activityRes, ordersRes, templatesRes, printerQueueRes, printersRes] =
         await Promise.allSettled([
           axios.get(`${BACKEND_URL}/admin/stats`, { headers }),
           axios.get(`${BACKEND_URL}/admin/users`, { headers }),
@@ -2567,6 +3115,8 @@ export default function AdminPage() {
           axios.get(`${BACKEND_URL}/admin/activity`, { headers }),
           axios.get(`${BACKEND_URL}/admin/orders`, { headers }),
           axios.get(`${BACKEND_URL}/admin/templates`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/print-queue?view=all`, { headers }),
+          axios.get(`${BACKEND_URL}/admin/printers`, { headers }),
         ]);
 
       // Tolerate individual endpoint failures so one bad request can't blank
@@ -2586,16 +3136,40 @@ export default function AdminPage() {
       } else {
         console.warn("Admin templates endpoint failed", templatesRes.reason);
       }
+      if (printerQueueRes.status === "fulfilled") {
+        setPrinterQueue(printerQueueRes.value.data.orders || []);
+      } else {
+        console.warn("Printer queue endpoint failed", printerQueueRes.reason);
+      }
+      if (printersRes.status === "fulfilled") {
+        setPrinterAccounts(printersRes.value.data.printers || []);
+      }
     } catch (err) {
       toast.error("Failed to load admin data");
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [authHeaders]);
 
   useEffect(() => {
-    if (isAdmin) fetchAll();
+    if (!isAdmin) return;
+    void fetchAll();
+
+    // Keep orders, stories, generation progress, and printer status current
+    // without exhausting the backend's shared API rate limit. This dashboard
+    // loads eight endpoints per refresh, so a five-second loop could generate
+    // more than 1,400 requests in one rate-limit window from a single tab.
+    const refresh = () => {
+      if (document.visibilityState === "visible") void fetchAll({ silent: true });
+    };
+    const interval = window.setInterval(refresh, 30000);
+    document.addEventListener("visibilitychange", refresh);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refresh);
+    };
   }, [isAdmin, fetchAll]);
 
   const handleUpdateTrials = async (userId: string, amount: number, action: string) => {
@@ -2691,8 +3265,12 @@ export default function AdminPage() {
     { id: "stories", label: "Stories", icon: <BookOpen className="w-4 h-4" />, count: stories.length },
     { id: "templates", label: "Templates", icon: <BookCopy className="w-4 h-4" />, count: templates.length },
     { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" />, count: orders.length },
+    { id: "printer", label: "Printer Queue", icon: <Printer className="w-4 h-4" />, count: printerQueue.filter((order) => !order.printedAt).length },
+    { id: "printer-accounts", label: "Printers", icon: <UserCheck className="w-4 h-4" />, count: printerAccounts.filter((printer) => printer.isActive).length },
     { id: "activity", label: "Activity", icon: <Activity className="w-4 h-4" /> },
     { id: "analytics", label: "Analytics", icon: <MousePointerClick className="w-4 h-4" /> },
+    { id: "test", label: "Test", icon: <Sparkles className="w-4 h-4" /> },
+    { id: "sample-story", label: "Create Sample Story", icon: <FileText className="w-4 h-4" /> },
   ];
 
   return (
@@ -2830,7 +3408,7 @@ export default function AdminPage() {
 
           <div className="p-3 border-t border-white/5 space-y-2">
             <button
-              onClick={fetchAll}
+              onClick={() => void fetchAll()}
               className="w-full flex items-center gap-2 px-3 py-2 text-white/40 hover:text-white/70 hover:bg-white/5 rounded-xl text-xs font-medium transition-all"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -2873,10 +3451,18 @@ export default function AdminPage() {
                     ? "Dashboard Overview"
                     : activeTab === "orders"
                         ? "Order Management"
+                        : activeTab === "printer"
+                          ? "Printer Queue"
+                          : activeTab === "printer-accounts"
+                            ? "Printer Accounts"
                         : activeTab === "templates"
                           ? "Story Templates"
                           : activeTab === "analytics"
                             ? "Analytics & Traffic"
+                            : activeTab === "test"
+                              ? "Pipeline Test"
+                            : activeTab === "sample-story"
+                              ? "Create Sample Story"
                             : activeTab}
                 </h1>
                 <p className="text-white/40 text-xs mt-0.5">Mon Petit Hero · Super Admin</p>
@@ -2973,14 +3559,27 @@ export default function AdminPage() {
                         Inspect the PDF book layout, typography, image frames, margins, and page counters on a clean template without needing AI image generation.
                       </p>
                     </div>
-                    <button
-                      onClick={handlePreviewEmptyPdf}
-                      disabled={pdfPreviewLoading}
-                      className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2 shrink-0 disabled:opacity-50"
-                    >
-                      <Eye className="w-4 h-4" />
-                      {pdfPreviewLoading ? "Generating Preview..." : "View Empty PDF Layout"}
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <label className="sr-only" htmlFor="pdf-preview-language">Preview language</label>
+                      <select
+                        id="pdf-preview-language"
+                        value={pdfPreviewLanguage}
+                        onChange={(e) => setPdfPreviewLanguage(e.target.value)}
+                        className="px-3 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      >
+                        <option className="bg-[#17171a]" value="English">English</option>
+                        <option className="bg-[#17171a]" value="French">Français</option>
+                        <option className="bg-[#17171a]" value="Arabic">العربية</option>
+                      </select>
+                      <button
+                        onClick={handlePreviewEmptyPdf}
+                        disabled={pdfPreviewLoading}
+                        className="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-semibold text-sm shadow-lg shadow-purple-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        <Eye className="w-4 h-4" />
+                        {pdfPreviewLoading ? "Generating Preview..." : "View Empty PDF Layout"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -3093,6 +3692,39 @@ export default function AdminPage() {
             {/* ── STORIES TAB ──────────────────────────────────────────────── */}
             {activeTab === "stories" && (
               <div className="space-y-4">
+                <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-300">Admin testing tool</p>
+                      <h2 className="mt-1 text-lg font-bold text-white">Generate a coloring book</h2>
+                      <p className="mt-1 text-sm text-white/55">Creates a separate 15-page test PDF: one full-color cover plus 14 black-and-white coloring pages.</p>
+                    </div>
+                    <div className="flex w-full flex-col gap-2 sm:flex-row lg:w-auto">
+                      <select
+                        value={coloringStoryId}
+                        onChange={(event) => setColoringStoryId(event.target.value)}
+                        className="min-w-0 flex-1 rounded-xl border border-white/15 bg-[#171225] px-3 py-2.5 text-sm text-white outline-none focus:ring-2 focus:ring-amber-400 sm:min-w-[280px]"
+                      >
+                        <option value="">Choose a story…</option>
+                        {stories.map((story) => (
+                          <option key={story.id} value={story.id}>{story.title}{story.childName ? ` — ${story.childName}` : ""}</option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!coloringStoryId || coloringBookLoading}
+                        onClick={() => {
+                          const story = stories.find((item) => item.id === coloringStoryId);
+                          if (story) void handleDownloadColoringBook(story.id, story.title);
+                        }}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-[#241500] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {coloringBookLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookCopy className="h-4 w-4" />}
+                        {coloringBookLoading ? "Generating…" : "Generate coloring test"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative flex-1">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
@@ -3153,6 +3785,14 @@ export default function AdminPage() {
                                   <Download className="w-3.5 h-3.5" />
                                   PDF
                                 </button>
+                                <button
+                                  onClick={() => handleDownloadColoringBook(s.id, s.title)}
+                                  className="px-2.5 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                                  title="Admin testing: generate coloring book"
+                                >
+                                  <BookCopy className="w-3.5 h-3.5" />
+                                  Coloring test
+                                </button>
                                 <button onClick={() => setEditingStoryId(s.id)} className="p-1.5 bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded-lg transition-colors" title="Edit Story">
                                   <PencilLine className="w-3.5 h-3.5" />
                                 </button>
@@ -3193,6 +3833,51 @@ export default function AdminPage() {
             {/* ── ANALYTICS TAB ────────────────────────────────────────────── */}
             {activeTab === "analytics" && <AnalyticsTab authHeaders={authHeaders} />}
 
+            {activeTab === "test" && <TestTab authHeaders={authHeaders} />}
+
+            {activeTab === "sample-story" && (
+              <div className="mx-auto w-full max-w-5xl space-y-6">
+                <section className="rounded-2xl border border-purple-400/25 bg-gradient-to-r from-purple-900/35 via-indigo-900/25 to-slate-900/30 p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-purple-300">PDF text rendering test</p>
+                      <h2 className="mt-1 text-2xl font-bold text-white">Create Sample Story</h2>
+                      <p className="mt-2 max-w-2xl text-sm text-white/55">Create and download a clean PDF containing only your story text. No photos, artwork, or image assets are used.</p>
+                    </div>
+                    <FileText className="h-8 w-8 shrink-0 text-purple-300" />
+                  </div>
+                </section>
+                <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+                  <div className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45" htmlFor="sample-story-language">Language</label>
+                      <select id="sample-story-language" value={sampleStoryLanguage} onChange={(event) => setSampleStoryLanguage(event.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white outline-none focus:border-purple-400/60">
+                        <option className="bg-[#17171a]" value="Arabic">العربية (Arabic)</option>
+                        <option className="bg-[#17171a]" value="English">English</option>
+                        <option className="bg-[#17171a]" value="French">Français</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45" htmlFor="sample-story-title">Title</label>
+                      <input id="sample-story-title" value={sampleStoryTitle} onChange={(event) => setSampleStoryTitle(event.target.value)} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-purple-400/60" placeholder="Sample story title" />
+                    </div>
+                    <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/10 p-4 text-xs leading-5 text-emerald-100/75">The generated PDF uses a plain A4 text layout and the selected language font. It does not create or load any images.</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-white/45" htmlFor="sample-story-text">Story text</label>
+                    <textarea id="sample-story-text" dir={sampleStoryLanguage === "Arabic" ? "rtl" : "ltr"} value={sampleStoryText} onChange={(event) => setSampleStoryText(event.target.value)} className="min-h-[260px] w-full resize-y rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-white/25 focus:border-purple-400/60" placeholder="Write or paste the story text here..." />
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-white/35">Separate paragraphs with a blank line.</p>
+                      <button type="button" onClick={() => void handleCreateTextOnlySample()} disabled={sampleStoryLoading || !sampleStoryText.trim()} className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-purple-400 disabled:cursor-not-allowed disabled:opacity-40">
+                        {sampleStoryLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        {sampleStoryLoading ? "Creating PDF..." : "Create & Download PDF"}
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            )}
+
             {/* ── ORDERS TAB ───────────────────────────────────────────────── */}
             {activeTab === "orders" && (
               <OrdersTab
@@ -3201,6 +3886,23 @@ export default function AdminPage() {
                 authHeaders={authHeaders}
                 onChanged={fetchAll}
                 onDownloadPdf={handleDownloadStoryPdf}
+              />
+            )}
+
+            {activeTab === "printer" && (
+              <PrinterQueueTab
+                orders={printerQueue}
+                authHeaders={authHeaders}
+                onChanged={fetchAll}
+                onDownloadPdf={handleDownloadStoryPdf}
+              />
+            )}
+
+            {activeTab === "printer-accounts" && (
+              <PrinterAccountsTab
+                printers={printerAccounts}
+                authHeaders={authHeaders}
+                onChanged={fetchAll}
               />
             )}
 

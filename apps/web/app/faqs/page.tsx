@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/sections/site-footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { faqs } from "@/lib/data";
+import { MotionReveal } from "@/components/motion-reveal";
 
 function faqAnchor(question: string, index: number) {
   return (
@@ -26,7 +27,7 @@ export default function FaqsPage() {
   return (
     <div className="min-h-screen bg-paper">
       <main className="pt-[7rem]">
-        <div className="shell max-w-[880px] pb-4 pt-14 text-center">
+        <MotionReveal className="shell max-w-[880px] pb-4 pt-14 text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
             Need help?
           </span>
@@ -37,9 +38,9 @@ export default function FaqsPage() {
             Everything you need to know about personalising, ordering and
             receiving your Mon Petit Hero books.
           </p>
-        </div>
+        </MotionReveal>
 
-        <section className="shell max-w-[880px] pb-4">
+        <MotionReveal className="shell max-w-[880px] pb-4" amount={0.1}>
           <Card className="p-6">
             <h2 className="font-display text-lg font-bold text-violet-deep">
               Topics in this page
@@ -58,11 +59,11 @@ export default function FaqsPage() {
               ))}
             </ul>
           </Card>
-        </section>
+        </MotionReveal>
 
         <Faq />
 
-        <section className="bg-violet-deep py-16 text-center text-white">
+        <MotionReveal className="bg-violet-deep py-16 text-center text-white" amount={0.1}>
           <div className="shell">
             <h2 className="font-display text-3xl font-bold sm:text-4xl">
               Still have a question?
@@ -78,7 +79,7 @@ export default function FaqsPage() {
               <Link href="/contact">Contact us</Link>
             </Button>
           </div>
-        </section>
+        </MotionReveal>
       </main>
       <SiteFooter />
     </div>

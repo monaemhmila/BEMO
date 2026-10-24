@@ -3,13 +3,13 @@
 import {
   ChevronLeft,
   ChevronRight,
-  Download,
   Loader2,
   Maximize2,
   Minimize2,
   Pause,
   Play,
   ShoppingBag,
+  Share2,
   Volume2,
   VolumeX,
   X,
@@ -38,8 +38,11 @@ interface StoryBookControlsProps {
   onNext: () => void;
   onToggleFullscreen: () => void;
   onClose: () => void;
-  onExportPdf: () => void;
+  onExportPdf: (pageSize: "14x14" | "20x20") => void;
   onOrderBook: () => void;
+  onShare: () => void;
+  canShare: boolean;
+  shareCopied: boolean;
   /**
    * Drops the "back to library" and fullscreen affordances, which have no
    * meaning when the book is shown inline rather than as a full-page reader.
@@ -62,6 +65,9 @@ export function StoryBookControls({
   onClose,
   onExportPdf,
   onOrderBook,
+  onShare,
+  canShare,
+  shareCopied,
   embedded = false,
 }: StoryBookControlsProps) {
   return (
@@ -138,21 +144,23 @@ export function StoryBookControls({
               </>
             ) : null}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-full text-white hover:bg-white/20"
-              onClick={onExportPdf}
-              disabled={exporting}
-              aria-label="Download PDF"
-              title="Download PDF"
-            >
-              {exporting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Download className="size-4" />
-              )}
-            </Button>
+            <div className="flex items-center gap-0.5 rounded-full bg-white/10 p-0.5" aria-label="Download PDF size">
+              {(["14x14", "20x20"] as const).map((pageSize) => (
+                <Button
+                  key={pageSize}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 rounded-full px-2 text-[10px] font-semibold text-white hover:bg-white/20"
+                  onClick={() => onExportPdf(pageSize)}
+                  disabled={exporting}
+                  aria-label={`Download ${pageSize} cm PDF`}
+                  title={`Download ${pageSize} cm PDF`}
+                >
+                  {exporting && pageSize === "14x14" ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}
+                  {pageSize}
+                </Button>
+              ))}
+            </div>
 
             <Button
               variant="ghost"
@@ -164,6 +172,19 @@ export function StoryBookControls({
             >
               <ShoppingBag className="size-4" />
             </Button>
+
+            {canShare && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 rounded-full text-white hover:bg-white/20"
+                onClick={onShare}
+                aria-label={shareCopied ? "Share link copied" : "Share story"}
+                title={shareCopied ? "Share link copied" : "Share story"}
+              >
+                <Share2 className="size-4" />
+              </Button>
+            )}
 
             {!embedded && (
               <Button

@@ -1,9 +1,41 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
+import { BookOpen, Camera, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
 export function Hero() {
+  const scenes = [
+    {
+      id: "imagine",
+      label: "Imagine",
+      title: "A story made around them",
+      image: "/home/hero-storybook.png",
+      icon: Sparkles,
+    },
+    {
+      id: "create",
+      label: "Create",
+      title: "Make it together",
+      image: "/home/create-together.png",
+      icon: Camera,
+    },
+    {
+      id: "read",
+      label: "Read",
+      title: "A keepsake to treasure",
+      image: "/home/reading-story.png",
+      icon: BookOpen,
+    },
+  ] as const;
+  const [activeScene, setActiveScene] = useState<(typeof scenes)[number]["id"]>("imagine");
+  const scene = scenes.find((item) => item.id === activeScene) ?? scenes[0];
+  const SceneIcon = scene.icon;
+
   return (
     <section className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_50%_0%,#ffe9c7_0%,#fdf7ef_38%,#f3ecff_100%)]">
       {/* decorative top banner art — replace with <Image src="/img/top-banner.webp" /> */}
@@ -32,7 +64,7 @@ export function Hero() {
               size="lg"
               className="h-13 w-full rounded-full px-8 text-base font-bold shadow-[0_10px_0_-2px_var(--ww-violet-dark)] transition-transform active:translate-y-0.5 sm:w-auto"
             >
-              <Link href="/personalise" data-track="hero_try_for_free">Try for free</Link>
+              <Link href="/storybook/create" data-track="hero_try_for_free">Try for free</Link>
             </Button>
             <Button
               asChild
@@ -46,15 +78,59 @@ export function Hero() {
         </div>
 
         <div className="relative order-1 lg:order-2">
-          <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2rem] border-4 border-white bg-[#f5e9dc] shadow-[0_28px_60px_-28px_rgba(31,22,54,.5)]">
-            <Image
-              src="/home/hero-storybook.png"
-              alt="A child becoming the hero of a magical storybook adventure"
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-            />
+          <div className="relative">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2rem] border-4 border-white bg-[#f5e9dc] shadow-[0_28px_60px_-28px_rgba(31,22,54,.5)]">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={scene.id}
+                  initial={{ opacity: 0, scale: 1.04, x: 18 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.98, x: -18 }}
+                  transition={{ duration: 0.45, ease: "easeOut" }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={scene.image}
+                    alt={scene.title}
+                    fill
+                    priority={scene.id === "imagine"}
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    className="object-cover"
+                  />
+                </motion.div>
+              </AnimatePresence>
+              <motion.div
+                key={`${scene.id}-caption`}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="absolute bottom-4 left-4 flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-violet-deep shadow-lg backdrop-blur"
+              >
+                <SceneIcon className="size-4 text-primary" /> {scene.title}
+              </motion.div>
+            </div>
+
+            <div className="mt-4 flex justify-center gap-2 sm:justify-end">
+              {scenes.map((item) => {
+                const Icon = item.icon;
+                const selected = item.id === scene.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveScene(item.id)}
+                    aria-pressed={selected}
+                    className={`group flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold transition-all ${
+                      selected
+                        ? "border-primary bg-primary text-white shadow-md shadow-primary/25"
+                        : "border-white/80 bg-white/75 text-violet-deep hover:-translate-y-0.5 hover:border-primary/40"
+                    }`}
+                  >
+                    <Icon className="size-3.5" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <span
             aria-hidden

@@ -38,6 +38,10 @@ interface OrderSummary {
   city: string;
   postalCode?: string | null;
   totalAmount: number;
+  subtotalAmount: number;
+  quantity: number;
+  discountPercent: number;
+  gameDiscountPercent?: number;
   currency: string;
   paymentMethod: string;
   paymentStatus: string;
@@ -67,6 +71,7 @@ interface FormState {
   address: string;
   city: string;
   postalCode: string;
+  quantity: number;
 }
 
 const EMPTY_FORM: FormState = {
@@ -75,6 +80,7 @@ const EMPTY_FORM: FormState = {
   address: "",
   city: "",
   postalCode: "",
+  quantity: 1,
 };
 
 const PHONE_REGEX = /^[+]?[\d\s()-]{7,20}$/;
@@ -101,7 +107,7 @@ function validateForm(form: FormState): Record<string, string> {
 }
 
 export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProps) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
 
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -111,6 +117,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
   const [price, setPrice] = useState<number | null>(null);
   const [currency, setCurrency] = useState("USD");
   const [priceLoading, setPriceLoading] = useState(false);
+  const [gameDiscountPercent, setGameDiscountPercent] = useState(0);
 
   const [submitting, setSubmitting] = useState(false);
   const [order, setOrder] = useState<OrderSummary | null>(null);
@@ -124,22 +131,24 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
     setErrors({});
     setServerError(null);
     setOrder(null);
+    setGameDiscountPercent(0);
 
     let cancelled = false;
 
     const init = async () => {
       const token = await getToken?.();
-      if (!token) return;
-
+      if (isSignedIn && !token) return;
       setPriceLoading(true);
 
       try {
         const configRes = await axios.get(`${BACKEND_URL}/orders/config`, {
-          headers: { Authorization: `Bearer ${token}` },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          withCredentials: true,
         });
         if (!cancelled) {
           setPrice(configRes.data.price);
           setCurrency(configRes.data.currency || "USD");
+          setGameDiscountPercent(Number(configRes.data.gameDiscountPercent) || 0);
         }
       } catch {
         // Non-fatal – backend remains authoritative for the price
@@ -150,7 +159,10 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
       try {
         const pendingRes = await axios.get(
           `${BACKEND_URL}/orders/pending/${story.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+            withCredentials: true,
+          }
         );
         if (!cancelled && pendingRes.data?.order) {
           setOrder(pendingRes.data.order);
@@ -166,7 +178,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
     return () => {
       cancelled = true;
     };
-  }, [open, story.id, getToken]);
+  }, [open, story.id, getToken, isSignedIn]);
 
   const handleSubmitForm = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -186,11 +198,10 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
 
     try {
       const token = await getToken?.();
-      if (!token) {
-        setServerError("Please sign in to place your order.");
+      if (isSignedIn && !token) {
+        setServerError("Your sign-in session needs to be refreshed. Please sign in again.");
         return;
       }
-
       const res = await axios.post(
         `${BACKEND_URL}/orders`,
         {
@@ -200,8 +211,12 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
           address: form.address.trim(),
           city: form.city.trim(),
           postalCode: form.postalCode.trim() || undefined,
+          quantity: form.quantity,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          withCredentials: true,
+        }
       );
 
       setOrder(res.data.order);
@@ -229,7 +244,7 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, story.id, form, getToken]);
+  }, [submitting, story.id, form, getToken, isSignedIn]);
 
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat("en-US", {
@@ -237,7 +252,12 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
       currency,
     }).format(amount);
 
-  const setField = (field: keyof FormState, value: string) => {
+  const discountForQuantity = (quantity: number) => ({ 1: 0, 2: 10, 3: 20, 4: 30 }[quantity] ?? 0);
+  const discountPercent = discountForQuantity(form.quantity) + gameDiscountPercent;
+  const subtotal = price === null ? null : price * form.quantity;
+  const total = subtotal === null ? null : Math.round(subtotal * (1 - discountPercent / 100) * 100) / 100;
+
+  const setField = (field: Exclude<keyof FormState, "quantity">, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => {
@@ -338,12 +358,27 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 </div>
               </div>
 
+              <div className="grid gap-2">
+                <Label htmlFor="quantity">Number of copies</Label>
+                <select
+                  id="quantity"
+                  value={form.quantity}
+                  onChange={(e) => setForm((prev) => ({ ...prev, quantity: Number(e.target.value) }))}
+                  className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value={1}>1 copy — regular price</option>
+                  <option value={2}>2 copies — 10% discount</option>
+                  <option value={3}>3 copies — 20% discount</option>
+                  <option value={4}>4 copies — 30% discount</option>
+                </select>
+              </div>
+
               <div className="flex items-center justify-between rounded-lg border border-border bg-paper px-4 py-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <ShieldCheck className="size-4 text-emerald-600" />
                   Cash on Delivery · No online payment
                 </div>
-                <div className="font-semibold text-violet-deep">
+                <div className="text-right font-semibold text-violet-deep">
                   {priceLoading ? (
                     <motion.span
                       animate={{ rotate: [0, 12, -12, 0], y: [0, -2, 0] }}
@@ -352,7 +387,10 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                       <Package className="size-4" />
                     </motion.span>
                   ) : price !== null ? (
-                    formatMoney(price)
+                    <>
+                      <div>{formatMoney(total ?? price)}</div>
+                      {form.quantity > 1 && <div className="text-xs font-normal text-muted-foreground">{discountPercent}% off</div>}
+                    </>
                   ) : (
                     "—"
                   )}
@@ -398,11 +436,11 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                     </p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-sm">
-                  <span className="text-muted-foreground">Price</span>
-                  <span className="font-semibold text-violet-deep">
-                    {price !== null ? formatMoney(price) : "—"}
-                  </span>
+                <div className="mt-3 space-y-1 border-t border-border pt-3 text-sm">
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Copies</span><span className="font-semibold text-violet-deep">{form.quantity}</span></div>
+                  <div className="flex items-center justify-between"><span className="text-muted-foreground">Subtotal</span><span>{subtotal !== null ? formatMoney(subtotal) : "—"}</span></div>
+                  {discountPercent > 0 && <div className="flex items-center justify-between text-emerald-700"><span>{gameDiscountPercent > 0 ? "Bundle + game discount" : "Bundle discount"}</span><span>−{formatMoney((subtotal ?? 0) - (total ?? 0))}</span></div>}
+                  <div className="flex items-center justify-between font-semibold"><span>Total</span><span className="text-violet-deep">{total !== null ? formatMoney(total) : "—"}</span></div>
                 </div>
               </div>
 
@@ -488,10 +526,10 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 </motion.div>
               </div>
               <DialogTitle className="text-center">
-                Order Confirmed!
+                Order Submitted!
               </DialogTitle>
               <DialogDescription className="text-center">
-                Your book is on its way to you. Pay cash when it arrives.
+                Your preview is approved for production. We&apos;ll prepare the full book after our team confirms the order. Pay cash when it arrives.
                 You also unlocked 1 extra free story generation!
               </DialogDescription>
             </DialogHeader>
@@ -537,6 +575,18 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                     {formatMoney(order.totalAmount)}
                   </span>
                 </div>
+                <div className="mt-1.5 flex items-center justify-between">
+                  <span className="text-muted-foreground">Copies</span>
+                  <span className="font-medium text-violet-deep">{order.quantity}</span>
+                </div>
+                {order.discountPercent > 0 && <div className="mt-1.5 flex items-center justify-between text-emerald-700">
+                  <span>Discount</span>
+                  <span className="font-medium">{order.discountPercent}%</span>
+                </div>}
+                {order.gameDiscountPercent ? <div className="mt-1.5 flex items-center justify-between text-emerald-700">
+                  <span>Game reward</span>
+                  <span className="font-medium">{order.gameDiscountPercent}%</span>
+                </div> : null}
                 <div className="mt-1.5 flex items-center justify-between">
                   <span className="text-muted-foreground">Deliver to</span>
                   <span className="font-medium text-violet-deep">

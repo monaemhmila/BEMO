@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/sections/site-footer";
 import { TemplateBookFilters } from "@/components/template-book-filters";
 import { Button } from "@/components/ui/button";
 import { getStoreTemplates } from "@/lib/story-templates";
+import { MotionReveal } from "@/components/motion-reveal";
 
 export const metadata: Metadata = {
   title: "Personalised Books",
@@ -24,7 +25,7 @@ export default async function BooksPage() {
       <main className="pt-[7rem] pb-20">
         <div className="shell">
           {/* Header */}
-          <div className="pt-14 pb-8 text-center">
+          <MotionReveal className="pt-14 pb-8 text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
               Mon Petit Hero collection
             </span>
@@ -36,12 +37,15 @@ export default async function BooksPage() {
               and name, and receive a beautifully printed book they&apos;ll
               treasure forever.
             </p>
-          </div>
+          </MotionReveal>
 
           {/* Search & filters */}
-          <TemplateBookFilters templates={templates} />
+          <MotionReveal amount={0.1}>
+            <TemplateBookFilters templates={templates} />
+          </MotionReveal>
 
           {/* CTA band */}
+          <MotionReveal amount={0.1}>
           <section className="relative mt-16 overflow-hidden rounded-[2rem] bg-gradient-to-r from-primary to-violet-deep p-10 text-center text-white md:p-14">
             <h2 className="font-display text-3xl font-bold sm:text-4xl">
               Can&apos;t decide? Start with our bestsellers
@@ -59,6 +63,7 @@ export default async function BooksPage() {
               <Link href="/storybook/create">Create my child&apos;s story</Link>
             </Button>
           </section>
+          </MotionReveal>
         </div>
       </main>
       <SiteFooter />

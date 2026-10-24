@@ -2,6 +2,8 @@ import { Hero } from "@/components/sections/hero";
 import { StoryRail } from "@/components/sections/story-rail";
 import { HowItWorks } from "@/components/sections/how-it-works";
 import { BeforeAfter } from "@/components/sections/before-after";
+import { FamilyMoments } from "@/components/sections/family-moments";
+import { MagicPromise } from "@/components/sections/magic-promise";
 import { CustomStoryBanner } from "@/components/sections/custom-story-banner";
 import { Faq } from "@/components/sections/faq";
 import { FinalCta } from "@/components/sections/final-cta";
@@ -13,6 +15,8 @@ import {
   type StoryTemplate,
 } from "@/data/story-templates";
 import { getStoreTemplates } from "@/lib/story-templates";
+import { MotionReveal } from "@/components/motion-reveal";
+import { AssistantChat } from "@/components/assistant-chat";
 
 // The shelves are read from the database through the backend.
 export const revalidate = 60;
@@ -45,38 +49,47 @@ export default async function HomePage() {
     // The app bar is fixed, so the storefront sits below it.
     <div className="pt-[7rem]">
       <Hero />
+      <MotionReveal><AssistantChat mode="section" /></MotionReveal>
 
       {bestsellersShelf && (
-        <StoryRail
-          eyebrow="Bestsellers"
-          title="Personalise a bestseller"
-          templates={bestsellersShelf}
-        />
+        <MotionReveal>
+          <StoryRail
+            eyebrow="Bestsellers"
+            title="Personalise a bestseller"
+            templates={bestsellersShelf}
+          />
+        </MotionReveal>
       )}
 
       {newReleasesShelf && (
-        <StoryRail
-          eyebrow="New releases"
-          title="Discover what's new"
-          templates={newReleasesShelf}
-          className="bg-paper"
-        />
+        <MotionReveal>
+          <StoryRail
+            eyebrow="New releases"
+            title="Discover what's new"
+            templates={newReleasesShelf}
+            className="bg-paper"
+          />
+        </MotionReveal>
       )}
 
-      <HowItWorks />
-      <BeforeAfter />
+      <MotionReveal><HowItWorks /></MotionReveal>
+      <MotionReveal><BeforeAfter /></MotionReveal>
+      <MotionReveal><FamilyMoments /></MotionReveal>
+      <MotionReveal><MagicPromise /></MotionReveal>
 
       {forGirls && (
-        <StoryRail
-          eyebrow="Our books"
-          title="Stories for every little hero"
-          templates={forGirls}
-          className="bg-paper"
-        />
+        <MotionReveal>
+          <StoryRail
+            eyebrow="Our books"
+            title="Stories for every little hero"
+            templates={forGirls}
+            className="bg-paper"
+          />
+        </MotionReveal>
       )}
-      <CustomStoryBanner />
-      <Faq />
-      <FinalCta />
+      <MotionReveal><CustomStoryBanner /></MotionReveal>
+      <MotionReveal><Faq /></MotionReveal>
+      <MotionReveal><FinalCta /></MotionReveal>
 
       <SiteFooter />
     </div>

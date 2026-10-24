@@ -90,7 +90,7 @@ export interface StoryGeneratorProps {
 export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { getToken, user } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(0);
@@ -103,6 +103,8 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
   // Form data
   const [childName, setChildName] = useState("");
+  const [latinChildName, setLatinChildName] = useState("");
+  const [arabicChildName, setArabicChildName] = useState("");
   const [childAge, setChildAge] = useState(5);
   // A photo tells the illustrator who the hero is; the gender tells the writer
   // which pronouns and details to use for that same hero.
@@ -197,6 +199,11 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
   /** Turn the parent's idea into a stored custom template. */
   const createCustomTemplate = async (): Promise<string | null> => {
+    if (!isSignedIn) {
+      setCustomTemplateError("Please sign in to create a custom story.");
+      return null;
+    }
+
     const idea = customIdea.trim();
     if (idea.length < 3) {
       setCustomTemplateError("Tell us a little about your story first.");
@@ -208,7 +215,20 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
     try {
       const token = await getToken?.();
-      const ageRange = childAge <= 5 ? "3-5" : childAge <= 8 ? "6-8" : "9-12";
+      if (isSignedIn && !token) {
+        setCustomTemplateError("Your sign-in session needs to be refreshed. Please sign in again.");
+        return null;
+      }
+      // Keep the wire format compatible with older API containers during a
+      // rolling deployment. The current API normalizes these legacy bands to
+      // 0-6 and 6-9, while older containers only accept the legacy values.
+      const ageRange = childAge <= 6 ? "3-5" : childAge <= 9 ? "6-8" : "9-12";
+
+      if (idea.length > 500 || customSetting.trim().length > 200 ||
+        customExtras.trim().length > 200 || customMessage.trim().length > 200) {
+        setCustomTemplateError("Please keep your idea under 500 characters and each optional field under 200 characters.");
+        return null;
+      }
 
       const response = await axios.post(
         `${BACKEND_URL}/storybook/templates/custom`,
@@ -219,7 +239,10 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           message: customMessage.trim() || undefined,
           ageRange,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          withCredentials: true,
+        }
       );
 
       const template: TemplateOption = response.data?.template;
@@ -284,6 +307,10 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
     try {
       const token = await getToken?.();
+      if (isSignedIn && !token) {
+        setError("Your sign-in session needs to be refreshed. Please sign in again.");
+        return;
+      }
 
       const response = await axios.post(
         `${BACKEND_URL}/storybook/generate-pdf`,
@@ -298,7 +325,8 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           childImage: childImage || undefined,
         },
         {
-          headers: { Authorization: `Bearer ${token}` },
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          withCredentials: true,
         }
       );
 
@@ -369,28 +397,6 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
     if (canProceed()) setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
-
-  if (!user) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Card className="p-8 text-center max-w-md">
-          <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-2xl font-display font-bold text-violet-deep mb-2">
-            Sign in to Create Stories
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Join to create personalized storybooks with your child as the hero.
-          </p>
-          <Button
-            onClick={() => router.push("/login")}
-            className="bg-buttercup/100 hover:bg-violet-deep text-white"
-          >
-            Sign In
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   // Teaser after generation: the book preview is capped at the first 2 pages,
   // and flipping past them surfaces the "Order now" call to action.
@@ -532,6 +538,9 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-center text-sm text-muted-foreground">
+        You can create one story without an account. This browser session gets one generation.
+      </div>
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex justify-between items-center relative">
@@ -636,8 +645,13 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                   <Label>Hero&apos;s Name *</Label>
                   <Input
                     value={childName}
-                    onChange={(e) => setChildName(e.target.value)}
-                    placeholder="Emma"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setChildName(value);
+                      if (storyLanguage === "arabic") setArabicChildName(value);
+                      else setLatinChildName(value);
+                    }}
+                    placeholder={storyLanguage === "arabic" ? "اكتب اسم الطفل بالعربية" : "Emma"}
                     className="mt-1"
                   />
                 </div>
@@ -645,7 +659,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                   <Label>Age</Label>
                   <Input
                     type="number"
-                    min={3}
+                    min={0}
                     max={12}
                     value={childAge}
                     onChange={(e) => setChildAge(Number(e.target.value))}
@@ -767,8 +781,14 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
                   <Button
                     type="button"
-                    onClick={createCustomTemplate}
-                    disabled={customTemplateLoading || customIdea.trim().length < 3}
+                    onClick={() => {
+                      if (!isSignedIn) {
+                        router.push("/login");
+                        return;
+                      }
+                      void createCustomTemplate();
+                    }}
+                    disabled={customTemplateLoading || (Boolean(isSignedIn) && customIdea.trim().length < 3)}
                     className="w-full bg-white text-violet-deep border border-border hover:bg-buttercup/10"
                   >
                     {customTemplateLoading ? (
@@ -779,7 +799,11 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 mr-2" />
-                        {customTemplateId ? "Rebuild my story" : "Turn my idea into a story"}
+                        {!isSignedIn
+                          ? "Sign in to create a custom story"
+                          : customTemplateId
+                          ? "Rebuild my story"
+                          : "Turn my idea into a story"}
                       </>
                     )}
                   </Button>
@@ -861,7 +885,22 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 <Label>Story Language</Label>
                 <Select
                   value={storyLanguage}
-                  onValueChange={(v) => setStoryLanguage(v as "english" | "french" | "arabic")}
+                  onValueChange={(v) => {
+                    const nextLanguage = v as "english" | "french" | "arabic";
+                    if (nextLanguage === "arabic") {
+                      const entered = window.prompt(
+                        "Please write your child's name in Arabic. This will replace the English or French name in the Arabic story.",
+                        arabicChildName || "",
+                      )?.trim();
+                      if (!entered) return;
+                      setLatinChildName((current) => current || childName);
+                      setArabicChildName(entered);
+                      setChildName(entered);
+                    } else if (storyLanguage === "arabic") {
+                      setChildName(latinChildName || childName);
+                    }
+                    setStoryLanguage(nextLanguage);
+                  }}
                 >
                   <SelectTrigger className="mt-1 w-full">
                     <SelectValue />

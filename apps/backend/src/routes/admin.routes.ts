@@ -7,7 +7,7 @@ import { adminAuthMiddleware } from "../middleware/adminAuth";
 import { logger } from "../lib/logger";
 import { PDFService } from "../services/pdf.service";
 import { z } from "zod";
-import { STORYBOOK_PAGE_COUNT } from "../contracts/storybook";
+import { STORYBOOK_PAGE_COUNT, parseStorybookPdfPageSize } from "../contracts/storybook";
 import { env } from "../config/env";
 import {
   deleteTemplateImage,
@@ -16,8 +16,29 @@ import {
   MAX_TEMPLATE_IMAGE_BYTES,
   saveTemplateImage,
 } from "../lib/template-images";
+import { generateOrderedStory } from "../services/ordered-story-generation.service";
+import { generateAdminColoringBook } from "../services/coloring-book-generation.service";
+import { StoryService, type StoryTemplateRow } from "../services/story.service";
+import { isLocalAssetAvailable } from "../lib/storage";
 
 const router = Router();
+const storyService = StoryService.getInstance();
+
+const AdminColoringBookInputSchema = z.object({
+  childName: z.string().trim().min(1).max(80),
+  childAge: z.coerce.number().int().min(1).max(12),
+  gender: z.string().trim().max(20).optional().nullable(),
+  category: z.string().trim().max(40).default("adventure"),
+  language: z.string().trim().max(30).default("English"),
+  theme: z.string().trim().max(500).optional().nullable(),
+  childImage: z.string().trim().min(20).max(12_000_000),
+});
+
+const TextOnlySamplePdfSchema = z.object({
+  title: z.string().trim().max(160).default("Sample Story"),
+  text: z.string().trim().min(1).max(30_000),
+  language: z.enum(["Arabic", "English", "French"]).default("English"),
+});
 
 // Protect ALL admin routes
 router.use(authMiddleware);
@@ -359,6 +380,7 @@ router.delete("/story/:id", async (req, res) => {
 router.get("/story/:id/pdf", async (req, res) => {
   const storyId = req.params.id;
   try {
+    const pageSize = parseStorybookPdfPageSize(req.query.size);
     const story = await prismaClient.story.findUnique({
       where: { id: storyId },
       include: { pages: { orderBy: { pageNumber: "asc" } } },
@@ -369,19 +391,19 @@ router.get("/story/:id/pdf", async (req, res) => {
       return;
     }
 
-    if (story.pdfUrl) {
+    if (pageSize === "14x14" && story.pdfUrl && isLocalAssetAvailable(story.pdfUrl)) {
       res.redirect(story.pdfUrl);
       return;
     }
 
-    if (story.pages.length === 0 || story.pages.some((page) => page.status !== "Generated" || !page.imageUrl)) {
+    if (story.pages.length === 0 || (story.status !== "Completed" && story.pages.some((page) => page.status !== "Generated" || !page.imageUrl))) {
       res.status(409).json({ message: "Wait until all story illustrations are ready before exporting." });
       return;
     }
 
     let missingArtWarning: string | undefined;
     const pdfBuffer = await new PDFService().generateStorybookPdf(
-      { title: story.title, dedication: story.dedication, childName: story.childName },
+      { title: story.title, dedication: story.dedication, childName: story.childName, language: story.language },
       story.pages.map((page) => ({
         pageNumber: page.pageNumber,
         content: page.content,
@@ -390,12 +412,13 @@ router.get("/story/:id/pdf", async (req, res) => {
       (message) => {
         missingArtWarning = message;
         logger.warn({ storyId, message }, "Story PDF rendered without some artwork");
-      }
+      },
+      { allowMissingArtwork: true, pageSize }
     );
 
     const safeFilename = story.title.replace(/[\\/:*?"<>|\r\n]+/g, "-").trim() || "storybook";
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${safeFilename}-${pageSize}.pdf"`);
     // The download itself still succeeds, but callers can see it came out
     // incomplete instead of mistaking it for a finished book.
     if (missingArtWarning) {
@@ -403,12 +426,13 @@ router.get("/story/:id/pdf", async (req, res) => {
     }
     res.send(pdfBuffer);
   } catch (error) {
-    logger.error({ error, storyId }, "Failed to generate admin story PDF");
+    const details = error instanceof Error ? error.message : String(error);
+    logger.error({ error: details, storyId, stack: error instanceof Error ? error.stack : undefined }, "Failed to generate admin story PDF");
     if (error instanceof Error && error.message.startsWith("PDF for ")) {
       res.status(409).json({ message: "Some page artwork could not be downloaded. Please retry the failed pages." });
       return;
     }
-    res.status(500).json({ message: "Failed to generate story PDF" });
+    res.status(500).json({ message: "Failed to generate story PDF", details });
   }
 });
 
@@ -460,7 +484,8 @@ router.get("/preview-pdf", async (req, res) => {
   try {
     const pdfService = new PDFService();
     const title = (req.query.title as string) || "Empty Storybook Layout Preview";
-    const pdfBuffer = await pdfService.generateEmptyPreviewPdf(title);
+    const language = (req.query.language as string) || "English";
+    const pdfBuffer = await pdfService.generateEmptyPreviewPdf(title, language);
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", 'inline; filename="empty-storybook-preview.pdf"');
@@ -558,6 +583,235 @@ router.get("/story/:id", async (req, res) => {
 });
 
 /**
+ * POST /admin/story/:id/translate-clone
+ * Create a translated copy while reusing the original artwork verbatim.
+ * This never queues image generation and is protected by the admin router.
+ */
+router.post("/story/:id/translate-clone", async (req, res) => {
+  const parsed = TranslateStoryCloneSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Choose French or Arabic as the target language." });
+    return;
+  }
+
+  if (!env.OPENAI_API_KEY) {
+    res.status(503).json({ message: "Automatic translation is not configured on the server." });
+    return;
+  }
+
+  const source = await prismaClient.story.findUnique({
+    where: { id: req.params.id },
+    include: { pages: { orderBy: { pageNumber: "asc" } } },
+  });
+  if (!source) {
+    res.status(404).json({ message: "Story not found" });
+    return;
+  }
+  if (source.language.toLowerCase() === parsed.data.targetLanguage.toLowerCase()) {
+    res.status(400).json({ message: "The story is already in that language." });
+    return;
+  }
+  if (source.pages.length === 0) {
+    res.status(409).json({ message: "This story has no pages to translate." });
+    return;
+  }
+  if (source.pages.some((page) => !page.imageUrl)) {
+    res.status(409).json({ message: "Wait until every source page has artwork before creating a translated clone." });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120_000);
+  let failurePhase = "translation";
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        max_tokens: 6000,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: `You translate children's storybooks into ${parsed.data.targetLanguage}. Return only valid JSON. Translate only human-readable text. Preserve names, numbers, page order, warmth, and age-appropriate meaning. Do not translate image prompts or URLs. Keep empty text values empty.`,
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              outputShape: {
+                title: "translated title",
+                dedication: "translated dedication or empty string",
+                pages: [{ pageNumber: 1, text: "translated page text" }],
+              },
+              source: {
+                title: source.title,
+                dedication: source.dedication || "",
+                pages: source.pages.map((page) => ({ pageNumber: page.pageNumber, text: page.content })),
+              },
+            }),
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      logger.warn({ status: response.status, detail: detail.slice(0, 1000) }, "OpenAI story translation failed");
+      res.status(502).json({ message: "The translation service could not complete this request." });
+      return;
+    }
+
+    const payload = (await response.json()) as {
+      choices?: Array<{ message?: { content?: string | null } }>;
+    };
+    const content = payload.choices?.[0]?.message?.content;
+    if (!content) {
+      res.status(502).json({ message: "The translation service returned an empty response." });
+      return;
+    }
+
+    let generated: unknown;
+    try {
+      generated = JSON.parse(content);
+    } catch {
+      res.status(502).json({ message: "The translation service returned invalid JSON." });
+      return;
+    }
+
+    // Models sometimes omit an empty dedication, emit page numbers as JSON
+    // strings, or call the translated field `content`. Normalize those
+    // harmless variations before validating the structure.
+    const rawObject = generated && typeof generated === "object"
+      ? generated as {
+        title?: unknown;
+        dedication?: unknown;
+        pages?: unknown;
+        translation?: unknown;
+        result?: unknown;
+      }
+      : {};
+    const nestedObject = rawObject.translation && typeof rawObject.translation === "object"
+      ? rawObject.translation as { title?: unknown; dedication?: unknown; pages?: unknown }
+      : rawObject.result && typeof rawObject.result === "object"
+        ? rawObject.result as { title?: unknown; dedication?: unknown; pages?: unknown }
+        : rawObject;
+    const rawTranslation = nestedObject;
+    const rawPages = rawTranslation.pages;
+    const normalizedTranslation = {
+      title: typeof rawTranslation.title === "string" && rawTranslation.title.trim()
+        ? rawTranslation.title
+        : source.title,
+      dedication: typeof rawTranslation.dedication === "string" ? rawTranslation.dedication : "",
+      pages: Array.isArray(rawPages)
+        ? rawPages.map((page, index) => {
+          const item = page && typeof page === "object"
+            ? page as { pageNumber?: unknown; number?: unknown; text?: unknown; content?: unknown; translatedText?: unknown; translation?: unknown }
+            : {};
+          const translatedText = item.translation && typeof item.translation === "string"
+            ? item.translation
+            : undefined;
+          return {
+            pageNumber: Number(item.pageNumber ?? item.number ?? index + 1),
+            text: typeof item.text === "string"
+              ? item.text
+              : typeof item.content === "string"
+                ? item.content
+                : typeof item.translatedText === "string"
+                  ? item.translatedText
+                  : translatedText || "",
+          };
+        })
+        : [],
+    };
+    const translated = GeneratedStoryTranslationSchema.safeParse(normalizedTranslation);
+    if (!translated.success) {
+      const issues = translated.error.issues.map((issue) => `${issue.path.join(".") || "response"}: ${issue.message}`);
+      logger.warn({ storyId: source.id, issues, returnedKeys: Object.keys(rawObject) }, "Translated story response failed validation");
+      res.status(502).json({ message: "The translation service returned incomplete story text.", issues });
+      return;
+    }
+
+    // Use the model's array order as authoritative. Models occasionally
+    // renumber pages or omit an empty closing-cover page; neither should move
+    // artwork or block a clone. Non-empty source pages must still be covered.
+    const translatedTexts = translated.data.pages.map((page) => page.text);
+    const requiredTextPageCount = source.pages.filter((page) => page.content.trim()).length;
+    if (translatedTexts.length < requiredTextPageCount || translatedTexts.length > source.pages.length) {
+      res.status(502).json({ message: "The translation service changed the story page structure." });
+      return;
+    }
+
+    failurePhase = "saving clone";
+    const clone = await prismaClient.$transaction(async (tx) => {
+      const created = await tx.story.create({
+        data: {
+          title: translated.data.title,
+          userId: source.userId,
+          status: "Completed",
+          childName: source.childName,
+          childAge: source.childAge,
+          gender: source.gender,
+          clothesGenerated: source.clothesGenerated,
+          artStyle: source.artStyle,
+          referenceImageUrl: source.referenceImageUrl,
+          storyLength: source.storyLength,
+          category: source.category,
+          dedication: translated.data.dedication || null,
+          templateId: source.templateId,
+          includeAudio: false,
+          voiceId: null,
+          isPublic: false,
+          tags: source.tags,
+          language: parsed.data.targetLanguage,
+          completedAt: new Date(),
+          pdfUrl: null,
+        },
+      });
+
+      await tx.storyPage.createMany({
+        data: source.pages.map((page, index) => ({
+          storyId: created.id,
+          pageNumber: page.pageNumber,
+          content: translatedTexts[index] ?? "",
+          imageUrl: page.imageUrl,
+          imagePrompt: page.imagePrompt,
+          status: "Generated",
+          audioUrl: null,
+          falAiRequestId: null,
+        })),
+      });
+
+      return created;
+    });
+
+    logger.info({ sourceStoryId: source.id, cloneStoryId: clone.id, language: parsed.data.targetLanguage }, "Created translated story clone");
+    res.status(201).json({ story: clone, sourceStoryId: source.id });
+  } catch (error) {
+    const isTimeout = error instanceof Error && error.name === "AbortError";
+    const message = isTimeout
+      ? "Translation timed out. Please try again."
+      : failurePhase === "saving clone"
+        ? "The translated story could not be saved. Please try again."
+        : "The translation service is unavailable. Please try again.";
+    logger.warn({
+      error: error instanceof Error ? error.message : String(error),
+      storyId: source.id,
+      phase: failurePhase,
+    }, "Admin story translation failed");
+    res.status(failurePhase === "saving clone" ? 500 : 502).json({ message });
+  } finally {
+    clearTimeout(timeout);
+  }
+});
+
+/**
  * PUT /admin/story/:id
  * Update story-level fields from the admin editor.
  */
@@ -649,6 +903,126 @@ const TranslateTemplateSchema = z.object({
   description: z.string().trim().min(1).max(2000),
   tagline: z.string().trim().max(300).default(""),
   excerpt: z.string().trim().max(2000).default(""),
+});
+
+const TranslateStoryCloneSchema = z.object({
+  targetLanguage: z.enum(["French", "Arabic"]),
+});
+
+const GeneratedStoryTranslationSchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  dedication: z.string().max(500),
+  pages: z.array(z.object({
+    pageNumber: z.number().int().min(1).max(64),
+    text: z.string().max(5000),
+  })).min(1).max(64),
+});
+
+/** POST /admin/sample-text-pdf - generate a PDF without any image assets. */
+router.post("/sample-text-pdf", async (req, res) => {
+  try {
+    const input = TextOnlySamplePdfSchema.parse(req.body);
+    const pdfBuffer = await new PDFService().generateTextOnlySamplePdf(input.title, input.text, input.language);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", 'attachment; filename="sample-story-text-only.pdf"');
+    res.send(pdfBuffer);
+  } catch (error) {
+    logger.error({ error }, "Failed to generate text-only sample PDF");
+    res.status(400).json({ message: "Failed to generate text-only sample PDF" });
+  }
+});
+
+/**
+ * POST /admin/testing/coloring-book
+ * Admin-only experiment. Generates a standalone coloring-book PDF from a
+ * story's stored child reference; it does not modify the story or its pages.
+ */
+router.post("/testing/coloring-book", async (req, res) => {
+  const storyId = typeof req.body?.storyId === "string" ? req.body.storyId : "";
+  if (!storyId) {
+    res.status(400).json({ message: "storyId is required" });
+    return;
+  }
+
+  try {
+    const pdf = await generateAdminColoringBook({ storyId, pageCount: 14 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="coloring-book-${storyId}.pdf"`);
+    res.send(pdf);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "COLORING_BOOK_FAILED";
+    const status = message === "STORY_NOT_FOUND" ? 404 : message.startsWith("STORY_") ? 409 : 500;
+    logger.error({ error, storyId }, "Failed to generate admin coloring book");
+    res.status(status).json({ message: status === 500 ? "Failed to generate coloring book" : message });
+  }
+});
+
+/**
+ * POST /admin/testing/coloring-book/generate
+ * Creates a one-off admin story from the Test tab inputs and returns the
+ * finished A4 coloring-book PDF. This bypasses customer trial consumption.
+ */
+router.post("/testing/coloring-book/generate", async (req, res) => {
+  const validation = AdminColoringBookInputSchema.safeParse(req.body);
+  if (!validation.success) {
+    res.status(400).json({ message: "Please provide a child name, age, and photo.", errors: validation.error.flatten() });
+    return;
+  }
+
+  let storyId: string | null = null;
+  try {
+    const input = validation.data;
+    const baseTemplate = await prismaClient.storyTemplate.findFirst({
+      where: { isActive: true, source: "PREDEFINED" },
+      orderBy: [{ difficulty: "asc" }, { name: "asc" }],
+    });
+    if (!baseTemplate) throw new Error("NO_ACTIVE_STORY_TEMPLATE");
+
+    const storedPrompts = baseTemplate.prompts as unknown as StoryTemplateRow["prompts"];
+    const template: StoryTemplateRow = {
+      id: baseTemplate.id,
+      name: baseTemplate.name,
+      description: baseTemplate.description,
+      ageRange: baseTemplate.ageRange,
+      category: input.category || baseTemplate.category,
+      difficulty: baseTemplate.difficulty,
+      prompts: {
+        ...storedPrompts,
+        theme: input.theme || storedPrompts.theme,
+        educationalFocus: "Learn clear colors and identify the important animals, objects, letters, or numbers in each scene.",
+      },
+    };
+
+    const gender = input.gender === "boy" || input.gender === "girl" ? input.gender : undefined;
+    const script = await storyService.generatePersonalizedStoryScript(
+      input.childName,
+      {
+        childName: input.childName,
+        childAge: input.childAge,
+        template,
+        language: input.language,
+        gender,
+      },
+      { name: input.childName, age: input.childAge },
+    );
+    const created = await storyService.createStory(
+      req.userId!,
+      script,
+      "simple animated",
+      { childName: input.childName, childAge: input.childAge, gender, language: input.language, childImage: input.childImage, template },
+    );
+    storyId = created.story.id;
+
+    const pdf = await generateAdminColoringBook({ storyId, pageCount: 14 });
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${input.childName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-coloring-book-a4.pdf"`);
+    res.send(pdf);
+  } catch (error) {
+    logger.error({ error, storyId }, "Failed to generate admin coloring book from test inputs");
+    const message = error instanceof Error ? error.message : "COLORING_BOOK_FAILED";
+    const status = message === "NO_ACTIVE_STORY_TEMPLATE" ? 409 : 500;
+    res.status(status).json({ message: status === 500 ? "Failed to generate coloring book" : message });
+  }
 });
 
 const GeneratedTranslationsSchema = z.object({
@@ -769,6 +1143,17 @@ function nullable(value: string | null | undefined): string | null {
   if (value === undefined || value === null) return null;
   const trimmed = value.trim();
   return trimmed === "" ? null : trimmed;
+}
+
+function previewImageSources(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((preview) =>
+      preview && typeof preview === "object" && "src" in preview
+        ? (preview as { src?: unknown }).src
+        : undefined
+    )
+    .filter((src): src is string => typeof src === "string" && src.length > 0);
 }
 
 /**
@@ -1036,7 +1421,7 @@ router.put("/templates/:id", async (req, res) => {
   try {
     const existing = await prismaClient.storyTemplate.findUnique({
       where: { id: req.params.id },
-      select: { id: true },
+      select: { id: true, coverImage: true, sampleImage: true, previews: true },
     });
     if (!existing) {
       res.status(404).json({ message: "Template not found" });
@@ -1074,8 +1459,37 @@ router.put("/templates/:id", async (req, res) => {
       },
     });
 
-    logger.info({ templateId: updated.id }, "Admin updated story template");
-    res.json({ template: updated });
+    // Removing an image in the editor removes it from the database and from
+    // local catalogue storage when the template is saved. External URLs are
+    // harmless here because deleteTemplateImage only deletes known local paths.
+    const removedImages = new Set<string>();
+    if (
+      data.coverImage !== undefined &&
+      existing.coverImage &&
+      existing.coverImage !== nullable(data.coverImage)
+    ) {
+      removedImages.add(existing.coverImage);
+    }
+    if (
+      data.sampleImage !== undefined &&
+      existing.sampleImage &&
+      existing.sampleImage !== nullable(data.sampleImage)
+    ) {
+      removedImages.add(existing.sampleImage);
+    }
+    if (data.previews !== undefined) {
+      const retained = new Set(data.previews.map((preview) => preview.src));
+      for (const src of previewImageSources(existing.previews)) {
+        if (!retained.has(src)) removedImages.add(src);
+      }
+    }
+    for (const src of removedImages) deleteTemplateImage(src);
+
+    logger.info(
+      { templateId: updated.id, imagesRemoved: removedImages.size },
+      "Admin updated story template"
+    );
+    res.json({ template: updated, imagesRemoved: removedImages.size });
   } catch (error) {
     logger.error({ error, templateId: req.params.id }, "Failed to update story template");
     res.status(500).json({ message: "Failed to update template" });
@@ -1194,6 +1608,84 @@ router.delete("/templates/:id", async (req, res) => {
 
 const ORDER_STATUS_VALUES = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"] as const;
 const PAYMENT_STATUS_VALUES = ["PENDING", "PAID", "FAILED", "REFUNDED"] as const;
+const PRINTABLE_ORDER_STATUSES = ["PROCESSING", "SHIPPED", "DELIVERED"] as const;
+
+const PrinterAccountSchema = z.object({
+  email: z.string().trim().email().transform((value) => value.toLowerCase()),
+  name: z.string().trim().min(1).max(120),
+});
+
+const UpdatePrinterAccountSchema = PrinterAccountSchema.partial().extend({
+  isActive: z.boolean().optional(),
+});
+
+router.get("/printers", async (_req, res) => {
+  try {
+    const printers = await prismaClient.printerAccount.findMany({ orderBy: { createdAt: "desc" } });
+    res.json({ printers });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch printer accounts");
+    res.status(500).json({ message: "Failed to fetch printer accounts" });
+  }
+});
+
+router.post("/printers", async (req, res) => {
+  const parsed = PrinterAccountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Enter a valid printer name and email." });
+    return;
+  }
+  try {
+    const printer = await prismaClient.printerAccount.create({ data: parsed.data });
+    res.status(201).json({ printer });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Unique constraint")) {
+      res.status(409).json({ message: "A printer account with this email already exists." });
+      return;
+    }
+    logger.error({ error }, "Failed to create printer account");
+    res.status(500).json({ message: "Failed to create printer account" });
+  }
+});
+
+router.patch("/printers/:id", async (req, res) => {
+  const parsed = UpdatePrinterAccountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "Invalid printer account update." });
+    return;
+  }
+  try {
+    const printer = await prismaClient.printerAccount.update({ where: { id: req.params.id }, data: parsed.data });
+    res.json({ printer });
+  } catch (error) {
+    logger.error({ error, printerId: req.params.id }, "Failed to update printer account");
+    res.status(500).json({ message: "Failed to update printer account" });
+  }
+});
+
+router.delete("/printers/:id", async (req, res) => {
+  try {
+    await prismaClient.printerAccount.delete({ where: { id: req.params.id } });
+    res.json({ success: true });
+  } catch (error) {
+    logger.error({ error, printerId: req.params.id }, "Failed to delete printer account");
+    res.status(500).json({ message: "Failed to delete printer account" });
+  }
+});
+
+router.get("/print-audit", async (_req, res) => {
+  try {
+    const logs = await prismaClient.printAuditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 300,
+      include: { order: { select: { orderNumber: true, story: { select: { title: true } } } } },
+    });
+    res.json({ logs });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch print audit");
+    res.status(500).json({ message: "Failed to fetch print audit" });
+  }
+});
 
 const UpdateOrderSchema = z.object({
   status: z.enum(ORDER_STATUS_VALUES).optional(),
@@ -1244,6 +1736,10 @@ router.get("/orders", async (req, res) => {
         paymentStatus: o.paymentStatus,
         paymentMethod: o.paymentMethod,
         totalAmount: Number(o.totalAmount),
+        subtotalAmount: Number(o.subtotalAmount),
+        quantity: o.quantity,
+        discountPercent: o.discountPercent,
+        gameDiscountPercent: o.gameDiscountPercent,
         currency: o.currency,
         customerName: o.customerName,
         phone: o.phone,
@@ -1252,6 +1748,8 @@ router.get("/orders", async (req, res) => {
         postalCode: o.postalCode,
         createdAt: o.createdAt,
         updatedAt: o.updatedAt,
+        printedAt: o.printedAt,
+        printedBy: o.printedBy,
         user: o.user,
         story: o.story,
       })),
@@ -1260,6 +1758,98 @@ router.get("/orders", async (req, res) => {
   } catch (error) {
     logger.error({ error }, "Failed to fetch admin orders");
     res.status(500).json({ message: "Failed to fetch orders" });
+  }
+});
+
+/**
+ * GET /admin/print-queue
+ * Confirmed orders are orders moved out of PENDING and not CANCELLED. The
+ * printer sees the ready queue first, while completed prints remain available
+ * for audit and re-download.
+ */
+router.get("/print-queue", async (req, res) => {
+  try {
+    const view = req.query.view === "printed" || req.query.view === "all" ? req.query.view : "ready";
+    const where = {
+      status: { in: [...PRINTABLE_ORDER_STATUSES] },
+      ...(view === "printed" ? { printedAt: { not: null } } : {}),
+      ...(view === "ready" ? { printedAt: null } : {}),
+    };
+    const orders = await prismaClient.order.findMany({
+      where,
+      orderBy: [{ printedAt: "asc" }, { createdAt: "asc" }],
+      take: 300,
+      include: {
+        story: { select: { id: true, title: true } },
+      },
+    });
+
+    res.json({
+      view,
+      orders: orders.map((order) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        printedAt: order.printedAt,
+        // Deliberately return only printer-safe fields. Customer details stay
+        // behind the normal admin orders endpoint.
+        story: order.story,
+      })),
+    });
+  } catch (error) {
+    logger.error({ error }, "Failed to fetch print queue");
+    res.status(500).json({ message: "Failed to fetch print queue" });
+  }
+});
+
+const PrintOrderSchema = z.object({ printed: z.boolean() });
+
+/**
+ * PATCH /admin/order/:id/print
+ * Mark a confirmed order as printed, or undo that action if the printer needs
+ * to reprint it. Printing is tracked separately from shipping and delivery.
+ */
+router.patch("/order/:id/print", async (req, res) => {
+  const parsed = PrintOrderSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: "printed must be a boolean" });
+    return;
+  }
+
+  try {
+    const existing = await prismaClient.order.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, orderNumber: true, status: true, story: { select: { status: true } } },
+    });
+    if (!existing) {
+      res.status(404).json({ message: "Order not found" });
+      return;
+    }
+    if (parsed.data.printed && !(PRINTABLE_ORDER_STATUSES as readonly string[]).includes(existing.status)) {
+      res.status(409).json({ message: "Only confirmed, non-cancelled orders can be marked printed." });
+      return;
+    }
+    if (parsed.data.printed && existing.story.status !== "Completed") {
+      res.status(409).json({ message: "The story PDF is not ready yet." });
+      return;
+    }
+
+    const updated = await prismaClient.order.update({
+      where: { id: existing.id },
+      data: {
+        printedAt: parsed.data.printed ? new Date() : null,
+        printedBy: parsed.data.printed ? (req.userId ?? null) : null,
+      },
+      select: { id: true, orderNumber: true, printedAt: true, printedBy: true },
+    });
+
+    logger.info(
+      { orderId: updated.id, printed: parsed.data.printed, printedBy: req.userId },
+      parsed.data.printed ? "Order marked printed" : "Order print mark cleared"
+    );
+    res.json({ success: true, order: updated });
+  } catch (error) {
+    logger.error({ error, orderId: req.params.id }, "Failed to update print status");
+    res.status(500).json({ message: "Failed to update print status" });
   }
 });
 
@@ -1279,6 +1869,9 @@ router.put("/order/:id", async (req, res) => {
       where: { id: req.params.id },
       data: parsed.data,
     });
+    if (parsed.data.status === "PROCESSING") {
+      void generateOrderedStory(order.id);
+    }
     logger.info(
       { orderId: order.id, status: order.status, paymentStatus: order.paymentStatus },
       "Order updated from admin dashboard"

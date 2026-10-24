@@ -57,22 +57,24 @@ export class TrialService {
     taskType: string = "storybook_generation"
   ): Promise<TrialResult> {
     try {
-      const current = await prismaClient.user.findUnique({
-        where: { id: userId },
-        select: { trialGenerations: true },
+      // The conditional update is important for guests: two tabs must not be
+      // able to spend the same one-generation allowance concurrently.
+      const changed = await prismaClient.user.updateMany({
+        where: { id: userId, trialGenerations: { gt: 0 } },
+        data: { trialGenerations: { decrement: 1 } },
       });
 
-      if (!current) {
-        return { success: false, remaining: 0, error: "USER_NOT_FOUND" };
+      if (changed.count === 0) {
+        const exists = await prismaClient.user.count({ where: { id: userId } });
+        return {
+          success: false,
+          remaining: 0,
+          error: exists ? "NO_TRIAL_GENERATIONS_LEFT" : "USER_NOT_FOUND",
+        };
       }
 
-      if (current.trialGenerations <= 0) {
-        return { success: false, remaining: 0, error: "NO_TRIAL_GENERATIONS_LEFT" };
-      }
-
-      const updated = await prismaClient.user.update({
+      const updated = await prismaClient.user.findUniqueOrThrow({
         where: { id: userId },
-        data: { trialGenerations: { decrement: 1 } },
         select: { trialGenerations: true },
       });
 

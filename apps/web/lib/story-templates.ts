@@ -16,6 +16,22 @@ import {
  */
 export const TEMPLATE_REVALIDATE_SECONDS = 60;
 
+/**
+ * Local, high-clarity shop covers. Keeping this presentation override in the
+ * storefront means existing database templates immediately use the committed
+ * catalogue artwork without requiring a database migration or remote image
+ * upload. The template id remains the source of truth for the story itself.
+ */
+const LOCAL_TEMPLATE_COVERS: Record<string, string> = {
+  "birthday-adventure-and-the-greedy-goblin": "/templates/birthday-adventure-and-the-greedy-goblin/cover.png",
+  "the-secret-of-the-forest": "/templates/the-secret-of-the-forest/cover.png",
+  "the-secret-beneath-the-sea": "/templates/the-secret-beneath-the-sea/cover.png",
+  "the-village-hero": "/templates/the-village-hero/cover.png",
+  "the-princess-magical-garden": "/templates/the-princess-magical-garden/cover.png",
+  "lets-count-1-10": "/templates/lets-count-1-10/cover.png",
+  "my-abc-adventure": "/templates/my-abc-adventure/cover.png",
+};
+
 function toAudience(raw: string): StoryAudience {
   return raw === "girl" || raw === "boy" ? raw : "any";
 }
@@ -76,7 +92,7 @@ function toStoryTemplate(row: StorefrontTemplate): StoryTemplate {
     description: row.description,
     excerpt: row.excerpt ?? "",
     translations: row.translations,
-    coverImage: toImageUrl(row.coverImage),
+    coverImage: LOCAL_TEMPLATE_COVERS[row.id] ?? toImageUrl(row.coverImage),
     previews: toPreviews(row.previews),
     ageRange: row.ageRange,
     theme: row.theme,

@@ -3,7 +3,7 @@
 // Allow next/image to optimise images served by the backend (generated pages,
 // cover art) without hard-coding a deployment host: derive it from the public
 // backend URL when available.
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+const backendUrl = globalThis.process?.env.NEXT_PUBLIC_BACKEND_URL;
 const backendPattern = (() => {
   const patterns = [
     { protocol: "http", hostname: "localhost", port: "8080", pathname: "/**" },
@@ -29,6 +29,17 @@ const backendPattern = (() => {
 
 const nextConfig = {
   poweredByHeader: false,
+  // Closing-cover URLs are intentionally stored as reusable `/assets/covers`
+  // paths. Proxy them through Next so existing stories and new stories both
+  // resolve the asset from the backend instead of the web container.
+  async rewrites() {
+    return backendUrl
+      ? [{
+        source: "/assets/covers/:path*",
+        destination: `${backendUrl.replace(/\/$/, "")}/assets/covers/:path*`,
+      }]
+      : [];
+  },
   experimental: {
     // Tree-shake these barrel packages per import instead of shipping them whole.
     optimizePackageImports: ["lucide-react", "framer-motion", "date-fns"],
@@ -43,7 +54,7 @@ const nextConfig = {
   compiler: {
     // Strip noisy client console output from production bundles.
     removeConsole:
-      process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+      globalThis.process?.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
   images: {
     minimumCacheTTL: 31536000,
