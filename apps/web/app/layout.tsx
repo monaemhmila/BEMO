@@ -108,7 +108,7 @@ export default function RootLayout({
           <link rel="preconnect" href="https://api.dicebear.com" crossOrigin="anonymous" />
           <script
             dangerouslySetInnerHTML={{
-              __html: `try{var l=localStorage.getItem("ww_lang");if(l==="fr"||l==="ar"){document.documentElement.lang=l;if(l==="ar")document.documentElement.dir="rtl";}}catch(e){}`,
+            __html: `try{var l=localStorage.getItem("ww_lang");if(l!=="fr"&&l!=="ar"){var n=(navigator.language||"").toLowerCase();l=n.indexOf("fr")===0?"fr":n.indexOf("ar")===0?"ar":"en";}document.documentElement.lang=l;if(l==="ar")document.documentElement.dir="rtl";}catch(e){}`,
             }}
           />
         </head>
