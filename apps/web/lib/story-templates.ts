@@ -23,7 +23,7 @@ export const TEMPLATE_REVALIDATE_SECONDS = 60;
  * upload. The template id remains the source of truth for the story itself.
  */
 const LOCAL_TEMPLATE_COVERS: Record<string, string> = {
-  "birthday-adventure-and-the-greedy-goblin": "/templates/birthday-adventure-and-the-greedy-goblin/cover.png",
+  "third-birthday-three-wishes": "/templates/third-birthday-three-wishes/cover.png",
   "the-secret-of-the-forest": "/templates/the-secret-of-the-forest/cover.png",
   "the-secret-beneath-the-sea": "/templates/the-secret-beneath-the-sea/cover.png",
   "the-village-hero": "/templates/the-village-hero/cover.png",
