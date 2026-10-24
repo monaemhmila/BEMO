@@ -219,8 +219,39 @@ const ADDITIONAL_TEMPLATE_STORIES: TemplateSeed[] = [
     beats: ["On a rainy night, the child enters a toy shop and discovers that the toys come alive after midnight.", "Captain Button leads a tour through Toy Train City, Dollhouse Palace, and Music Box Garden.", "Benny, an old teddy bear, hides because he is missing a button and worries that nobody will choose him.", "The child repairs Benny's button and chooses him with love, showing that a well-loved toy is never less special."],
     coverImage: "/templates/the-magic-toy-shop/cover.png", emoji: "🧸",
   }),
+  makeAdditionalTemplate({
+    id: "my-magical-shapes-adventure", name: "My Magical Shapes Adventure",
+    description: "A child helps Coco, Sammy, and Tina restore the shapes of Shape Village and learns that differences make the world beautiful.",
+    ageRange: "2-4", category: "educative", tags: ["shapes", "problem-solving", "friendship", "early-learning"],
+    theme: "Different shapes and talents work together to build something wonderful.", moralLesson: "Everyone has a different purpose, and our differences make the world more beautiful when we work together.", educationalFocus: "Recognizing circles, squares, and triangles; matching shapes to everyday objects; early problem-solving.", worldContext: "Shape Village, Rainbow Playground, Cookie Bakery, and Castle of Shapes.",
+    beats: ["On a sunny morning, the child finds Coco, a tiny talking circle, crying because Shape Village has lost all its shapes.", "The child meets Sammy the Square and Tina the Triangle and searches the Rainbow Playground, Cookie Bakery, and Castle of Shapes.", "They match round wheels, square windows, and triangular roofs, making the village colorful again.", "The friends build a little house together, celebrate with a shape parade, and give the child a golden Shape Explorer medal."],
+    coverImage: "/templates/my-magical-shapes-adventure/cover.png", emoji: "🔺",
+  }),
+  makeAdditionalTemplate({
+    id: "the-wonderful-world-of-colors", name: "The Wonderful World of Colors",
+    description: "A child and a rainbow butterfly restore the colors of a gray world through kindness and gratitude.",
+    ageRange: "2-4", category: "educative", tags: ["colors", "gratitude", "differences", "kindness"],
+    theme: "Every color and every act of kindness adds beauty to the world.", moralLesson: "Every person brings something unique, and even the smallest kindness can brighten someone's day.", educationalFocus: "Recognizing primary and secondary colors, matching colors to familiar objects and animals, and visual recognition.", worldContext: "Strawberry Garden, Sunshine Meadow, Blueberry Lake, Emerald Forest, and a rainbow sky.",
+    beats: ["The child wakes to discover that the flowers, sky, sun, and trees have all turned gray.", "Lili the rainbow butterfly leads the child through gardens, meadow, lake, and forest to collect the missing colors.", "The child helps a red ladybug, a yellow duckling, and a blue butterfly, and each kind act restores a color.", "When every color returns, Lili reveals a magnificent rainbow and the child celebrates how beautifully differences shine together."],
+    coverImage: "/templates/the-wonderful-world-of-colors/cover.png", emoji: "🎨",
+  }),
+  makeAdditionalTemplate({
+    id: "my-first-trip-to-space", name: "My First Trip to Space",
+    description: "A curious child travels through space with Astro the robot and helps a tiny star believe in its own light.",
+    ageRange: "4-7", category: "discovery", tags: ["space", "curiosity", "courage", "science"],
+    theme: "Curiosity and encouragement help even the smallest light shine.", moralLesson: "You do not have to be the biggest or brightest to make a difference; keep exploring and believe in your special light.", educationalFocus: "The Moon, planets, stars, space travel, curiosity, imagination, and early scientific thinking.", worldContext: "A garden telescope, silver spaceship, Moon craters, Mars, Saturn's rings, and a quiet asteroid field.",
+    beats: ["While looking through a telescope, the child sees a blinking star and meets Astro, a friendly robot in a tiny silver spaceship.", "They fly past the Moon, visit Mars, and glide beside Saturn while collecting clues about the missing light.", "Near an asteroid field, they meet Nova, a lonely little star who feels too small to matter.", "The child encourages Nova until she shines again, lights the way home, and gives the child a glowing star badge."],
+    coverImage: "/templates/my-first-trip-to-space/cover.png", emoji: "🚀",
+  }),
+  makeAdditionalTemplate({
+    id: "my-first-day-at-school", name: "My First Day at School",
+    description: "A nervous child makes a new friend at Sunshine School and discovers that small acts of kindness can make new places feel safe.",
+    ageRange: "3-6", category: "friendship", tags: ["school", "friendship", "confidence", "emotions"],
+    theme: "Courage grows through small steps, kindness, and new friendships.", moralLesson: "It is okay to feel nervous when trying something new; helping someone else can help us feel brave too.", educationalFocus: "Separation confidence, naming nervous feelings, classroom routines, and making friends through kindness.", worldContext: "Sunshine School, a welcoming classroom, painting tables, reading corner, and colorful playground.",
+    beats: ["On the first school morning, the child holds a parent's hand tightly while feeling excited and nervous.", "Miss Lily welcomes the child to Sunshine School and introduces Sami, a shy classmate who feels nervous too.", "When Sami spills his crayons, the child helps gather them and invites him to paint together.", "The children laugh and explore the classroom, and the child proudly hugs their parent at the end of a wonderful first day."],
+    coverImage: "/templates/my-first-day-at-school/cover.png", emoji: "🎒",
+  }),
 ];
-}
 
 // ── Storefront templates (/books) ─────────────────────────────────────────
 // These ids are linked from the book detail pages, so they must exist in the

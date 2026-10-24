@@ -38,6 +38,10 @@ const LOCAL_TEMPLATE_COVERS: Record<string, string> = {
   "the-rainbow-that-lost-its-colors": "/templates/the-rainbow-that-lost-its-colors/cover.png",
   "the-unicorns-missing-star": "/templates/the-unicorns-missing-star/cover.png",
   "the-magic-toy-shop": "/templates/the-magic-toy-shop/cover.png",
+  "my-magical-shapes-adventure": "/templates/my-magical-shapes-adventure/cover.png",
+  "the-wonderful-world-of-colors": "/templates/the-wonderful-world-of-colors/cover.png",
+  "my-first-trip-to-space": "/templates/my-first-trip-to-space/cover.png",
+  "my-first-day-at-school": "/templates/my-first-day-at-school/cover.png",
 };
 
 function toAudience(raw: string): StoryAudience {
