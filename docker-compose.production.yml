@@ -30,7 +30,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: ["sh", "-c", "npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma && npx ts-node packages/db/prisma/seed-templates.ts"]
+    command:
+      - sh
+      - -c
+      - >-
+        npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma &&
+        npx ts-node --skip-project --compiler-options
+        '{"module":"CommonJS","moduleResolution":"node","target":"ES2022","esModuleInterop":true}'
+        packages/db/prisma/seed-templates.ts
 
   backend:
     build:
