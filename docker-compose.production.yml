@@ -30,7 +30,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: ["npx", "prisma", "migrate", "deploy", "--schema=packages/db/prisma/schema.prisma"]
+    command: ["sh", "-c", "npx prisma migrate deploy --schema=packages/db/prisma/schema.prisma && npx ts-node packages/db/prisma/seed-templates.ts"]
 
   backend:
     build:

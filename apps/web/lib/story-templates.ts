@@ -30,6 +30,14 @@ const LOCAL_TEMPLATE_COVERS: Record<string, string> = {
   "the-princess-magical-garden": "/templates/the-princess-magical-garden/cover.png",
   "lets-count-1-10": "/templates/lets-count-1-10/cover.png",
   "my-abc-adventure": "/templates/my-abc-adventure/cover.png",
+  "my-little-dragon-friend": "/templates/my-little-dragon-friend/cover.png",
+  "the-castle-above-the-clouds": "/templates/the-castle-above-the-clouds/cover.png",
+  "my-dinosaur-adventure": "/templates/my-dinosaur-adventure/cover.png",
+  "the-secret-door-to-fairyland": "/templates/the-secret-door-to-fairyland/cover.png",
+  "the-little-wizards-first-spell": "/templates/the-little-wizards-first-spell/cover.png",
+  "the-rainbow-that-lost-its-colors": "/templates/the-rainbow-that-lost-its-colors/cover.png",
+  "the-unicorns-missing-star": "/templates/the-unicorns-missing-star/cover.png",
+  "the-magic-toy-shop": "/templates/the-magic-toy-shop/cover.png",
 };
 
 function toAudience(raw: string): StoryAudience {
