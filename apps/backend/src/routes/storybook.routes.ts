@@ -922,6 +922,7 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       templatePrompts: template.prompts,
       pagePrompts: script.pages.map((page) => page.imageDescription),
       gender,
+      language,
     });
     // Store the one-time costume before any child image is generated. Every
     // image prompt below reads this persisted value, never a new GPT result.

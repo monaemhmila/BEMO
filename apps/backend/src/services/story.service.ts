@@ -978,6 +978,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           story: {
             select: {
               title: true,
+              language: true,
               childAge: true,
               gender: true,
               category: true,
@@ -1008,13 +1009,14 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           templatePrompts: page.story.template?.prompts,
           pagePrompts: page.story.pages.map((item) => item.imagePrompt),
           gender: options?.gender ?? (page.story.gender === "boy" || page.story.gender === "girl" ? page.story.gender : undefined),
+          language: page.story.language,
         });
         await prismaClient.storyPage.update({
           where: { id: pageId },
           data: { imageUrl: cover.url, falAiRequestId: null, status: "Generated" },
         });
-        logger.info({ pageId, cover: cover.color }, "Applied story closing cover");
-        return { requestId: `local-cover:${cover.color}` };
+        logger.info({ pageId, cover: cover.color, language: cover.language, filename: cover.filename }, "Applied story closing cover");
+        return { requestId: `local-cover:${cover.color}-${cover.language}` };
       }
       const isSquarePage = isSquareBookPage(page.pageNumber, totalPages);
 

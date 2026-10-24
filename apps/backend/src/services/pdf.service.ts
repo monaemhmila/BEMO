@@ -423,9 +423,7 @@ export class PDFService {
             this.renderEndingPage(doc, leaf, totalBookPages, story);
             break;
           case "closing":
-            // The 20 x 20 closing cover needs extra separation below its
-            // title; keep the established 14 x 14 position unchanged.
-            this.renderClosingPage(doc, leaf, story, pageSize > PAGE_WIDTH ? 10 : 0);
+            this.renderClosingPage(doc, leaf);
             break;
           default:
             this.renderStoryPage(doc, leaf, totalBookPages, story);
@@ -620,23 +618,17 @@ export class PDFService {
   }
 
   /**
-   * Closing page: full-bleed illustration with one short, warm goodbye. The
-   * renderText guard prevents the closing cover overlay from being repeated on
-   * the second half of a legacy split image.
+   * Closing page: the supplied cover asset already contains all artwork and
+   * copy, so it must remain a clean full-bleed image with no PDF overlay.
    */
   private renderClosingPage(
     doc: PDFKit.PDFDocument,
     leaf: PdfLeaf,
-    story: StoryPayload,
-    bodyDrop = 0,
   ) {
     const width = PAGE_WIDTH;
     const height = PAGE_HEIGHT;
     this.paintBackground(doc, width, height, "page");
     this.drawPageImage(doc, leaf.image, width, height);
-    if (leaf.renderText) {
-      this.drawFinalCoverMessage(doc, story, width, height, bodyDrop);
-    }
   }
 
   private drawFinalCoverMessage(

@@ -2,11 +2,12 @@ import path from "path";
 import { env } from "../config/env";
 
 export type StoryCoverColor = "blue" | "green" | "pink";
+export type StoryCoverLanguage = "arabic" | "english" | "french";
 
-const COVER_FILES: Record<StoryCoverColor, string> = {
-  blue: "BLUE-CO.png",
-  green: "GREEN-CO.png",
-  pink: "PNK-CO.png",
+const COVER_FILES: Record<StoryCoverColor, Record<StoryCoverLanguage, string>> = {
+  blue: { arabic: "BAR.png", english: "BENG.png", french: "BFR.png" },
+  green: { arabic: "GAR.png", english: "GENG.png", french: "GFR.png" },
+  pink: { arabic: "PAR.png", english: "PENG.png", french: "PFR.png" },
 };
 
 const BLUE_WORDS = ["sea", "ocean", "water", "underwater", "beach", "island", "mermaid", "marine", "river", "lake", "sail"];
@@ -15,6 +16,13 @@ const PINK_WORDS = ["princess", "fairy", "unicorn", "birthday", "castle", "magic
 
 function countMatches(text: string, words: string[]): number {
   return words.reduce((score, word) => score + (text.includes(word) ? 1 : 0), 0);
+}
+
+function normalizeCoverLanguage(language?: string | null): StoryCoverLanguage {
+  const normalized = (language || "").trim().toLowerCase();
+  if (normalized.startsWith("ar") || normalized.startsWith("arab")) return "arabic";
+  if (normalized.startsWith("fr") || normalized.startsWith("fren")) return "french";
+  return "english";
 }
 
 /**
@@ -30,7 +38,8 @@ export function chooseStoryCover(input: {
   templatePrompts?: unknown;
   pagePrompts?: string[];
   gender?: "boy" | "girl" | null;
-}): { color: StoryCoverColor; url: string; filePath: string } {
+  language?: string | null;
+}): { color: StoryCoverColor; language: StoryCoverLanguage; filename: string; url: string; filePath: string } {
   const prompts = input.templatePrompts && typeof input.templatePrompts === "object"
     ? JSON.stringify(input.templatePrompts)
     : "";
@@ -55,7 +64,8 @@ export function chooseStoryCover(input: {
   if (blueScore > greenScore && blueScore >= pinkScore) color = "blue";
   else if (pinkScore > greenScore && pinkScore > blueScore) color = "pink";
 
-  const filename = COVER_FILES[color];
+  const language = normalizeCoverLanguage(input.language);
+  const filename = COVER_FILES[color][language];
   const publicBase = env.PUBLIC_ASSET_BASE_URL?.replace(/\/$/, "");
   const sourceCandidates = [
     path.join(process.cwd(), "src", "covers", filename),
@@ -65,6 +75,8 @@ export function chooseStoryCover(input: {
 
   return {
     color,
+    language,
+    filename,
     url: publicBase ? `${publicBase}/assets/covers/${filename}` : `/assets/covers/${filename}`,
     filePath: sourceCandidates[0],
   };
