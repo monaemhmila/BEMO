@@ -186,6 +186,16 @@ export const frFeatures: Record<string, string> = {
   "My Stories": "Mes histoires",
   "View Preview": "Voir l’aperçu",
   "Order Now": "Commander maintenant",
+  "Order This Book": "Commander ce livre",
+  "Love this adventure?": "Vous aimez cette aventure ?",
+  "Keep the magic forever with a beautiful printed book delivered to your door.":
+    "Gardez la magie pour toujours avec un magnifique livre imprimé livré chez vous.",
+  "Close order prompt": "Fermer la proposition de commande",
+  "Close order offer": "Fermer l’offre de commande",
+  "Your adventure is waiting": "Votre aventure vous attend",
+  "Love the first pages?": "Vous aimez les premières pages ?",
+  "Turn this preview into a beautiful printed book for your child.":
+    "Transformez cet aperçu en un magnifique livre imprimé pour votre enfant.",
   "Create your first personalized storybook!":
     "Créez votre premier livre d'histoires personnalisé !",
   View: "Voir",

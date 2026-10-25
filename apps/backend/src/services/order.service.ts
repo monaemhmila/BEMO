@@ -57,11 +57,24 @@ export interface OrderWithStory {
     title: string;
     childName: string | null;
     pdfUrl: string | null;
+    coverImage: string | null;
   };
 }
 
 const STORY_SELECT = {
-  story: { select: { id: true, title: true, childName: true, pdfUrl: true } },
+  story: {
+    select: {
+      id: true,
+      title: true,
+      childName: true,
+      pdfUrl: true,
+      pages: {
+        select: { imageUrl: true },
+        orderBy: { pageNumber: "asc" },
+        take: 1,
+      },
+    },
+  },
 } as const;
 
 type OrderWithStoryRecord = Prisma.OrderGetPayload<{
@@ -95,6 +108,7 @@ function serializeOrder(order: OrderWithStoryRecord): OrderWithStory {
       title: order.story.title,
       childName: order.story.childName,
       pdfUrl: order.story.pdfUrl,
+      coverImage: order.story.pages[0]?.imageUrl ?? null,
     },
   };
 }

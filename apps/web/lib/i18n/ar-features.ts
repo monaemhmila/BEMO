@@ -180,6 +180,16 @@ export const arFeatures: Record<string, string> = {
   "My Stories": "قصصي",
   "View Preview": "عرض المعاينة",
   "Order Now": "اطلب الآن",
+  "Order This Book": "اطلب هذا الكتاب",
+  "Love this adventure?": "هل أحببت هذه المغامرة؟",
+  "Keep the magic forever with a beautiful printed book delivered to your door.":
+    "احتفظ بسحرها إلى الأبد مع كتاب مطبوع جميل يُوصَل إلى باب منزلك.",
+  "Close order prompt": "إغلاق اقتراح الطلب",
+  "Close order offer": "إغلاق عرض الطلب",
+  "Your adventure is waiting": "مغامرتك بانتظارك",
+  "Love the first pages?": "هل أعجبتك الصفحات الأولى؟",
+  "Turn this preview into a beautiful printed book for your child.":
+    "حوّل هذه المعاينة إلى كتاب مطبوع جميل لطفلك.",
   "Create your first personalized storybook!":
     "أنشئ أول كتاب قصة مخصص لك!",
   View: "عرض",

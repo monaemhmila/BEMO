@@ -99,8 +99,19 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
   const [queueMessage, setQueueMessage] = useState<string | null>(null);
   const [generatedStory, setGeneratedStory] = useState<GeneratedStoryResult | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [showOrderPrompt, setShowOrderPrompt] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfTitle, setPdfTitle] = useState<string>("");
+
+  useEffect(() => {
+    if (!generatedStory) {
+      setShowOrderPrompt(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowOrderPrompt(true), 30_000);
+    return () => window.clearTimeout(timer);
+  }, [generatedStory?.storyId]);
 
   // Form data
   const [childName, setChildName] = useState("");
@@ -523,6 +534,76 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
             <span>Previewing first 2 generated pages</span>
           </div>
         </Card>
+
+        <AnimatePresence>
+          {showOrderPrompt && !isOrderModalOpen && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-violet-deep/55 p-4 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border-2 border-buttercup bg-gradient-to-br from-white via-buttercup/20 to-blush/40 p-6 text-center shadow-2xl sm:p-9"
+                initial={{ opacity: 0, y: 30, scale: 0.9, rotate: -2 }}
+                animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                transition={{ type: "spring", bounce: 0.35 }}
+              >
+                <motion.span
+                  aria-hidden
+                  className="absolute left-8 top-5 text-3xl text-buttercup"
+                  animate={{ y: [0, -10, 0], rotate: [0, 15, 0] }}
+                  transition={{ duration: 1.8, repeat: Infinity }}
+                >
+                  ✦
+                </motion.span>
+                <motion.span
+                  aria-hidden
+                  className="absolute right-8 top-8 text-2xl text-primary"
+                  animate={{ y: [0, 8, 0], rotate: [0, -15, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
+                >
+                  ✦
+                </motion.span>
+                <button
+                  type="button"
+                  aria-label="Close order offer"
+                  onClick={() => setShowOrderPrompt(false)}
+                  className="absolute right-4 top-3 text-2xl text-violet-deep/50 hover:text-violet-deep"
+                >
+                  ×
+                </button>
+                <motion.div
+                  className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-primary to-violet-deep text-white shadow-xl shadow-primary/30"
+                  animate={{ y: [0, -5, 0], rotate: [0, 3, 0] }}
+                  transition={{ duration: 2.2, repeat: Infinity }}
+                >
+                  <ShoppingBag className="h-10 w-10" />
+                </motion.div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                  Your adventure is waiting
+                </p>
+                <h3 className="mt-2 font-display text-3xl font-bold text-violet-deep sm:text-4xl">
+                  Love the first pages?
+                </h3>
+                <p className="mx-auto mt-3 max-w-md text-base leading-7 text-muted-foreground">
+                  Turn this preview into a beautiful printed book for your child.
+                </p>
+                <Button
+                  className="mt-7 w-full rounded-2xl bg-buttercup py-7 text-lg font-bold text-violet-deep shadow-xl shadow-buttercup/40 transition-transform hover:scale-[1.02] hover:bg-buttercup"
+                  onClick={() => {
+                    setShowOrderPrompt(false);
+                    setIsOrderModalOpen(true);
+                  }}
+                >
+                  <ShoppingBag className="mr-2 h-5 w-5" />
+                  Order Now
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Order Modal */}
         <OrderBookModal

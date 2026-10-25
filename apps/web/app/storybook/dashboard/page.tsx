@@ -48,6 +48,7 @@ interface CustomerOrder {
     id: string;
     title: string;
     childName?: string | null;
+    coverImage?: string | null;
   };
 }
 
@@ -176,15 +177,15 @@ export default function StorybookDashboardPage() {
   }, [getToken, user]);
 
   return (
-    <div className="space-y-8">
-      <header>
+    <div className="flex flex-col gap-8">
+      <header className="order-1">
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-violet-deep">
           My Books
         </h1>
       </header>
 
       {/* My Orders */}
-      <section>
+      <section className="order-3">
         <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-white via-blush/20 to-buttercup/15 p-0 shadow-lg shadow-primary/5">
           <div className="mb-6 bg-gradient-to-r from-violet-deep via-primary to-violet-ink p-6 text-white">
             <div className="flex items-center gap-4">
@@ -219,8 +220,18 @@ export default function StorybookDashboardPage() {
                   key={order.id}
                   className="flex flex-col gap-5 rounded-3xl border border-primary/15 bg-gradient-to-r from-white to-blush/25 p-6 transition-all hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md sm:flex-row sm:items-center"
                 >
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-buttercup/40 shadow-sm ring-1 ring-primary/15">
-                    <Package className="h-8 w-8 text-violet-deep" />
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-buttercup/40 shadow-sm ring-1 ring-primary/15">
+                    {order.story.coverImage ? (
+                      <img
+                        src={order.story.coverImage}
+                        alt={order.story.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Package className="h-8 w-8 text-violet-deep" />
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -265,7 +276,7 @@ export default function StorybookDashboardPage() {
       </section>
 
       {/* My Stories */}
-      <section id="recent-stories" className="scroll-mt-32">
+      <section id="recent-stories" className="order-2 scroll-mt-32">
         <Card className="p-6 border-border">
           <h2 className="font-display text-2xl font-bold text-violet-deep mb-6">
             My Stories

@@ -65,6 +65,8 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
+  const [showOrderPrompt, setShowOrderPrompt] = useState(false);
+  const [orderPulse, setOrderPulse] = useState(false);
 
   const currentPage = story?.pages[currentPageIndex];
   const isLastPage = !!story && currentPageIndex === story.pages.length - 1;
@@ -72,6 +74,22 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
   const handleStoryEvent = useCallback((nextStory: Story) => setStory(nextStory), []);
   const handleStoryStreamReady = useCallback(() => setLoading(false), []);
   useStoryEvents<Story>(storyId, getToken, handleStoryEvent, handleStoryStreamReady);
+
+  // Give readers time to enjoy the preview, then offer a gentle order prompt.
+  useEffect(() => {
+    if (story?.status !== "Completed") return;
+
+    const promptTimer = window.setTimeout(() => setShowOrderPrompt(true), 90_000);
+    const pulseTimer = window.setInterval(() => {
+      setOrderPulse(true);
+      window.setTimeout(() => setOrderPulse(false), 8_000);
+    }, 120_000);
+
+    return () => {
+      window.clearTimeout(promptTimer);
+      window.clearInterval(pulseTimer);
+    };
+  }, [story?.status]);
 
   // Auto-play audio when page changes
   useEffect(() => {
@@ -209,15 +227,55 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
           {story.status === "Completed" && (
             <Button
               variant="gradient"
-              className="px-4 py-3 text-base font-bold text-white shadow-xl sm:px-6"
-              onClick={() => setOrderOpen(true)}
+              className={`px-4 py-3 text-base font-bold text-white shadow-xl transition-all sm:px-6 ${
+                orderPulse
+                  ? "bg-buttercup text-violet-deep ring-4 ring-buttercup/50 animate-pulse hover:bg-buttercup"
+                  : ""
+              }`}
+              onClick={() => {
+                setShowOrderPrompt(false);
+                setOrderOpen(true);
+              }}
             >
               <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
-              <span>Order Now</span>
+              <span>Order This Book</span>
             </Button>
           )}
         </div>
       </div>
+
+      {showOrderPrompt && story.status === "Completed" && !orderOpen && (
+        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-black/45 p-4">
+          <div className="relative w-full max-w-md rounded-3xl border-2 border-buttercup bg-gradient-to-br from-white via-buttercup/20 to-blush/30 p-6 text-center shadow-2xl">
+            <button
+              type="button"
+              aria-label="Close order prompt"
+              onClick={() => setShowOrderPrompt(false)}
+              className="absolute right-4 top-3 text-2xl text-violet-deep/60 hover:text-violet-deep"
+            >
+              ×
+            </button>
+            <ShoppingCart className="mx-auto mb-3 h-12 w-12 text-primary" />
+            <h2 className="font-display text-2xl font-bold text-violet-deep">
+              Love this adventure?
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              Keep the magic forever with a beautiful printed book delivered to your door.
+            </p>
+            <Button
+              variant="gradient"
+              className="mt-6 w-full rounded-full bg-buttercup py-6 text-lg font-bold text-violet-deep shadow-lg shadow-buttercup/40 hover:bg-buttercup"
+              onClick={() => {
+                setShowOrderPrompt(false);
+                setOrderOpen(true);
+              }}
+            >
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Order This Book
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-4 py-20">
