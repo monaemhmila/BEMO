@@ -6,6 +6,7 @@ import { TemplateBookFilters } from "@/components/template-book-filters";
 import { Button } from "@/components/ui/button";
 import { getStoreTemplates } from "@/lib/story-templates";
 import { MotionReveal } from "@/components/motion-reveal";
+import { TypeOnText } from "@/components/type-on-text";
 
 export const metadata: Metadata = {
   title: "Personalised Books",
@@ -30,12 +31,12 @@ export default async function BooksPage() {
               Mon Petit Hero collection
             </span>
             <h1 className="mt-4 font-display text-4xl font-bold text-violet-deep sm:text-5xl">
-              Personalised storybooks
+              <TypeOnText>Personalised storybooks</TypeOnText>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-[17px] leading-relaxed text-muted-foreground">
-              Your child is the hero of every page. Pick a story, add their photo
-              and name, and receive a beautifully printed book they&apos;ll
-              treasure forever.
+              <TypeOnText delay={0.7}>
+                Your child is the hero of every page. Pick a story, add their photo and name, and receive a beautifully printed book they&apos;ll treasure forever.
+              </TypeOnText>
             </p>
           </MotionReveal>
 
