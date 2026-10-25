@@ -16,7 +16,7 @@ import {
   MAX_TEMPLATE_IMAGE_BYTES,
   saveTemplateImage,
 } from "../lib/template-images";
-import { generateOrderedStory } from "../services/ordered-story-generation.service";
+import { queueOrderedStoryGeneration } from "../services/ordered-story-generation.service";
 import { generateAdminColoringBook } from "../services/coloring-book-generation.service";
 import { StoryService, type StoryTemplateRow } from "../services/story.service";
 import { isLocalAssetAvailable } from "../lib/storage";
@@ -1870,7 +1870,7 @@ router.put("/order/:id", async (req, res) => {
       data: parsed.data,
     });
     if (parsed.data.status === "PROCESSING") {
-      void generateOrderedStory(order.id);
+      queueOrderedStoryGeneration(order.id);
     }
     logger.info(
       { orderId: order.id, status: order.status, paymentStatus: order.paymentStatus },

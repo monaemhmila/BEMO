@@ -9,6 +9,72 @@ import { ImageGenerationService } from "./image-generation.service";
 
 const inProgress = new Set<string>();
 const legacyImageService = ImageGenerationService.getInstance();
+const activeQueueJobs = new Set<string>();
+let queuePumpRunning = false;
+let queuePumpRequested = false;
+
+const CONFIRMED_ORDER_STATUSES = ["PROCESSING", "SHIPPED", "DELIVERED"] as const;
+const GENERATABLE_STORY_STATUSES = ["Pending", "Generating", "Processing"] as const;
+
+/**
+ * Keep confirmed order generation bounded while allowing the queue to drain
+ * faster as it grows: 1 worker for 1–20 jobs, 2 for 21–40, etc.
+ *
+ * The orders remain PROCESSING in the database, so a server restart can
+ * discover and resume jobs that were waiting or interrupted.
+ */
+export function queueOrderedStoryGeneration(orderId?: string): void {
+  queuePumpRequested = true;
+  if (orderId) logger.info({ orderId }, "Queued confirmed story generation");
+  if (!queuePumpRunning) void pumpOrderedStoryQueue();
+}
+
+async function pumpOrderedStoryQueue(): Promise<void> {
+  if (queuePumpRunning) return;
+  queuePumpRunning = true;
+
+  try {
+    do {
+      queuePumpRequested = false;
+      const pendingOrders = await prismaClient.order.findMany({
+        where: {
+          status: { in: [...CONFIRMED_ORDER_STATUSES] },
+          story: { status: { in: [...GENERATABLE_STORY_STATUSES] } },
+        },
+        orderBy: { createdAt: "asc" },
+        take: 500,
+        select: { id: true },
+      });
+
+      const workerCount = Math.max(1, Math.ceil(pendingOrders.length / 20));
+      const slots = Math.max(0, workerCount - activeQueueJobs.size);
+      if (slots > 0) {
+        for (const order of pendingOrders) {
+          if (activeQueueJobs.size >= workerCount) break;
+          if (activeQueueJobs.has(order.id)) continue;
+
+          activeQueueJobs.add(order.id);
+          void generateOrderedStory(order.id).finally(() => {
+            activeQueueJobs.delete(order.id);
+            queueOrderedStoryGeneration();
+          });
+        }
+
+        if (slots > 0 && activeQueueJobs.size > 0) {
+          logger.info(
+            { backlog: pendingOrders.length, workers: workerCount, active: activeQueueJobs.size },
+            "Confirmed story generation queue dispatched"
+          );
+        }
+      }
+    } while (queuePumpRequested);
+  } catch (error) {
+    logger.error({ error }, "Confirmed story generation queue pump failed");
+  } finally {
+    queuePumpRunning = false;
+    if (queuePumpRequested) void pumpOrderedStoryQueue();
+  }
+}
 
 /** Resume confirmed orders that were interrupted by a backend restart. */
 export async function resumePendingOrderedStories(): Promise<void> {
@@ -22,7 +88,9 @@ export async function resumePendingOrderedStories(): Promise<void> {
     },
   });
 
-  const pendingOrders = orders.filter((order) => order.story.status !== "Completed");
+  const pendingOrders = orders.filter((order) =>
+    (GENERATABLE_STORY_STATUSES as readonly string[]).includes(order.story.status)
+  );
   if (pendingOrders.length === 0) return;
 
   logger.info(
@@ -30,9 +98,7 @@ export async function resumePendingOrderedStories(): Promise<void> {
     "Resuming incomplete confirmed story orders"
   );
 
-  await Promise.allSettled(
-    pendingOrders.map((order) => generateOrderedStory(order.id))
-  );
+  queueOrderedStoryGeneration();
 }
 
 /** Generate the held personalized pages after admin confirmation. */
