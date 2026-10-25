@@ -7,6 +7,7 @@ import { ArrowRight, Bot, ChevronDown, Compass, ExternalLink, RotateCcw, Send, S
 import { AnimatePresence, motion } from "framer-motion";
 
 import { BACKEND_URL } from "../app/config";
+import { useLanguage } from "./language-provider";
 
 type AssistantTemplate = {
   id: string;
@@ -103,13 +104,13 @@ function detectLanguageSafe(message: string, selected: ChatLanguage): ChatLangua
 
 export function AssistantChat({ mode }: AssistantChatProps) {
   const pathname = usePathname();
+  const { locale: siteLanguage } = useLanguage();
   const hideBubble = pathname === "/admin" || pathname.startsWith("/admin/") || pathname.startsWith("/stories/");
 
   const [open, setOpen] = useState(mode === "section");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [blocked, setBlocked] = useState(false);
-  const [siteLanguage, setSiteLanguage] = useState<ChatLanguage>("en");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
@@ -117,13 +118,6 @@ export function AssistantChat({ mode }: AssistantChatProps) {
     content: TRANSLATED_COPY.en.welcome,
     },
   ]);
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem("ww_lang");
-    const htmlLanguage = document.documentElement.lang;
-    const next = saved === "fr" || saved === "ar" ? saved : htmlLanguage === "fr" || htmlLanguage === "ar" ? htmlLanguage : "en";
-    setSiteLanguage(next);
-  }, []);
 
   useEffect(() => {
     setMessages((current) => {
