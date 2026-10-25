@@ -196,6 +196,12 @@ export const frFeatures: Record<string, string> = {
   "Love the first pages?": "Vous aimez les premières pages ?",
   "Turn this preview into a beautiful printed book for your child.":
     "Transformez cet aperçu en un magnifique livre imprimé pour votre enfant.",
+  "Good example: a clear front-facing child photo": "Bon exemple : photo claire de face",
+  "Bad example: an angled child photo with the face hidden": "Mauvais exemple : visage caché et angle étrange",
+  "Good photo": "Bonne photo",
+  "Clear face · front-facing · good light": "Visage clair · de face · bonne lumière",
+  "Avoid this": "À éviter",
+  "Face hidden · strange angle · blurry": "Visage caché · angle étrange · flou",
   "Create your first personalized storybook!":
     "Créez votre premier livre d'histoires personnalisé !",
   View: "Voir",

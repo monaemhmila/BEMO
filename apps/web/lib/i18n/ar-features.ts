@@ -190,6 +190,12 @@ export const arFeatures: Record<string, string> = {
   "Love the first pages?": "هل أعجبتك الصفحات الأولى؟",
   "Turn this preview into a beautiful printed book for your child.":
     "حوّل هذه المعاينة إلى كتاب مطبوع جميل لطفلك.",
+  "Good example: a clear front-facing child photo": "مثال جيد: صورة واضحة للطفل من الأمام",
+  "Bad example: an angled child photo with the face hidden": "مثال سيئ: الوجه مخفي والصورة بزاوية غريبة",
+  "Good photo": "صورة جيدة",
+  "Clear face · front-facing · good light": "وجه واضح · من الأمام · إضاءة جيدة",
+  "Avoid this": "تجنب هذا",
+  "Face hidden · strange angle · blurry": "وجه مخفي · زاوية غريبة · صورة ضبابية",
   "Create your first personalized storybook!":
     "أنشئ أول كتاب قصة مخصص لك!",
   View: "عرض",

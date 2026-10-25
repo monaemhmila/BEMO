@@ -761,6 +761,39 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="overflow-hidden rounded-2xl border-2 border-emerald-200 bg-emerald-50/60 p-2.5 sm:p-3">
+                  <Image
+                    src="/upload-guidance/good-child-photo.webp"
+                    alt="Good example: a clear front-facing child photo"
+                    width={320}
+                    height={320}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
+                  <p className="mt-2 text-center text-xs font-bold text-emerald-700 sm:text-sm">
+                    Good photo
+                  </p>
+                  <p className="mt-1 text-center text-[11px] leading-4 text-emerald-800/80 sm:text-xs">
+                    Clear face · front-facing · good light
+                  </p>
+                </div>
+                <div className="overflow-hidden rounded-2xl border-2 border-red-200 bg-red-50/60 p-2.5 sm:p-3">
+                  <Image
+                    src="/upload-guidance/bad-child-photo.webp"
+                    alt="Bad example: an angled child photo with the face hidden"
+                    width={320}
+                    height={320}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
+                  <p className="mt-2 text-center text-xs font-bold text-red-700 sm:text-sm">
+                    Avoid this
+                  </p>
+                  <p className="mt-1 text-center text-[11px] leading-4 text-red-800/80 sm:text-xs">
+                    Face hidden · strange angle · blurry
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Hero&apos;s Name *</Label>
