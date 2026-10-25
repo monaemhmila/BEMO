@@ -635,12 +635,39 @@ router.post("/story/:id/translate-clone", async (req, res) => {
       body: JSON.stringify({
         model: "gpt-4o-mini",
         temperature: 0.2,
-        max_tokens: 6000,
-        response_format: { type: "json_object" },
+        max_tokens: 8000,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "translated_story",
+            strict: true,
+            schema: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                title: { type: "string" },
+                dedication: { type: "string" },
+                pages: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    properties: {
+                      pageNumber: { type: "integer", minimum: 1, maximum: 64 },
+                      text: { type: "string" },
+                    },
+                    required: ["pageNumber", "text"],
+                  },
+                },
+              },
+              required: ["title", "dedication", "pages"],
+            },
+          },
+        },
         messages: [
           {
             role: "system",
-            content: `You translate children's storybooks into ${parsed.data.targetLanguage}. Return only valid JSON. Translate only human-readable text. Preserve names, numbers, page order, warmth, and age-appropriate meaning. Do not translate image prompts or URLs. Keep empty text values empty.`,
+            content: `You translate children's storybooks into ${parsed.data.targetLanguage}. Return only valid JSON matching the required schema. The pages array is mandatory and must contain exactly ${source.pages.length} page objects, one for every source page, including pages whose text is empty. Translate only human-readable text. Preserve names, numbers, page order, warmth, and age-appropriate meaning. Do not translate image prompts or URLs. Keep empty text values empty.`,
           },
           {
             role: "user",
@@ -688,22 +715,29 @@ router.post("/story/:id/translate-clone", async (req, res) => {
     // Models sometimes omit an empty dedication, emit page numbers as JSON
     // strings, or call the translated field `content`. Normalize those
     // harmless variations before validating the structure.
-    const rawObject = generated && typeof generated === "object"
+    const rawObject = generated && typeof generated === "object" && !Array.isArray(generated)
       ? generated as {
         title?: unknown;
         dedication?: unknown;
         pages?: unknown;
         translation?: unknown;
         result?: unknown;
+        data?: unknown;
+        translatedPages?: unknown;
+        pageTranslations?: unknown;
       }
       : {};
     const nestedObject = rawObject.translation && typeof rawObject.translation === "object"
       ? rawObject.translation as { title?: unknown; dedication?: unknown; pages?: unknown }
       : rawObject.result && typeof rawObject.result === "object"
         ? rawObject.result as { title?: unknown; dedication?: unknown; pages?: unknown }
-        : rawObject;
+        : rawObject.data && typeof rawObject.data === "object"
+          ? rawObject.data as { title?: unknown; dedication?: unknown; pages?: unknown }
+          : rawObject;
     const rawTranslation = nestedObject;
-    const rawPages = rawTranslation.pages;
+    const rawPages = Array.isArray(generated)
+      ? generated
+      : rawTranslation.pages ?? rawObject.translatedPages ?? rawObject.pageTranslations;
     const normalizedTranslation = {
       title: typeof rawTranslation.title === "string" && rawTranslation.title.trim()
         ? rawTranslation.title
