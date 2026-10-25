@@ -590,7 +590,7 @@ router.get("/story/:id", async (req, res) => {
 router.post("/story/:id/translate-clone", async (req, res) => {
   const parsed = TranslateStoryCloneSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: "Choose French or Arabic as the target language." });
+    res.status(400).json({ message: "Choose English, French, or Arabic as the target language." });
     return;
   }
 
@@ -607,7 +607,14 @@ router.post("/story/:id/translate-clone", async (req, res) => {
     res.status(404).json({ message: "Story not found" });
     return;
   }
-  if (source.language.toLowerCase() === parsed.data.targetLanguage.toLowerCase()) {
+  const normalizeLanguage = (value: string) => {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "en" || normalized.startsWith("english")) return "english";
+    if (normalized === "fr" || normalized.startsWith("french") || normalized.startsWith("français")) return "french";
+    if (normalized === "ar" || normalized.startsWith("arabic") || normalized.startsWith("العربية")) return "arabic";
+    return normalized;
+  };
+  if (normalizeLanguage(source.language) === normalizeLanguage(parsed.data.targetLanguage)) {
     res.status(400).json({ message: "The story is already in that language." });
     return;
   }
@@ -940,7 +947,7 @@ const TranslateTemplateSchema = z.object({
 });
 
 const TranslateStoryCloneSchema = z.object({
-  targetLanguage: z.enum(["French", "Arabic"]),
+  targetLanguage: z.enum(["English", "French", "Arabic"]),
 });
 
 const GeneratedStoryTranslationSchema = z.object({

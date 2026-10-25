@@ -737,7 +737,7 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [saving, setSaving] = useState("");
-  const [translationTarget, setTranslationTarget] = useState<"French" | "Arabic">("French");
+  const [translationTarget, setTranslationTarget] = useState<"English" | "French" | "Arabic">("French");
   const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
@@ -871,11 +871,12 @@ function StoryEditor({ storyId, authHeaders, onClose, onChanged }: {
                   <div className="flex flex-wrap items-center justify-end gap-2">
                     <select
                       value={translationTarget}
-                      onChange={(event) => setTranslationTarget(event.target.value as "French" | "Arabic")}
+                      onChange={(event) => setTranslationTarget(event.target.value as "English" | "French" | "Arabic")}
                       disabled={translating}
                       className="rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs text-white outline-none"
                       aria-label="Translation language"
                     >
+                      <option value="English" className="bg-[#17171a]">English</option>
                       <option value="French" className="bg-[#17171a]">French</option>
                       <option value="Arabic" className="bg-[#17171a]">Arabic</option>
                     </select>
