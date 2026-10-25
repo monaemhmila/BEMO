@@ -209,4 +209,8 @@ export const arCoverage: Record<string, string> = {
   "Start over": "ابدأ من جديد",
   "Short, colorful games for curious kids — inspired by the same worlds, characters, and imagination behind our personalised storybooks.": "ألعاب قصيرة وملونة للأطفال الفضوليين — مستوحاة من العوالم والشخصيات والخيال نفسه وراء كتب قصصنا المخصصة.",
   "These games are free, account-free, and designed for short, screen-time-friendly play. Ready for a bigger adventure? Explore a personalised book when you're done.": "هذه الألعاب مجانية ولا تتطلب حسابًا، ومصممة للعب قصير ومناسب لوقت الشاشة. هل أنت مستعد لمغامرة أكبر؟ اكتشف كتابًا مخصصًا بعد الانتهاء.",
+  "Celebrate who they are becoming": "احتفل بمن يصبحون",
+  "Mark a birthday, a brave first day, or a new dream with a keepsake made just for them.": "احتفل بعيد ميلاد، أو بيوم أول شجاع، أو بحلم جديد مع تذكار صُمم خصيصًا لهم.",
+  "Let their wildest ideas take the lead": "دع أكثر أفكارهم خيالًا تقود الطريق",
+  "From enchanted gardens to distant planets, their imagination becomes a world they can hold.": "من حدائق مسحورة إلى كواكب بعيدة، يتحول خيالهم إلى عالم يمكنهم الاحتفاظ به.",
 };

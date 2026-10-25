@@ -209,4 +209,8 @@ export const frCoverage: Record<string, string> = {
   "Start over": "Recommencer",
   "Short, colorful games for curious kids — inspired by the same worlds, characters, and imagination behind our personalised storybooks.": "De petits jeux colorés pour les enfants curieux — inspirés des mêmes mondes, personnages et de la même imagination que nos livres personnalisés.",
   "These games are free, account-free, and designed for short, screen-time-friendly play. Ready for a bigger adventure? Explore a personalised book when you're done.": "Ces jeux sont gratuits, sans compte, et conçus pour de courtes sessions adaptées au temps d'écran. Prêt pour une plus grande aventure ? Découvrez un livre personnalisé quand vous avez terminé.",
+  "Celebrate who they are becoming": "Célébrez la personne qu'ils deviennent",
+  "Mark a birthday, a brave first day, or a new dream with a keepsake made just for them.": "Marquez un anniversaire, une première journée pleine de courage ou un nouveau rêve avec un souvenir créé spécialement pour eux.",
+  "Let their wildest ideas take the lead": "Laissez leurs idées les plus folles ouvrir la voie",
+  "From enchanted gardens to distant planets, their imagination becomes a world they can hold.": "Des jardins enchantés aux planètes lointaines, leur imagination devient un monde qu'ils peuvent tenir entre leurs mains.",
 };
