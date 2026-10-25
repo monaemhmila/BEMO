@@ -209,11 +209,11 @@ export function StoryViewer({ storyId }: StoryViewerProps) {
           {story.status === "Completed" && (
             <Button
               variant="gradient"
-              className="text-white px-2 sm:px-4"
+              className="px-4 py-3 text-base font-bold text-white shadow-xl sm:px-6"
               onClick={() => setOrderOpen(true)}
             >
               <ShoppingCart className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Order My Book</span>
+              <span>Order Now</span>
             </Button>
           )}
         </div>

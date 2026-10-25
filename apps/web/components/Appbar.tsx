@@ -93,9 +93,7 @@ export function Appbar() {
 
   const signedInNav = [
     ...currentAuthItems,
-    { label: "Shop Books", href: "/books" },
     { label: "Games", href: "/games" },
-    { label: "Support", href: "/support" },
   ];
 
   const isActive = (href: string) =>

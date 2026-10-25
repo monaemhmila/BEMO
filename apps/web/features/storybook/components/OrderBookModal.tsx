@@ -69,8 +69,6 @@ interface FormState {
   customerName: string;
   phone: string;
   address: string;
-  city: string;
-  postalCode: string;
   quantity: number;
 }
 
@@ -78,8 +76,6 @@ const EMPTY_FORM: FormState = {
   customerName: "",
   phone: "",
   address: "",
-  city: "",
-  postalCode: "",
   quantity: 1,
 };
 
@@ -99,10 +95,6 @@ function validateForm(form: FormState): Record<string, string> {
   if (form.address.trim().length < 5) {
     errors.address = "Please enter your delivery address.";
   }
-  if (form.city.trim().length < 2) {
-    errors.city = "Please enter your city.";
-  }
-
   return errors;
 }
 
@@ -209,8 +201,6 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
           customerName: form.customerName.trim(),
           phone: form.phone.trim(),
           address: form.address.trim(),
-          city: form.city.trim(),
-          postalCode: form.postalCode.trim() || undefined,
           quantity: form.quantity,
         },
         {
@@ -333,31 +323,6 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    placeholder="City"
-                    value={form.city}
-                    onChange={(e) => setField("city", e.target.value)}
-                    aria-invalid={!!errors.city}
-                  />
-                  {errors.city && (
-                    <p className="text-sm text-red-600">{errors.city}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="postalCode">Postal code (optional)</Label>
-                  <Input
-                    id="postalCode"
-                    placeholder="Postal / ZIP"
-                    value={form.postalCode}
-                    onChange={(e) => setField("postalCode", e.target.value)}
-                  />
-                </div>
-              </div>
-
               <div className="grid gap-2">
                 <Label htmlFor="quantity">Number of copies</Label>
                 <select
@@ -456,13 +421,6 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                   <dd className="text-foreground">{form.phone.trim()}</dd>
                   <dt className="text-muted-foreground">Address</dt>
                   <dd className="text-foreground">{form.address.trim()}</dd>
-                  <dt className="text-muted-foreground">City</dt>
-                  <dd className="text-foreground">
-                    {form.city.trim()}
-                    {form.postalCode.trim()
-                      ? `, ${form.postalCode.trim()}`
-                      : ""}
-                  </dd>
                 </dl>
               </div>
 
@@ -587,12 +545,6 @@ export function OrderBookModal({ open, onOpenChange, story }: OrderBookModalProp
                   <span>Game reward</span>
                   <span className="font-medium">{order.gameDiscountPercent}%</span>
                 </div> : null}
-                <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-muted-foreground">Deliver to</span>
-                  <span className="font-medium text-violet-deep">
-                    {order.city}
-                  </span>
-                </div>
                 <div className="mt-1.5 flex items-center justify-between">
                   <span className="text-muted-foreground">Payment</span>
                   <span className="font-medium text-emerald-700">

@@ -169,6 +169,8 @@ export const frFeatures: Record<string, string> = {
   "My Orders": "Mes commandes",
   "Track your printed storybooks from order to delivery.":
     "Suivez vos livres imprimés de la commande à la livraison.",
+  "See every printed book order, its status, and delivery progress in one place.":
+    "Retrouvez toutes vos commandes de livres imprimés, leur statut et le suivi de livraison au même endroit.",
   "No orders yet": "Aucune commande pour le moment",
   "Open a finished story and order your printed book.":
     "Ouvrez une histoire terminée et commandez votre livre imprimé.",
@@ -181,6 +183,9 @@ export const frFeatures: Record<string, string> = {
   "Cash on Delivery": "Paiement à la livraison",
   "View Book": "Voir le livre",
   "Recent Stories": "Histoires récentes",
+  "My Stories": "Mes histoires",
+  "View Preview": "Voir l’aperçu",
+  "Order Now": "Commander maintenant",
   "Create your first personalized storybook!":
     "Créez votre premier livre d'histoires personnalisé !",
   View: "Voir",
@@ -282,6 +287,11 @@ export const frFeatures: Record<string, string> = {
     "Paiement à la livraison · aucun paiement en ligne",
   Cancel: "Annuler",
   "Continue to Summary": "Continuer vers le récapitulatif",
+  "Number of copies": "Nombre d’exemplaires",
+  "1 copy — regular price": "1 exemplaire — prix normal",
+  "2 copies — 10% discount": "2 exemplaires — remise de 10 %",
+  "3 copies — 20% discount": "3 exemplaires — remise de 20 %",
+  "4 copies — 30% discount": "4 exemplaires — remise de 30 %",
   "Review Your Order": "Récapitulatif de votre commande",
   "Confirm your details and pay cash on delivery.":
     "Confirmez vos coordonnées et payez en espèces à la livraison.",
@@ -301,6 +311,13 @@ export const frFeatures: Record<string, string> = {
   "Order number": "Numéro de commande",
   Book: "Livre",
   Total: "Total",
+  Copies: "Exemplaires",
+  Subtotal: "Sous-total",
+  "Bundle + game discount": "Remise groupée + jeu",
+  "Bundle discount": "Remise groupée",
+  "Order Submitted!": "Commande envoyée !",
+  "Your preview is approved for production. We'll prepare the full book after our team confirms the order. Pay cash when it arrives.":
+    "Votre aperçu est approuvé pour la production. Nous préparerons le livre complet après confirmation de la commande. Payez à la livraison.",
   "Deliver to": "Livrer à",
   Payment: "Paiement",
   Done: "Terminé",

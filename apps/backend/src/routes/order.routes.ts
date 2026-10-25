@@ -16,7 +16,7 @@ const CreateOrderSchema = z.object({
   customerName: z.string().trim().min(2, "Enter your full name").max(100),
   phone: z.string().trim().min(7, "Enter a valid phone number").max(20).regex(phoneRegex, "Enter a valid phone number"),
   address: z.string().trim().min(5, "Enter a valid delivery address").max(500),
-  city: z.string().trim().min(2, "Enter your city").max(100),
+  city: z.string().trim().max(100).optional().default(""),
   postalCode: z.string().trim().max(20).optional().or(z.literal("")),
   quantity: z.number().int().min(1).max(4).default(1),
 });

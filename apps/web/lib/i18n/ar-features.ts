@@ -163,6 +163,8 @@ export const arFeatures: Record<string, string> = {
   "My Orders": "طلباتي",
   "Track your printed storybooks from order to delivery.":
     "تتبع كتبك المطبوعة من الطلب حتى التسليم.",
+  "See every printed book order, its status, and delivery progress in one place.":
+    "اطّلع على جميع طلبات الكتب المطبوعة وحالتها وتقدم التوصيل في مكان واحد.",
   "No orders yet": "لا توجد طلبات بعد",
   "Open a finished story and order your printed book.":
     "افتح قصة مكتملة واطلب كتابك المطبوع.",
@@ -175,6 +177,9 @@ export const arFeatures: Record<string, string> = {
   "Cash on Delivery": "الدفع عند الاستلام",
   "View Book": "عرض الكتاب",
   "Recent Stories": "أحدث القصص",
+  "My Stories": "قصصي",
+  "View Preview": "عرض المعاينة",
+  "Order Now": "اطلب الآن",
   "Create your first personalized storybook!":
     "أنشئ أول كتاب قصة مخصص لك!",
   View: "عرض",
@@ -269,6 +274,11 @@ export const arFeatures: Record<string, string> = {
   "Cash on Delivery · No online payment": "الدفع عند الاستلام · بدون دفع إلكتروني",
   Cancel: "إلغاء",
   "Continue to Summary": "متابعة إلى الملخص",
+  "Number of copies": "عدد النسخ",
+  "1 copy — regular price": "نسخة واحدة — السعر العادي",
+  "2 copies — 10% discount": "نسختان — خصم 10٪",
+  "3 copies — 20% discount": "3 نسخ — خصم 20٪",
+  "4 copies — 30% discount": "4 نسخ — خصم 30٪",
   "Review Your Order": "مراجعة طلبك",
   "Confirm your details and pay cash on delivery.":
     "أكد بياناتك وادفع نقدًا عند الاستلام.",
@@ -287,6 +297,13 @@ export const arFeatures: Record<string, string> = {
   "Order number": "رقم الطلب",
   Book: "الكتاب",
   Total: "الإجمالي",
+  Copies: "النسخ",
+  Subtotal: "المجموع الفرعي",
+  "Bundle + game discount": "خصم المجموعة واللعبة",
+  "Bundle discount": "خصم المجموعة",
+  "Order Submitted!": "تم إرسال الطلب!",
+  "Your preview is approved for production. We'll prepare the full book after our team confirms the order. Pay cash when it arrives.":
+    "تمت الموافقة على المعاينة للإنتاج. سنجهز الكتاب الكامل بعد تأكيد فريقنا للطلب. ادفع نقدًا عند وصوله.",
   "Deliver to": "التسليم إلى",
   Payment: "الدفع",
   Done: "تم",
