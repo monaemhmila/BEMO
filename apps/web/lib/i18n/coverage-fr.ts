@@ -207,7 +207,6 @@ export const frCoverage: Record<string, string> = {
   "You scored": "Votre score est de",
   "Tap Start over for another try.": "Appuyez sur Recommencer pour réessayer.",
   "Start over": "Recommencer",
-  "Play, learn, and become the hero": "Jouez, apprenez et devenez le héros",
   "Short, colorful games for curious kids — inspired by the same worlds, characters, and imagination behind our personalised storybooks.": "De petits jeux colorés pour les enfants curieux — inspirés des mêmes mondes, personnages et de la même imagination que nos livres personnalisés.",
   "These games are free, account-free, and designed for short, screen-time-friendly play. Ready for a bigger adventure? Explore a personalised book when you're done.": "Ces jeux sont gratuits, sans compte, et conçus pour de courtes sessions adaptées au temps d'écran. Prêt pour une plus grande aventure ? Découvrez un livre personnalisé quand vous avez terminé.",
 };

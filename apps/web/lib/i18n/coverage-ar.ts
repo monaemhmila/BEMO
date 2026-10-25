@@ -207,7 +207,6 @@ export const arCoverage: Record<string, string> = {
   "You scored": "لقد سجلت",
   "Tap Start over for another try.": "اضغط على ابدأ من جديد للمحاولة مرة أخرى.",
   "Start over": "ابدأ من جديد",
-  "Play, learn, and become the hero": "العب وتعلّم وكن البطل",
   "Short, colorful games for curious kids — inspired by the same worlds, characters, and imagination behind our personalised storybooks.": "ألعاب قصيرة وملونة للأطفال الفضوليين — مستوحاة من العوالم والشخصيات والخيال نفسه وراء كتب قصصنا المخصصة.",
   "These games are free, account-free, and designed for short, screen-time-friendly play. Ready for a bigger adventure? Explore a personalised book when you're done.": "هذه الألعاب مجانية ولا تتطلب حسابًا، ومصممة للعب قصير ومناسب لوقت الشاشة. هل أنت مستعد لمغامرة أكبر؟ اكتشف كتابًا مخصصًا بعد الانتهاء.",
 };
