@@ -96,6 +96,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queueMessage, setQueueMessage] = useState<string | null>(null);
   const [generatedStory, setGeneratedStory] = useState<GeneratedStoryResult | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -302,6 +303,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
     setLoading(true);
     setError(null);
+    setQueueMessage(null);
     setPdfUrl(null);
     setGeneratedStory(null);
 
@@ -312,6 +314,10 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         return;
       }
 
+      const requestConfig = {
+        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+        withCredentials: true,
+      };
       const response = await axios.post(
         `${BACKEND_URL}/storybook/generate-pdf`,
         {
@@ -324,25 +330,58 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           dedication: dedication || undefined,
           childImage: childImage || undefined,
         },
-        {
-          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
-          withCredentials: true,
-        }
+        requestConfig
       );
 
-      if (response.data?.storyId && response.data?.pages) {
+      let resultData = response.data;
+      if (response.data?.queued && response.data?.jobId) {
+        setQueueMessage(response.data.message || "Our story studio is busy. Please wait while we prepare your preview.");
+        const deadline = Date.now() + 12 * 60 * 1000;
+
+        while (Date.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          const statusResponse = await axios.get(
+            `${BACKEND_URL}/storybook/generate-pdf/status/${response.data.jobId}`,
+            requestConfig
+          );
+          const status = statusResponse.data;
+
+          if (status.state === "completed") {
+            resultData = status.result;
+            setQueueMessage(null);
+            break;
+          }
+          if (status.state === "failed") {
+            throw new Error(status.error || "Preview generation failed");
+          }
+
+          if (status.position > 10) {
+            setQueueMessage(
+              `Our story studio is busy right now. Please wait about 3 minutes while we prepare your preview (position ${status.position}).`
+            );
+          } else {
+            setQueueMessage("Your story preview is being prepared now. Please wait a moment...");
+          }
+        }
+
+        if (resultData === response.data) {
+          throw new Error("The preview is taking longer than expected. Please try again shortly.");
+        }
+      }
+
+      if (resultData?.storyId && resultData?.pages) {
         setGeneratedStory({
-          storyId: response.data.storyId,
-          title: response.data.title || `${childName}'s Storybook`,
-          childName: response.data.childName || childName,
-          pdfUrl: response.data.pdfUrl,
-          pages: response.data.pages,
+          storyId: resultData.storyId,
+          title: resultData.title || `${childName}'s Storybook`,
+          childName: resultData.childName || childName,
+          pdfUrl: resultData.pdfUrl,
+          pages: resultData.pages,
         });
 
         // One free generation was consumed server-side - refresh the counter
-        if (typeof response.data.trialsRemaining === "number") {
+        if (typeof resultData.trialsRemaining === "number") {
           trialUpdateEvent.dispatchEvent(
-            new CustomEvent("trialUpdate", { detail: response.data.trialsRemaining })
+            new CustomEvent("trialUpdate", { detail: resultData.trialsRemaining })
           );
         }
       } else if (response.data instanceof Blob) {
@@ -351,6 +390,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         setPdfUrl(url);
         setPdfTitle(`${childName}'s Storybook`);
       }
+      setQueueMessage(null);
     } catch (err) {
       console.error("Generation failed", err);
       const errorResponse = err instanceof AxiosError ? err.response : undefined;
@@ -1065,6 +1105,11 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
               {error && (
                 <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm">{error}</div>
+              )}
+              {queueMessage && !error && (
+                <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm" role="status">
+                  {queueMessage}
+                </div>
               )}
             </motion.div>
           )}

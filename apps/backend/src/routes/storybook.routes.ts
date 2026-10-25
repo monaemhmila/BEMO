@@ -18,6 +18,7 @@ import {
   getPersonalizedPageSlot,
 } from "../contracts/personalized-book-layout";
 import { personalizedBookImageService } from "../services/personalized-book-image.service";
+import { previewGenerationQueue } from "../services/preview-generation-queue.service";
 
 const router = Router();
 const storyService = StoryService.getInstance();
@@ -867,11 +868,6 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       return;
     }
 
-    logger.info(
-      { childName, templateId, trialsLeft },
-      "Starting no-training PDF storybook generation"
-    );
-
     // The image service creates and uploads a face-focused crop before Fal sees
     // the reference, so the original client upload is never sent directly.
     const storyRef = childImage || null;
@@ -895,139 +891,146 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
       ? `The uploaded portrait is the authoritative identity reference. The parent-confirmed identity facts are: ${identityFacts}. Preserve the child's face shape, complexion, eyes, hair, and age-appropriate proportions exactly. These facts are non-negotiable and must not be changed or guessed differently.`
       : undefined;
 
-    // Step 1: Generate story script via LLM
-    const script = await storyService.generatePersonalizedPrintStoryScript(
-      childName,
-      {
-        childName,
-        childAge,
-        template,
-        dedication,
-        language,
-        gender,
-      },
-      {
-        name: childName,
-        age: childAge,
-        appearance,
+    let storyId: string | undefined;
+    const queued = previewGenerationQueue.enqueue(req.userId!, async () => {
+      try {
+        logger.info(
+          { childName, templateId, trialsLeft },
+          "Starting no-training PDF storybook generation"
+        );
+
+        // Step 1: Generate story script via LLM. This is inside the capacity
+        // gate so the full generation workflow is limited to ten users.
+        const script = await storyService.generatePersonalizedPrintStoryScript(
+          childName,
+          { childName, childAge, template, dedication, language, gender },
+          { name: childName, age: childAge, appearance }
+        );
+
+        const closingCover = chooseStoryCover({
+          category: template.category,
+          title: script.title,
+          templateName: template.name,
+          templateDescription: template.description,
+          templatePrompts: template.prompts,
+          pagePrompts: script.pages.map((page) => page.imageDescription),
+          gender,
+          language,
+        });
+
+        const story = await prismaClient.story.create({
+          data: {
+            title: script.title,
+            userId: req.userId!,
+            status: "Generating",
+            childName,
+            childAge,
+            gender,
+            artStyle,
+            clothesGenerated: script.clothesGenerated?.trim() || null,
+            category: template.category,
+            dedication,
+            language,
+            templateId: template.id,
+            referenceImageUrl: storyRef,
+          },
+        });
+        storyId = story.id;
+
+        const consumeResult = await trialService.consumeGeneration(
+          req.userId!,
+          story.id,
+          "storybook_generation"
+        );
+        if (!consumeResult.success) {
+          throw new Error(consumeResult.error || "NO_TRIAL_GENERATIONS_LEFT");
+        }
+
+        const previewPages: Array<{
+          pageNumber: number;
+          content: string;
+          imagePrompt: string;
+          imageUrl: string;
+        }> = [];
+        for (const pageNumber of [1, 2]) {
+          const page = script.pages[pageNumber - 1];
+          const imagePrompt = injectGeneratedClothes(
+            personalizedPagePrompt(pageNumber, page),
+            story.clothesGenerated,
+          );
+          const imageUrl = await personalizedBookImageService.generateChildSquare({
+            childName,
+            childAge,
+            gender,
+            referenceImageUrl: storyRef || childImage || "",
+            prompt: imagePrompt,
+            artStyle,
+            aspectRatio: pageNumber === 1 ? "1:1" : "16:9",
+            edgePlacementSide: pageNumber === 1 ? undefined : getPageComposition(pageNumber, PERSONALIZED_PRINT_PAGE_COUNT).characterSide,
+          });
+          previewPages.push({ pageNumber, content: page.text, imagePrompt, imageUrl });
+        }
+
+        const previewByPage = new Map(previewPages.map((page) => [page.pageNumber, page]));
+        await prismaClient.storyPage.createMany({
+          data: Array.from({ length: PERSONALIZED_PRINT_PAGE_COUNT }, (_, index) => {
+            const pageNumber = index + 1;
+            const scriptPage = script.pages[pageNumber - 1];
+            const preview = previewByPage.get(pageNumber);
+            const finalCover = pageNumber === PERSONALIZED_PRINT_PAGE_COUNT;
+            return {
+              storyId: story.id,
+              pageNumber,
+              content: finalCover ? "" : scriptPage?.text || "",
+              imagePrompt: finalCover
+                ? "Printed closing cover"
+                : injectGeneratedClothes(personalizedPagePrompt(pageNumber, scriptPage || {}), story.clothesGenerated),
+              imageUrl: finalCover ? closingCover.url : preview?.imageUrl || null,
+              status: (finalCover || preview?.imageUrl ? "Generated" : "Pending") as "Generated" | "Pending",
+            };
+          }),
+        });
+
+        return {
+          success: true,
+          storyId: story.id,
+          title: script.title,
+          childName,
+          pages: previewPages,
+          trialsRemaining: await trialService.getRemaining(req.userId!),
+        };
+      } catch (error) {
+        if (storyId) {
+          await prismaClient.story.update({
+            where: { id: storyId },
+            data: { status: "Failed" },
+          }).catch(() => undefined);
+        }
+        throw error;
       }
-    );
-
-    // Generate the reusable final cover without an AI image-generation call.
-    const closingCover = chooseStoryCover({
-      category: template.category,
-      title: script.title,
-      templateName: template.name,
-      templateDescription: template.description,
-      templatePrompts: template.prompts,
-      pagePrompts: script.pages.map((page) => page.imageDescription),
-      gender,
-      language,
-    });
-    // Store the one-time costume before any child image is generated. Every
-    // image prompt below reads this persisted value, never a new GPT result.
-    const story = await prismaClient.story.create({
-      data: {
-        title: script.title,
-        userId: req.userId!,
-        status: "Generating",
-        childName,
-        childAge,
-        gender,
-        artStyle,
-        clothesGenerated: script.clothesGenerated?.trim() || null,
-        category: template.category,
-        dedication,
-        language,
-        templateId: template.id,
-        referenceImageUrl: storyRef,
-      },
     });
 
-    // Only the first two child-focused square images are generated for the preview.
-    const previewPages = await Promise.all([1, 2].map(async (pageNumber) => {
-      const page = script.pages[pageNumber - 1];
-      const imagePrompt = injectGeneratedClothes(
-        personalizedPagePrompt(pageNumber, page),
-        story.clothesGenerated,
-      );
-      const imageUrl = await personalizedBookImageService.generateChildSquare({
-        childName,
-        childAge,
-        gender,
-        referenceImageUrl: storyRef || childImage || "",
-        prompt: imagePrompt,
-        artStyle,
-        aspectRatio: pageNumber === 1 ? "1:1" : "16:9",
-        edgePlacementSide: pageNumber === 1 ? undefined : getPageComposition(pageNumber, PERSONALIZED_PRINT_PAGE_COUNT).characterSide,
-      }).catch((err) => {
-        logger.error({ err, pageNumber }, "Failed child image generation for preview page");
-        return null;
-      });
-      return {
-        pageNumber,
-        content: page.text,
-        imagePrompt,
-        imageUrl,
-      };
-    }));
-
-    // Consume one free generation now that the story was successfully created
-    const consumeResult = await trialService.consumeGeneration(
-      req.userId!,
-      story.id,
-      "storybook_generation"
-    );
-
-    if (!consumeResult.success) {
-      await prismaClient.story.update({
-        where: { id: story.id },
-        data: { status: "Failed" },
-      });
-
-      res.status(402).json({
-        message:
-          "You have used all of your free story generations. Order a printed book to unlock another one!",
-        code: "NO_TRIAL_GENERATIONS_LEFT",
-        error: consumeResult.error,
+    if (!queued) {
+      res.status(429).json({
+        success: false,
+        code: "PREVIEW_CAPACITY_REACHED",
+        message: "Our story studio is full right now. Please try again in a few minutes.",
+        retryAfterSeconds: 180,
       });
       return;
     }
 
-    const previewByPage = new Map(previewPages.map((page) => [page.pageNumber, page]));
-    await prismaClient.storyPage.createMany({
-      data: Array.from({ length: PERSONALIZED_PRINT_PAGE_COUNT }, (_, index) => {
-        const pageNumber = index + 1;
-        const scriptPage = script.pages[pageNumber - 1];
-        const preview = previewByPage.get(pageNumber);
-        const finalCover = pageNumber === PERSONALIZED_PRINT_PAGE_COUNT;
-        return {
-          storyId: story.id,
-          pageNumber,
-          content: finalCover ? "" : scriptPage?.text || "",
-          imagePrompt: finalCover
-            ? "Printed closing cover"
-            : injectGeneratedClothes(
-                personalizedPagePrompt(pageNumber, scriptPage || {}),
-                story.clothesGenerated,
-              ),
-          imageUrl: finalCover ? closingCover.url : preview?.imageUrl || null,
-          status: (finalCover || preview?.imageUrl ? "Generated" : "Pending") as "Generated" | "Pending",
-        };
-      }),
-    });
-
-    // Remaining illustrations and the PDF stay pending until an admin confirms
-    // the physical-book order.
-
-    // Immediately trigger & return first 2 preview images to the user
-    res.json({
+    res.status(202).json({
       success: true,
-      storyId: story.id,
-      title: script.title,
-      childName,
-      pages: previewPages,
-      trialsRemaining: await trialService.getRemaining(req.userId!),
+      queued: true,
+      jobId: queued.jobId,
+      position: queued.position,
+      active: queued.active,
+      queuedJobs: queued.queued,
+      estimatedWaitSeconds: queued.estimatedWaitSeconds,
+      message: queued.position > 10
+        ? `Our story studio is busy right now. Please wait about ${Math.ceil(queued.estimatedWaitSeconds / 60)} minutes while we prepare your preview.`
+        : "Your story preview is being prepared.",
     });
     return;
   } catch (error) {
@@ -1035,6 +1038,15 @@ router.post("/generate-pdf", guestGenerationIpLimiter, authOrGuestMiddleware, st
     res.status(500).json({ message: "Error generating storybook PDF" });
     return;
   }
+});
+
+router.get("/generate-pdf/status/:jobId", authOrGuestMiddleware, (req, res) => {
+  const status = previewGenerationQueue.getStatus(req.params.jobId, req.userId!);
+  if (!status) {
+    res.status(404).json({ message: "Preview job not found" });
+    return;
+  }
+  res.json(status);
 });
 
 export const storybookRouter = router;
