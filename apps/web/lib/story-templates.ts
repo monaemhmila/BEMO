@@ -44,7 +44,7 @@ const LOCAL_TEMPLATE_COVERS: Record<string, string> = {
   "my-first-day-at-school": "/templates/my-first-day-at-school/cover.png",
 };
 
-function toAudience(raw: string): StoryAudience {
+function toAudience(raw: unknown): StoryAudience {
   return raw === "girl" || raw === "boy" ? raw : "any";
 }
 
@@ -87,6 +87,7 @@ function toPreviews(raw: StorefrontTemplate["previews"]): StoryMedia[] {
 
   const slides: StoryMedia[] = [];
   for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
     const src = toImageUrl(entry?.src ?? null);
     if (!src) continue;
 
@@ -106,20 +107,25 @@ function toPreviews(raw: StorefrontTemplate["previews"]): StoryMedia[] {
  * than the database, because labels and colours are a presentation concern.
  */
 function toStoryTemplate(row: StorefrontTemplate): StoryTemplate {
+  const id = typeof row.id === "string" ? row.id : "";
+  const title = typeof row.title === "string" ? row.title : "Untitled story";
+  const description = typeof row.description === "string" ? row.description : "";
+  const ageRange = typeof row.ageRange === "string" ? row.ageRange : "2-8";
+
   return {
-    slug: row.id,
-    title: row.title,
+    slug: id,
+    title,
     audience: toAudience(row.audience),
     category: toStoryCategory(row.category),
     categoryLabel: getCategoryMeta(row.category).label,
     emoji: row.emoji ?? "",
     tagline: row.tagline ?? "",
-    description: row.description,
+    description,
     excerpt: row.excerpt ?? "",
     translations: row.translations,
     coverImage: LOCAL_TEMPLATE_COVERS[row.id] ?? toImageUrl(row.coverImage),
     previews: toPreviews(row.previews),
-    ageRange: row.ageRange,
+    ageRange,
     theme: row.theme,
     artStyle: row.artStyle ?? "",
     moral: row.moral ?? undefined,
