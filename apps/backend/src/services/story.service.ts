@@ -361,12 +361,13 @@ Return ONLY valid JSON:
         ...script,
         clothesGenerated: outfit,
         title: this.ensureTitleIncludesChildName(script.title, input.childName, input.language),
-        pages: outfit
-          ? script.pages.map((page) => ({
-              ...page,
-              imageDescription: this.withConsistentOutfit(page.imageDescription, outfit),
-            }))
-          : script.pages,
+        pages: script.pages.map((page) => ({
+          ...page,
+          text: this.ensurePageTextIncludesChildName(page.text, input.childName, input.language),
+          ...(outfit
+            ? { imageDescription: this.withConsistentOutfit(page.imageDescription, outfit) }
+            : {}),
+        })),
       },
       pageCount
     );
@@ -409,7 +410,7 @@ Return exactly ${pageCount} pages as valid JSON only. Keep one continuous story 
 adventure, challenge, resolution, and gentle ending. Page 1 is a short cover hook. Page ${pageCount} is a
 short closing story page before the reusable final cover image.
 
-The story text may mention and feature the child on every page. Return a childImageDescription for every page. Describe the complete environment and what the ${input.gender || "child"} is doing or feeling. You may say "boy" or "girl", but never use the child's name, age, hair, face, skin, eyes, ethnicity, complexion, or any other physical identity detail. Keep the child on the far edge specified by the physical layout, leaving the opposite leaf open for text. Never put image style instructions, text, signs, logos, or story text inside the image prompt.
+The exact name "${characterName}" MUST appear in the story text on EVERY page. Always use "${characterName}" when referring to the hero in the prose; do not replace the name with generic wording such as "the child", "the boy", or "the girl". Return a childImageDescription for every page. Describe the complete environment and what the ${input.gender || "child"} is doing or feeling. You may say "boy" or "girl" in image descriptions, but never use the child's name, age, hair, face, skin, eyes, ethnicity, complexion, or any other physical identity detail there. Keep the child on the far edge specified by the physical layout, leaving the opposite leaf open for text. Never put image style instructions, text, signs, logos, or story text inside the image prompt.
 
 First determine the hero's story role and generate one complete, specific costume description in clothesGenerated. Generate clothesGenerated exactly once for the whole story. Do not describe or vary the costume separately in any childImageDescription. The server will inject the exact clothesGenerated value after every child scene before sending the prompt to image generation. Keep all clothing items, colors, accessories, equipment, and footwear identical on every child image. Scene-only pages must not mention or include the costume.
 
@@ -442,14 +443,14 @@ Return exactly: { "title": "...", "clothesGenerated": "...", "pages": [{ "pageNu
     return {
       title: this.ensureTitleIncludesChildName(parsed.title, input.childName, input.language),
       clothesGenerated: outfit,
-      pages: parsed.pages.map((page, index) => {
+        pages: parsed.pages.map((page, index) => {
         const isChildPage = getPersonalizedPageSlot(index + 1).kind === "child";
         const childImageDescription = page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "";
         const imageDescription = page.imageDescription?.trim() || childImageDescription;
         return {
           ...page,
           pageNumber: index + 1,
-          text: page.text?.trim() || "",
+          text: this.ensurePageTextIncludesChildName(page.text?.trim() || "", input.childName, input.language),
           childImageDescription: outfit && isChildPage
             ? this.withConsistentOutfit(childImageDescription, outfit)
             : childImageDescription,
@@ -541,6 +542,30 @@ Return exactly: { "title": "...", "clothesGenerated": "...", "pages": [{ "pageNu
     }
 
     return `${cleanName} and ${cleanTitle}`;
+  }
+
+  /** Keep the hero named in every piece of reader-facing story prose. */
+  private ensurePageTextIncludesChildName(text: string, childName: string, language?: string): string {
+    const cleanText = text.trim();
+    const cleanName = childName.trim();
+    if (!cleanText || !cleanName) return cleanText;
+
+    const escapedName = cleanName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escapedName}\\b`, "i").test(cleanText)) return cleanText;
+
+    const normalizedLanguage = language?.toLocaleLowerCase() || "";
+    if (normalizedLanguage.startsWith("french") || normalizedLanguage.startsWith("fr")) {
+      const replaced = cleanText.replace(/\\b(l['’]enfant|le petit|la petite|l’enfant)\\b/i, cleanName);
+      return replaced === cleanText ? `${cleanName} ${cleanText}` : replaced;
+    }
+
+    // Arabic prose reads naturally with the name introduced at the beginning;
+    // for English, replace the common generic protagonist phrase directly.
+    const replaced = cleanText.replace(
+      /\b(the child|the boy|the girl|this child|a child)\b/i,
+      cleanName,
+    );
+    return replaced === cleanText ? `${cleanName} ${cleanText}` : replaced;
   }
 
   /**

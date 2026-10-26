@@ -319,16 +319,20 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
     setGeneratedStory(null);
 
     try {
-      const token = await getToken?.();
-      if (isSignedIn && !token) {
-        setError("Your sign-in session needs to be refreshed. Please sign in again.");
-        return;
-      }
-
-      const requestConfig = {
-        ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
-        withCredentials: true,
+      // A generation can stay queued for several minutes while Clerk JWTs are
+      // short-lived. Build auth headers per request instead of reusing the JWT
+      // captured when generation started.
+      const requestConfig = async () => {
+        const token = await getToken?.();
+        if (isSignedIn && !token) {
+          throw new Error("Your sign-in session needs to be refreshed. Please sign in again.");
+        }
+        return {
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          withCredentials: true,
+        };
       };
+
       const response = await axios.post(
         `${BACKEND_URL}/storybook/generate-pdf`,
         {
@@ -341,7 +345,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           dedication: dedication || undefined,
           childImage: childImage || undefined,
         },
-        requestConfig
+        await requestConfig()
       );
 
       let resultData = response.data;
@@ -351,10 +355,24 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
         while (Date.now() < deadline) {
           await new Promise((resolve) => setTimeout(resolve, 3000));
-          const statusResponse = await axios.get(
-            `${BACKEND_URL}/storybook/generate-pdf/status/${response.data.jobId}`,
-            requestConfig
-          );
+          let statusResponse;
+          try {
+            statusResponse = await axios.get(
+              `${BACKEND_URL}/storybook/generate-pdf/status/${response.data.jobId}`,
+              await requestConfig()
+            );
+          } catch (error) {
+            // If a token expired between polling attempts, getToken() will
+            // refresh it and the next request can continue the same job.
+            if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+              statusResponse = await axios.get(
+                `${BACKEND_URL}/storybook/generate-pdf/status/${response.data.jobId}`,
+                await requestConfig()
+              );
+            } else {
+              throw error;
+            }
+          }
           const status = statusResponse.data;
 
           if (status.state === "completed") {
