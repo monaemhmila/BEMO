@@ -128,6 +128,15 @@ export function TemplateBookDetail({
     <div className="min-h-screen bg-paper">
       <main className="pb-20 pt-[7rem] md:pb-40">
         <div className="shell">
+          <nav aria-label="Breadcrumb" className="pt-10">
+            <Link
+              href="/books"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+            >
+              Back to all books
+            </Link>
+          </nav>
+
           <MotionReveal className="flex w-full flex-col justify-between lg:flex-row lg:space-x-8">
             {/* Mobile title block */}
             <div className="order-1 py-2 text-left md:block lg:hidden">
@@ -168,6 +177,9 @@ export function TemplateBookDetail({
 
             {/* Product info */}
             <MotionReveal amount={0.1} className="order-3 py-2 lg:order-2 lg:w-[35%] lg:py-6 lg:pl-4">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
+                Personalised storybook
+              </span>
               <h1 className="hidden font-display text-[34px] font-semibold leading-[34px] text-violet-deep lg:block">
                 <LocalizedStoryText
                   templateId={template.slug}

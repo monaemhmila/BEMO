@@ -400,6 +400,7 @@ export const frFeatures: Record<string, string> = {
   "Bedtime Adventures": "Aventures du soir",
   "Storybook Platform": "Plateforme de livres d'histoires",
   "Back to all books": "Retour à tous les livres",
+  "Personalised storybook": "Livre d'histoires personnalisé",
   "Personalised book": "Livre personnalisé",
   "Personalise this book": "Personnaliser ce livre",
   "Personalise my book": "Personnaliser mon livre",

@@ -385,6 +385,7 @@ export const arFeatures: Record<string, string> = {
   "Bedtime Adventures": "مغامرات ما قبل النوم",
   "Storybook Platform": "منصة كتب القصص",
   "Back to all books": "العودة إلى جميع الكتب",
+  "Personalised storybook": "كتاب قصص مخصص",
   "Personalised book": "كتاب مخصص",
   "Personalise this book": "خصص هذا الكتاب",
   "Personalise my book": "خصص كتابي",
