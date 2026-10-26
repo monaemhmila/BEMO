@@ -7,14 +7,86 @@ import { BookCard } from "@/components/book-card";
 import { LocalizedStoryText } from "@/components/localized-story-text";
 import { FillerImage } from "@/components/filler";
 import { SiteFooter } from "@/components/sections/site-footer";
-import {
-  TemplateBookDetail,
-  TemplateBookDetailMetadata,
-} from "@/components/template-book-detail";
 import { Button } from "@/components/ui/button";
 import { getBook, allBooks, bestsellers, newReleases, girlsBooks, boysBooks } from "@/lib/data";
 import { getStoreTemplates } from "@/lib/story-templates";
 import { MotionReveal } from "@/components/motion-reveal";
+import type { StoryTemplate } from "@/data/story-templates";
+
+const KNOWN_STORE_SLUGS = new Set([
+  "lets-count-1-10",
+  "my-abc-adventure",
+  "my-little-dragon-friend",
+  "the-castle-above-the-clouds",
+  "my-dinosaur-adventure",
+  "the-secret-door-to-fairyland",
+  "the-little-wizards-first-spell",
+  "the-rainbow-that-lost-its-colors",
+  "the-unicorns-missing-star",
+  "the-magic-toy-shop",
+  "my-magical-shapes-adventure",
+  "the-wonderful-world-of-colors",
+  "my-first-trip-to-space",
+  "my-first-day-at-school",
+]);
+
+function fallbackTemplate(slug: string): StoryTemplate | undefined {
+  if (!KNOWN_STORE_SLUGS.has(slug)) return undefined;
+  return {
+    slug,
+    title: slug.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()),
+    audience: "any",
+    category: "adventure",
+    categoryLabel: "Adventure",
+    emoji: "",
+    tagline: "A personalised adventure for your child.",
+    description: "Create a magical personalised storybook with your child as the hero.",
+    excerpt: "",
+    coverImage: `/templates/${slug}/cover.png`,
+    previews: [],
+    ageRange: "2-8",
+    theme: "",
+    artStyle: "",
+  };
+}
+
+/**
+ * Keep the route usable even if a client-only gallery/detail enhancement fails
+ * during server rendering. The catalogue data is still shown and the CTA
+ * remains available; the richer detail component can be restored independently.
+ */
+function StoreTemplateFallback({ template }: { template: StoryTemplate }) {
+  return (
+    <div className="min-h-screen bg-paper">
+      <main className="pb-20 pt-[7rem]">
+        <div className="shell">
+          <Link href="/books" className="inline-flex pt-10 text-sm font-semibold text-muted-foreground hover:text-primary">
+            <ArrowLeft className="mr-2 size-4" /> Back to all books
+          </Link>
+          <div className="mt-8 grid items-start gap-12 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-3xl bg-white shadow-xl">
+              {template.coverImage ? (
+                <img src={template.coverImage} alt={`${template.title} book cover`} className="aspect-square w-full object-cover" />
+              ) : (
+                <div className="aspect-square bg-primary/10" />
+              )}
+            </div>
+            <div className="lg:py-6">
+              <p className="text-sm font-bold uppercase tracking-[0.15em] text-primary">Personalised storybook</p>
+              <h1 className="mt-4 font-display text-4xl font-bold text-violet-deep sm:text-5xl">{template.title}</h1>
+              <p className="mt-6 text-lg leading-relaxed text-muted-foreground">{template.description}</p>
+              <p className="mt-4 text-muted-foreground">For kids ages {template.ageRange} years.</p>
+              <Link href={`/storybook/create?templateId=${encodeURIComponent(template.slug)}`} className="mt-8 inline-flex rounded-full bg-primary px-8 py-4 font-bold text-white hover:bg-violet-deep">
+                Personalise my book
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
 
 /**
  * The legacy hard-coded books are still pre-rendered. Story templates are read
@@ -56,13 +128,9 @@ export default async function BookDetailPage({
 }) {
   const { slug } = await params;
   const templates = await getStoreTemplates();
-  const template = templates.find((item) => item.slug === slug);
+  const template = templates.find((item) => item.slug === slug) ?? fallbackTemplate(slug);
   if (template) {
-    const moreStories = templates
-      .filter((item) => item.slug !== template.slug)
-      .slice(0, 3);
-
-    return <TemplateBookDetail template={template} moreStories={moreStories} />;
+    return <StoreTemplateFallback template={template} />;
   }
 
   const book = getBook(slug);
@@ -204,8 +272,14 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const template = (await getStoreTemplates()).find((item) => item.slug === slug);
-  if (template) return TemplateBookDetailMetadata({ template });
+  const template = (await getStoreTemplates()).find((item) => item.slug === slug) ?? fallbackTemplate(slug);
+  if (template) {
+    return {
+      title: template.title,
+      description: `${template.tagline} Personalise this storybook so your child becomes the hero.`,
+      alternates: { canonical: `/books/${template.slug}` },
+    };
+  }
 
   const book = getBook(slug);
   if (!book) return { title: "Book not found" };
