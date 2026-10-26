@@ -49,8 +49,21 @@ function toAudience(raw: string): StoryAudience {
 }
 
 function toReview(raw: StorefrontTemplate["review"]): StoryReview | undefined {
-  if (!raw || !raw.quote || !raw.author) return undefined;
-  return raw;
+  // The catalogue is persisted as JSON and older rows may contain a partial
+  // review object. Normalise it here so a malformed review can never crash the
+  // detail page (for example when the UI calls count.toLocaleString()).
+  if (!raw || typeof raw !== "object") return undefined;
+
+  const quote = typeof raw.quote === "string" ? raw.quote.trim() : "";
+  const author = typeof raw.author === "string" ? raw.author.trim() : "";
+  if (!quote || !author) return undefined;
+
+  const rating = Number.isFinite(raw.rating)
+    ? Math.max(0, Math.min(5, Math.round(raw.rating)))
+    : 0;
+  const count = Number.isFinite(raw.count) ? Math.max(0, Math.round(raw.count)) : 0;
+
+  return { rating, count, quote, author };
 }
 
 /**
