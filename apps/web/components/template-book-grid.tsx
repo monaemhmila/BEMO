@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { TemplateBookCover } from "@/components/template-book-cover";
 import { LocalizedStoryText } from "@/components/localized-story-text";
@@ -7,32 +10,6 @@ import type { StoryTemplate } from "@/data/story-templates";
 
 const PRICE_FROM = "";
 const PRICE = "70 DT";
-
-/** Hinge position as % of cover width. Tweak this one number. */
-const HINGE = 5.5;
-
-const spineGradient = `linear-gradient(90deg,
-  rgba(255,255,255,.38) 0%,
-  rgba(255,255,255,.14) 0.7%,
-  rgba(0,0,0,.06) 1.8%,
-  rgba(0,0,0,.16) ${HINGE - 1.6}%,
-  rgba(0,0,0,.55) ${HINGE - 0.35}%,
-  rgba(0,0,0,.35) ${HINGE}%,
-  rgba(255,255,255,.34) ${HINGE + 0.55}%,
-  rgba(255,255,255,.06) ${HINGE + 1.2}%,
-  rgba(0,0,0,.30) ${HINGE + 2}%,
-  rgba(0,0,0,.14) ${HINGE + 5}%,
-  rgba(0,0,0,.04) ${HINGE + 10}%,
-  transparent ${HINGE + 15}%)`;
-
-const sheenGradient = `linear-gradient(115deg,
-  rgba(255,255,255,.20) 0%,
-  rgba(255,255,255,0) 35%,
-  rgba(255,255,255,0) 65%,
-  rgba(0,0,0,.14) 100%)`;
-
-const edgeGradient = `linear-gradient(180deg, rgba(255,255,255,.14), transparent 6%, transparent 94%, rgba(0,0,0,.18)),
-  linear-gradient(270deg, rgba(0,0,0,.16), transparent 3%)`;
 
 /** Wraps a cover image so it looks like a hardcover book with a hinged spine. */
 function BookFrame({ children }: { children: ReactNode }) {
@@ -43,7 +20,7 @@ function BookFrame({ children }: { children: ReactNode }) {
         aria-hidden
         className="absolute bottom-0 left-[3%] right-0 top-[1.2%] rounded-r-[10px] rounded-bl-[3px]"
         style={{
-          background: "repeating-linear-gradient(90deg,#f4f1ea 0 1px,#ddd8cc 1px 2px)",
+          background: "#fffaf0",
           boxShadow: "inset 0 -1px 0 rgba(0,0,0,.25)",
         }}
       />
@@ -58,9 +35,8 @@ function BookFrame({ children }: { children: ReactNode }) {
       >
         {children}
 
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: edgeGradient }} />
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: sheenGradient }} />
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: spineGradient }} />
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-[5.5%] bg-[#07549d]/25" />
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-[2%] bg-[#14324a]/10" />
 
         {/* Fine edge highlight, like laminated board */}
         <div
@@ -136,9 +112,20 @@ export function TemplateBookCard({ template }: { template: StoryTemplate }) {
 export function TemplateBookGrid({ templates }: { templates: StoryTemplate[] }) {
   return (
     <div className="mt-10 grid w-full grid-cols-1 gap-y-7 md:grid-cols-2 md:gap-[21px] lg:grid-cols-3 lg:gap-[21px] xl:grid-cols-[repeat(3,390px)] xl:justify-between xl:gap-x-0">
-      {templates.map((template) => (
-        <TemplateBookCard key={template.slug} template={template} />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {templates.map((template, index) => (
+          <motion.div
+            key={template.slug}
+            layout
+            initial={{ opacity: 0, y: 28, scale: 0.94 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -18, scale: 0.94 }}
+            transition={{ duration: 0.55, delay: Math.min(index * 0.08, 0.45), ease: "easeOut" }}
+          >
+            <TemplateBookCard template={template} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { BookMobileCta } from "@/components/book-mobile-cta";
 import { TemplateBookGrid } from "@/components/template-book-grid";
 import { LocalizedStoryText } from "@/components/localized-story-text";
 import { SiteFooter } from "@/components/sections/site-footer";
+import { MotionReveal } from "@/components/motion-reveal";
 import {
   CATEGORY_META,
   createStoryHref,
@@ -127,7 +128,16 @@ export function TemplateBookDetail({
     <div className="min-h-screen bg-paper">
       <main className="pb-20 pt-[7rem] md:pb-40">
         <div className="shell">
-          <div className="flex w-full flex-col justify-between lg:flex-row lg:space-x-8">
+          <nav aria-label="Breadcrumb" className="pt-10">
+            <Link
+              href="/books"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground transition-colors hover:text-primary"
+            >
+              Back to all books
+            </Link>
+          </nav>
+
+          <MotionReveal className="flex w-full flex-col justify-between lg:flex-row lg:space-x-8">
             {/* Mobile title block */}
             <div className="order-1 py-2 text-left md:block lg:hidden">
               <h1 className="font-display text-[30px] font-semibold leading-tight text-violet-deep">
@@ -157,16 +167,19 @@ export function TemplateBookDetail({
             </div>
 
             {/* Gallery + desktop review */}
-            <div className="order-2 flex flex-col md:max-w-[664px] lg:order-1 lg:max-w-[630px]">
+            <MotionReveal amount={0.1} className="order-2 flex flex-col md:max-w-[664px] lg:order-1 lg:max-w-[630px]">
               <BookGallery slides={slides} alt={template.title} />
 
               <div className="ml-24 mt-6 hidden max-w-[482px] lg:block">
                 <ReviewHighlight template={template} />
               </div>
-            </div>
+            </MotionReveal>
 
             {/* Product info */}
-            <div className="order-3 py-2 lg:order-2 lg:w-[35%] lg:py-6 lg:pl-4">
+            <MotionReveal amount={0.1} className="order-3 py-2 lg:order-2 lg:w-[35%] lg:py-6 lg:pl-4">
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
+                Personalised storybook
+              </span>
               <h1 className="hidden font-display text-[34px] font-semibold leading-[34px] text-violet-deep lg:block">
                 <LocalizedStoryText
                   templateId={template.slug}
@@ -241,11 +254,11 @@ export function TemplateBookDetail({
               <div className="mt-8">
                 <BookFaq items={FAQS} />
               </div>
-            </div>
-          </div>
+            </MotionReveal>
+          </MotionReveal>
 
           {/* Reviews */}
-          <section id="book-reviews" className="mt-20 scroll-mt-32">
+          <MotionReveal id="book-reviews" className="mt-20 scroll-mt-32">
             <h2 className="font-display text-3xl font-bold text-violet-deep">Reviews</h2>
             {review ? (
               <div className="mt-6 max-w-[560px] rounded-3xl border border-border bg-white p-6 shadow-sm">
@@ -258,16 +271,16 @@ export function TemplateBookDetail({
             ) : (
               <p className="mt-4 text-muted-foreground">No reviews yet for this story.</p>
             )}
-          </section>
+          </MotionReveal>
 
           {/* More stories */}
           {moreStories.length > 0 && (
-            <section className="mt-20">
+            <MotionReveal className="mt-20">
               <h2 className="font-display text-3xl font-bold text-violet-deep">
                 More stories to love
               </h2>
               <TemplateBookGrid templates={moreStories} />
-            </section>
+            </MotionReveal>
           )}
         </div>
       </main>
@@ -292,5 +305,16 @@ export function TemplateBookDetailMetadata({
   return {
     title: template.title,
     description: `${template.tagline} Personalise this storybook so your child becomes the hero.`,
+    alternates: {
+      canonical: `/books/${template.slug}`,
+    },
+    openGraph: {
+      title: template.title,
+      description: `${template.tagline} Personalise this storybook so your child becomes the hero.`,
+      type: "website",
+      images: template.coverImage
+        ? [{ url: template.coverImage, alt: `${template.title} book cover` }]
+        : [{ url: "/brand/social-card.svg", width: 1200, height: 630 }],
+    },
   };
 }

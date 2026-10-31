@@ -182,7 +182,18 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved && isLocale(saved)) {
         setLocale(saved);
+        return;
       }
+
+      // Respect the visitor's browser language on first visit. English remains
+      // the fallback for visitors whose browser is not French or Arabic.
+      const browserLanguage = navigator.language.toLowerCase();
+      const detected: Locale = browserLanguage.startsWith("fr")
+        ? "fr"
+        : browserLanguage.startsWith("ar")
+          ? "ar"
+          : "en";
+      if (detected !== "en") setLocale(detected);
     } catch {
       // ignore
     }

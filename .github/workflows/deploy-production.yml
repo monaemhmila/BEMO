@@ -1,0 +1,47 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [PROD]
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Deploy over SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+
+          : "${VPS_PORT:=22}"
+          test -n "${VPS_HOST}"
+          test -n "${VPS_USER}"
+          test -n "${VPS_SSH_KEY}"
+          test -n "${VPS_DEPLOY_PATH}"
+
+          install -m 700 -d "$HOME/.ssh"
+          # Normalize Windows line endings before OpenSSH parses the key.
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/vps_deploy_key"
+          chmod 600 "$HOME/.ssh/vps_deploy_key"
+          ssh-keygen -y -f "$HOME/.ssh/vps_deploy_key" >/dev/null
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> "$HOME/.ssh/known_hosts"
+
+          ssh -p "$VPS_PORT" -i "$HOME/.ssh/vps_deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            "cd '$VPS_DEPLOY_PATH' && git fetch origin PROD && git checkout PROD && git pull --ff-only origin PROD && bash deploy/deploy-production.sh"

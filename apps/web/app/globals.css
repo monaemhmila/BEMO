@@ -4,20 +4,20 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ---------------------------------------------------------------
-   Mon Petit Hero brand tokens
-   Playful storybook palette: deep violet ink, buttercup accent,
-   warm paper background.
-   Swap these six values to re-skin the whole page.
+   Mon Petit Hero storybook palette
+   Bright rounded colors inspired by the new kids-book hero artwork.
 ---------------------------------------------------------------- */
 :root {
-  --radius: 1.25rem;
+  --radius: 1.35rem;
 
-  --ww-violet: #5b3bd4;
-  --ww-violet-dark: #3d2699;
-  --ww-buttercup: #ffc83d;
-  --ww-paper: #fdf7ef;
-  --ww-blush: #ffe9e2;
-  --ww-ink: #1f1636;
+  --ww-violet: #0875d1;
+  --ww-violet-dark: #07549d;
+  --ww-buttercup: #f7c900;
+  --ww-paper: #fffaf0;
+  --ww-blush: #ffe2ea;
+  --ww-ink: #14324a;
+  --ww-teal: #1bb1a6;
+  --ww-coral: #e6322c;
 
   --background: #ffffff;
   --foreground: var(--ww-ink);
@@ -29,13 +29,13 @@
   --primary-foreground: #ffffff;
   --secondary: var(--ww-paper);
   --secondary-foreground: var(--ww-ink);
-  --muted: #f4f1fa;
-  --muted-foreground: #6b6483;
+  --muted: #eef8fb;
+  --muted-foreground: #5c7180;
   --accent: var(--ww-buttercup);
   --accent-foreground: var(--ww-ink);
-  --destructive: #e5484d;
-  --border: #eae6f4;
-  --input: #eae6f4;
+  --destructive: #e6322c;
+  --border: #d9edf0;
+  --input: #d9edf0;
   --ring: var(--ww-violet);
 }
 
@@ -52,13 +52,13 @@
   --primary-foreground: #ffffff;
   --secondary: var(--ww-paper);
   --secondary-foreground: var(--ww-ink);
-  --muted: #f4f1fa;
-  --muted-foreground: #6b6483;
+  --muted: #eef8fb;
+  --muted-foreground: #5c7180;
   --accent: var(--ww-buttercup);
   --accent-foreground: var(--ww-ink);
-  --destructive: #e5484d;
-  --border: #eae6f4;
-  --input: #eae6f4;
+  --destructive: #e6322c;
+  --border: #d9edf0;
+  --input: #d9edf0;
   --ring: var(--ww-violet);
 }
 
@@ -130,11 +130,17 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes authCardIn {
+  from { opacity: 0; transform: translateY(16px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .shape-diamond { animation: shapeFloat 6s ease-in-out infinite; }
 .shape-orbit { animation: shapeOrbit 5s ease-in-out infinite; }
 .shape-blob { animation: shapeBlob 8s ease-in-out infinite; }
 .shape-twinkle { animation: twinkle 2.8s ease-in-out infinite; }
 .animate-reveal-up { animation: revealUp .7s cubic-bezier(.22,1,.36,1) both; }
+.animate-auth-card { animation: authCardIn .55s cubic-bezier(.22,1,.36,1) both; }
 .animate-story-card { animation: revealUp .7s cubic-bezier(.22,1,.36,1) both; }
 .animate-story-card:nth-child(2) { animation-delay: 90ms; }
 .animate-story-card:nth-child(3) { animation-delay: 180ms; }
@@ -226,6 +232,41 @@
   }
   .shell {
     @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6 lg:px-10;
+  }
+
+  /* Keep every route on the new storybook palette while older utility names
+     are retired from individual screens. */
+  [class*="bg-purple"], [class*="bg-violet"], [class*="bg-indigo"] {
+    background-color: var(--ww-violet) !important;
+    background-image: none !important;
+  }
+  [class*="text-purple"], [class*="text-violet"], [class*="text-indigo"] {
+    color: var(--ww-violet-dark) !important;
+  }
+  [class*="border-purple"], [class*="border-violet"], [class*="border-indigo"] {
+    border-color: var(--ww-violet) !important;
+  }
+  [class*="ring-purple"], [class*="ring-violet"], [class*="ring-indigo"] {
+    --tw-ring-color: var(--ww-violet) !important;
+  }
+  [class*="from-purple"], [class*="from-violet"], [class*="from-indigo"] {
+    --tw-gradient-from: var(--ww-violet) !important;
+  }
+  [class*="via-purple"], [class*="via-violet"], [class*="via-indigo"] {
+    --tw-gradient-via: var(--ww-teal) !important;
+  }
+  [class*="to-purple"], [class*="to-violet"], [class*="to-indigo"] {
+    --tw-gradient-to: var(--ww-teal) !important;
+  }
+  [class*="shadow-purple"], [class*="shadow-violet"], [class*="shadow-indigo"] {
+    --tw-shadow-color: color-mix(in srgb, var(--ww-violet) 35%, transparent) !important;
+  }
+
+  /* Older arbitrary-value classes used by the admin tools. */
+  [class*="7a5bff"], [class*="c4b2ff"], [class*="a78bfa"] {
+    background-color: var(--ww-violet) !important;
+    border-color: var(--ww-violet) !important;
+    color: var(--ww-violet-dark) !important;
   }
 }
 

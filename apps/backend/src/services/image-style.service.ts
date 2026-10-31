@@ -24,7 +24,8 @@ export const ART_STYLES: ArtStyleOption[] = [
   {
     id: "photo-realistic",
     name: "Photo Realistic",
-    prompt: "",
+    prompt:
+      "photorealistic live-action photograph of a real child, natural skin texture, realistic facial proportions, natural eyes, real fabric and hair, authentic photographic lighting, no cartoon or animation styling",
   },
   {
     id: "disney-pixar",
@@ -89,9 +90,9 @@ export function applyArtStyle(sceneDescription: string, artStyle?: string): stri
  * with a smaller subject.
  */
 export function getCharacterEdgeDirective(side: "left" | "right"): string {
-  const farSide = side === "left" ? "FAR LEFT" : "FAR RIGHT";
-  const otherSide = side === "left" ? "right" : "left";
-  return `Position the child at the ${farSide} of the composition naturally integrated into the scene.`;
+  const farSide = side === "left" ? "LEFT" : " RIGHT";
+  const textSide = side === "left" ? "RIGHT" : "LEFT";
+  return `Position the child at the ${farSide} of the composition, naturally integrated into the scene.`;
 }
 
 /**
@@ -99,13 +100,9 @@ export function getCharacterEdgeDirective(side: "left" | "right"): string {
  * scene description, `[FILL_CANVAS]` with the canvas-ratio sentence and
  * `[EDGE_PLACEMENT]` with the per-page edge rule (middle pages only).
  */
-export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference. It is a square face crop, not a body or composition reference.
+export const STORYBOOK_IMAGE_TEMPLATE = `Use the supplied image ONLY as a facial identity reference.
 
-Preserve the child's recognizable facial identity accurately, including facial features, face shape, skin tone, eyes, eyebrows, nose, mouth, hair characteristics, and apparent age. The child must remain recognizable as the same child throughout the generated image.
-
-Do not reproduce the reference image's background, framing, crop, white areas, lighting setup, or camera composition. Do not stretch, squeeze, widen, or reshape the reference face.
-
-Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape. The child's body must remain narrow and anatomically natural; never use horizontal scaling, compression, or stretching. Choose a distinctive, age-appropriate costume or outfit for the child that clearly fits their role in the story. The costume should change according to the story and make the child visually feel like the protagonist of that particular adventure.
+Generate the complete child naturally within the scene, including the head, body, clothing, arms, hands, legs, and feet. The child must be actively doing something specific in every scene: running, jumping, climbing, reaching, carrying, dancing, exploring, helping, or physically interacting with a story object. Use an energetic but natural action pose with visible movement, not a passive standing portrait. Use normal camera perspective and uniform natural scale: realistic head-to-body ratio, shoulder width, torso width, limb length, and face shape. Preserve the exact story-role costume described in the scene prompt on every page: the same role, clothing items, colors, accessories, equipment, and footwear. If the role is a princess, visibly dress the child in the complete princess costume described by the prompt; do not replace it with ordinary clothes.
 
 Create the following scene:
 
@@ -113,7 +110,7 @@ Create the following scene:
 
 [EDGE_PLACEMENT][FILL_CANVAS] Create a completely new, rich, immersive environment around the child. The environment must naturally surround and integrate the child with detailed foreground, middle-ground, and background elements.
 
-The output canvas is landscape, but the landscape layout applies only to the environment and camera framing. Keep the child's geometry unchanged and use the environment to occupy the extra horizontal space. Keep the child at approximately 12-20% of the frame height, with generous natural space around them. The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings. The result must look like one cohesive scene, not a face pasted onto a generated body or background.
+[CANVAS_GUIDANCE] [SUBJECT_SCALE] The child must be naturally integrated into the environment with appropriate scale, perspective, lighting, shadows, depth, and interaction with the surroundings.
 
 Correct human anatomy, natural proportions, properly formed hands and feet, normal limbs, and age-appropriate clothing. The child must be fully clothed and wear full-length trousers and shoes.
 
@@ -130,7 +127,7 @@ export function buildStorybookImagePrompt(input: {
 }): string {
   const scene = applyArtStyle(input.sceneDescription, input.artStyle);
   const ratio = input.aspectRatio === "1:1"
-    ? "Use a square composition."
+    ? "Use a square 1:1 portrait composition with the child prominently framed in the complete square canvas."
     : "Use a landscape 16:9 canvas for the environment; do not resize or reshape the child to match the canvas.";
   const edge = input.edgePlacementSide
     ? `${getCharacterEdgeDirective(input.edgePlacementSide)}\n\n`
@@ -139,7 +136,13 @@ export function buildStorybookImagePrompt(input: {
   return STORYBOOK_IMAGE_TEMPLATE
     .replace("[SCENE]", scene)
     .replace("[EDGE_PLACEMENT]", edge)
-    .replace("[FILL_CANVAS]", ratio);
+    .replace("[FILL_CANVAS]", ratio)
+    .replace("[CANVAS_GUIDANCE]", input.aspectRatio === "1:1"
+      ? "Use the complete square canvas with natural portrait camera framing and no empty margins."
+      : "The output canvas is landscape, but the landscape layout applies only to the environment and camera framing. Keep the child's geometry unchanged and use the environment to occupy the extra horizontal space.")
+    .replace("[SUBJECT_SCALE]", input.aspectRatio === "1:1"
+      ? "Frame the child as a prominent full-body portrait, approximately 45-60% of the frame height."
+      : "Keep the child at approximately 12-20% of the frame height, with generous natural space around them.");
 }
 
 export default {

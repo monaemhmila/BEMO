@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { z } from "zod";
 import { authMiddleware } from "../middleware/auth";
+import { authOrGuestMiddleware } from "../middleware/guestAuth";
+import { guestOrderIpLimiter } from "../middleware/rateLimiter";
 import { env } from "../config/env";
-import { createOrder, listOrders, getOrder, getPendingOrderForStory } from "../services/order.service";
+import { prismaClient } from "../lib/prisma";
+import { createOrder, listOrders, getOrder, getPendingOrderForStory, ORDER_DISCOUNTS } from "../services/order.service";
 
 const router = Router();
 
@@ -13,19 +16,27 @@ const CreateOrderSchema = z.object({
   customerName: z.string().trim().min(2, "Enter your full name").max(100),
   phone: z.string().trim().min(7, "Enter a valid phone number").max(20).regex(phoneRegex, "Enter a valid phone number"),
   address: z.string().trim().min(5, "Enter a valid delivery address").max(500),
-  city: z.string().trim().min(2, "Enter your city").max(100),
+  city: z.string().trim().max(100).optional().default(""),
   postalCode: z.string().trim().max(20).optional().or(z.literal("")),
+  quantity: z.number().int().min(1).max(4).default(1),
 });
 
 /**
  * GET /orders/config
  * Order configuration for the frontend (price, currency, payment method)
  */
-router.get("/config", authMiddleware, (_req, res) => {
+router.get("/config", authOrGuestMiddleware, async (req, res) => {
+  const user = await prismaClient.user.findUnique({
+    where: { id: req.userId! },
+    select: { gameRewardClaimedAt: true, gameRewardUsedAt: true },
+  });
   res.json({
     price: env.BOOK_PRICE_TND,
     currency: env.BOOK_CURRENCY,
     paymentMethod: "CASH_ON_DELIVERY",
+    discounts: ORDER_DISCOUNTS,
+    maxQuantity: 4,
+    gameDiscountPercent: user?.gameRewardClaimedAt && !user.gameRewardUsedAt ? 10 : 0,
   });
 });
 
@@ -33,7 +44,7 @@ router.get("/config", authMiddleware, (_req, res) => {
  * POST /orders
  * Create a Cash on Delivery order for a completed book
  */
-router.post("/", authMiddleware, async (req, res) => {
+router.post("/", guestOrderIpLimiter, authOrGuestMiddleware, async (req, res) => {
   const parsed = CreateOrderSchema.safeParse(req.body);
 
   if (!parsed.success) {
@@ -50,6 +61,7 @@ router.post("/", authMiddleware, async (req, res) => {
       address: parsed.data.address,
       city: parsed.data.city,
       postalCode: parsed.data.postalCode || undefined,
+      quantity: parsed.data.quantity,
     });
 
     if (result.alreadyExists) {
@@ -86,7 +98,7 @@ router.post("/", authMiddleware, async (req, res) => {
  * GET /orders/pending/:storyId
  * Check whether the user already has a pending order for a given book
  */
-router.get("/pending/:storyId", authMiddleware, async (req, res) => {
+router.get("/pending/:storyId", authOrGuestMiddleware, async (req, res) => {
   try {
     const order = await getPendingOrderForStory(req.userId!, req.params.storyId);
     res.json({ success: true, order });

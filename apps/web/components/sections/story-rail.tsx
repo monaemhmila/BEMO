@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 import { TemplateBookCard } from "@/components/template-book-grid";
 import { Button } from "@/components/ui/button";
@@ -63,7 +64,14 @@ export function StoryRail({
                 key={`${template.slug}-${i}`}
                 className="animate-story-card basis-[85%] pl-4 sm:basis-1/2 lg:basis-1/3"
               >
-                <TemplateBookCard template={template} />
+                <motion.div
+                  whileHover={{ y: -8, rotate: i % 2 === 0 ? -0.6 : 0.6 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 20 }}
+                  className="h-full"
+                >
+                  <TemplateBookCard template={template} />
+                </motion.div>
               </CarouselItem>
             ))}
           </CarouselContent>

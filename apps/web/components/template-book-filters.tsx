@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Cake, ChevronDown, Search, UserRound, X } from "lucide-react";
+import { motion } from "framer-motion";
 
 import { CATEGORY_META, type StoryCategory, type StoryTemplate } from "@/data/story-templates";
 import { TemplateBookGrid } from "@/components/template-book-grid";
@@ -195,6 +196,46 @@ export function TemplateBookFilters({ templates }: { templates: StoryTemplate[] 
 
   return (
     <div>
+      {/* Primary category segments stay above the secondary filters. */}
+      <motion.div
+        className="mb-5 grid w-full grid-cols-3 gap-1.5 rounded-2xl border border-violet-100 bg-paper p-1.5 shadow-sm sm:gap-2 sm:p-2"
+        initial={{ opacity: 0, y: 70 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1.5, ease: "easeOut" }}
+      >
+        {CATEGORY_OPTIONS.map((option, index) => {
+          const active = categories.includes(option.value);
+          return (
+            <motion.button
+              key={option.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => toggle(setCategories, option.value)}
+              initial={{ scale: 1 }}
+              animate={{ scale: [1, 1.04, 1] }}
+              transition={{ duration: 0.45, delay: 2.25 + index * 0.7, ease: "easeInOut" }}
+              className={cn(
+                "relative flex min-h-12 w-full items-center justify-center overflow-hidden rounded-xl border px-2 py-3 text-center text-[11px] font-bold uppercase tracking-wide transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:px-4 sm:text-xs md:min-h-14 md:text-sm",
+                active
+                  ? "border-violet-deep bg-gradient-to-r from-violet-deep to-primary text-white shadow-md hover:from-primary hover:to-violet-600"
+                  : "border-violet-200 bg-white text-violet-deep shadow-sm hover:border-primary/50 hover:bg-violet-50 hover:text-primary",
+              )}
+            >
+              {!active && (
+                <motion.span
+                  aria-hidden="true"
+                  className="absolute inset-0 rounded-xl bg-buttercup"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 0.95, 0] }}
+                  transition={{ duration: 0.8, delay: 2.1 + index * 0.7, ease: "easeInOut" }}
+                />
+              )}
+              <span className="relative z-10">{option.label}</span>
+            </motion.button>
+          );
+        })}
+      </motion.div>
+
       <div className="flex flex-col gap-2 md:max-w-2xl md:flex-row md:items-center md:gap-4 md:px-0">
         <div className="flex-1 md:w-40">
           <div className="relative w-full">
@@ -255,29 +296,6 @@ export function TemplateBookFilters({ templates }: { templates: StoryTemplate[] 
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Second filter row: story category */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {CATEGORY_OPTIONS.map((option) => {
-          const active = categories.includes(option.value);
-          return (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={active}
-              onClick={() => toggle(setCategories, option.value)}
-              className={cn(
-                "rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wide transition-colors",
-                active
-                  ? "border-primary bg-primary text-white"
-                  : "border-border bg-white text-muted-foreground hover:border-primary/40 hover:text-primary",
-              )}
-            >
-              {option.label}
-            </button>
-          );
-        })}
       </div>
 
       {filtered.length === 0 ? (

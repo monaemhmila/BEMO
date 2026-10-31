@@ -90,19 +90,33 @@ export interface StoryGeneratorProps {
 export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { getToken, user } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [queueMessage, setQueueMessage] = useState<string | null>(null);
   const [generatedStory, setGeneratedStory] = useState<GeneratedStoryResult | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [showOrderPrompt, setShowOrderPrompt] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [pdfTitle, setPdfTitle] = useState<string>("");
 
+  useEffect(() => {
+    if (!generatedStory) {
+      setShowOrderPrompt(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShowOrderPrompt(true), 30_000);
+    return () => window.clearTimeout(timer);
+  }, [generatedStory?.storyId]);
+
   // Form data
   const [childName, setChildName] = useState("");
+  const [latinChildName, setLatinChildName] = useState("");
+  const [arabicChildName, setArabicChildName] = useState("");
   const [childAge, setChildAge] = useState(5);
   // A photo tells the illustrator who the hero is; the gender tells the writer
   // which pronouns and details to use for that same hero.
@@ -197,6 +211,11 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
   /** Turn the parent's idea into a stored custom template. */
   const createCustomTemplate = async (): Promise<string | null> => {
+    if (!isSignedIn) {
+      setCustomTemplateError("Please sign in to create a custom story.");
+      return null;
+    }
+
     const idea = customIdea.trim();
     if (idea.length < 3) {
       setCustomTemplateError("Tell us a little about your story first.");
@@ -208,7 +227,20 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
     try {
       const token = await getToken?.();
-      const ageRange = childAge <= 5 ? "3-5" : childAge <= 8 ? "6-8" : "9-12";
+      if (isSignedIn && !token) {
+        setCustomTemplateError("Your sign-in session needs to be refreshed. Please sign in again.");
+        return null;
+      }
+      // Keep the wire format compatible with older API containers during a
+      // rolling deployment. The current API normalizes these legacy bands to
+      // 0-6 and 6-9, while older containers only accept the legacy values.
+      const ageRange = childAge <= 6 ? "3-5" : childAge <= 9 ? "6-8" : "9-12";
+
+      if (idea.length > 500 || customSetting.trim().length > 200 ||
+        customExtras.trim().length > 200 || customMessage.trim().length > 200) {
+        setCustomTemplateError("Please keep your idea under 500 characters and each optional field under 200 characters.");
+        return null;
+      }
 
       const response = await axios.post(
         `${BACKEND_URL}/storybook/templates/custom`,
@@ -219,7 +251,10 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           message: customMessage.trim() || undefined,
           ageRange,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          withCredentials: true,
+        }
       );
 
       const template: TemplateOption = response.data?.template;
@@ -279,11 +314,24 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
     setLoading(true);
     setError(null);
+    setQueueMessage(null);
     setPdfUrl(null);
     setGeneratedStory(null);
 
     try {
-      const token = await getToken?.();
+      // A generation can stay queued for several minutes while Clerk JWTs are
+      // short-lived. Build auth headers per request instead of reusing the JWT
+      // captured when generation started.
+      const requestConfig = async () => {
+        const token = await getToken?.();
+        if (isSignedIn && !token) {
+          throw new Error("Your sign-in session needs to be refreshed. Please sign in again.");
+        }
+        return {
+          ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+          withCredentials: true,
+        };
+      };
 
       const response = await axios.post(
         `${BACKEND_URL}/storybook/generate-pdf`,
@@ -297,24 +345,72 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           dedication: dedication || undefined,
           childImage: childImage || undefined,
         },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        await requestConfig()
       );
 
-      if (response.data?.storyId && response.data?.pages) {
+      let resultData = response.data;
+      if (response.data?.queued && response.data?.jobId) {
+        setQueueMessage(response.data.message || "Our story studio is busy. Please wait while we prepare your preview.");
+        const deadline = Date.now() + 12 * 60 * 1000;
+
+        while (Date.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          let statusResponse;
+          try {
+            statusResponse = await axios.get(
+              `${BACKEND_URL}/storybook/generate-pdf/status/${response.data.jobId}`,
+              await requestConfig()
+            );
+          } catch (error) {
+            // If a token expired between polling attempts, getToken() will
+            // refresh it and the next request can continue the same job.
+            if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+              statusResponse = await axios.get(
+                `${BACKEND_URL}/storybook/generate-pdf/status/${response.data.jobId}`,
+                await requestConfig()
+              );
+            } else {
+              throw error;
+            }
+          }
+          const status = statusResponse.data;
+
+          if (status.state === "completed") {
+            resultData = status.result;
+            setQueueMessage(null);
+            break;
+          }
+          if (status.state === "failed") {
+            throw new Error(status.error || "Preview generation failed");
+          }
+
+          if (status.position > 10) {
+            setQueueMessage(
+              `Our story studio is busy right now. Please wait about 3 minutes while we prepare your preview (position ${status.position}).`
+            );
+          } else {
+            setQueueMessage("Your story preview is being prepared now. Please wait a moment...");
+          }
+        }
+
+        if (resultData === response.data) {
+          throw new Error("The preview is taking longer than expected. Please try again shortly.");
+        }
+      }
+
+      if (resultData?.storyId && resultData?.pages) {
         setGeneratedStory({
-          storyId: response.data.storyId,
-          title: response.data.title || `${childName}'s Storybook`,
-          childName: response.data.childName || childName,
-          pdfUrl: response.data.pdfUrl,
-          pages: response.data.pages,
+          storyId: resultData.storyId,
+          title: resultData.title || `${childName}'s Storybook`,
+          childName: resultData.childName || childName,
+          pdfUrl: resultData.pdfUrl,
+          pages: resultData.pages,
         });
 
         // One free generation was consumed server-side - refresh the counter
-        if (typeof response.data.trialsRemaining === "number") {
+        if (typeof resultData.trialsRemaining === "number") {
           trialUpdateEvent.dispatchEvent(
-            new CustomEvent("trialUpdate", { detail: response.data.trialsRemaining })
+            new CustomEvent("trialUpdate", { detail: resultData.trialsRemaining })
           );
         }
       } else if (response.data instanceof Blob) {
@@ -323,6 +419,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
         setPdfUrl(url);
         setPdfTitle(`${childName}'s Storybook`);
       }
+      setQueueMessage(null);
     } catch (err) {
       console.error("Generation failed", err);
       const errorResponse = err instanceof AxiosError ? err.response : undefined;
@@ -369,28 +466,6 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
     if (canProceed()) setStep((s) => Math.min(s + 1, STEPS.length - 1));
   };
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
-
-  if (!user) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Card className="p-8 text-center max-w-md">
-          <User className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-2xl font-display font-bold text-violet-deep mb-2">
-            Sign in to Create Stories
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Join to create personalized storybooks with your child as the hero.
-          </p>
-          <Button
-            onClick={() => router.push("/login")}
-            className="bg-buttercup/100 hover:bg-violet-deep text-white"
-          >
-            Sign In
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
   // Teaser after generation: the book preview is capped at the first 2 pages,
   // and flipping past them surfaces the "Order now" call to action.
@@ -478,6 +553,76 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
           </div>
         </Card>
 
+        <AnimatePresence>
+          {showOrderPrompt && !isOrderModalOpen && (
+            <motion.div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-violet-deep/55 p-4 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <motion.div
+                className="relative w-full max-w-lg overflow-hidden rounded-[2rem] border-2 border-buttercup bg-gradient-to-br from-white via-buttercup/20 to-blush/40 p-6 text-center shadow-2xl sm:p-9"
+                initial={{ opacity: 0, y: 30, scale: 0.9, rotate: -2 }}
+                animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                transition={{ type: "spring", bounce: 0.35 }}
+              >
+                <motion.span
+                  aria-hidden
+                  className="absolute left-8 top-5 text-3xl text-buttercup"
+                  animate={{ y: [0, -10, 0], rotate: [0, 15, 0] }}
+                  transition={{ duration: 1.8, repeat: Infinity }}
+                >
+                  ✦
+                </motion.span>
+                <motion.span
+                  aria-hidden
+                  className="absolute right-8 top-8 text-2xl text-primary"
+                  animate={{ y: [0, 8, 0], rotate: [0, -15, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
+                >
+                  ✦
+                </motion.span>
+                <button
+                  type="button"
+                  aria-label="Close order offer"
+                  onClick={() => setShowOrderPrompt(false)}
+                  className="absolute right-4 top-3 text-2xl text-violet-deep/50 hover:text-violet-deep"
+                >
+                  ×
+                </button>
+                <motion.div
+                  className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-primary to-violet-deep text-white shadow-xl shadow-primary/30"
+                  animate={{ y: [0, -5, 0], rotate: [0, 3, 0] }}
+                  transition={{ duration: 2.2, repeat: Infinity }}
+                >
+                  <ShoppingBag className="h-10 w-10" />
+                </motion.div>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                  Your adventure is waiting
+                </p>
+                <h3 className="mt-2 font-display text-3xl font-bold text-violet-deep sm:text-4xl">
+                  Love the first pages?
+                </h3>
+                <p className="mx-auto mt-3 max-w-md text-base leading-7 text-muted-foreground">
+                  Turn this preview into a beautiful printed book for your child.
+                </p>
+                <Button
+                  className="mt-7 w-full rounded-2xl bg-buttercup py-7 text-lg font-bold text-violet-deep shadow-xl shadow-buttercup/40 transition-transform hover:scale-[1.02] hover:bg-buttercup"
+                  onClick={() => {
+                    setShowOrderPrompt(false);
+                    setIsOrderModalOpen(true);
+                  }}
+                >
+                  <ShoppingBag className="mr-2 h-5 w-5" />
+                  Order Now
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Order Modal */}
         <OrderBookModal
           open={isOrderModalOpen}
@@ -532,6 +677,9 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
   return (
     <div className="max-w-4xl mx-auto">
+      <div className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-center text-sm text-muted-foreground">
+        You can create one story without an account. This browser session gets one generation.
+      </div>
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex justify-between items-center relative">
@@ -631,13 +779,51 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="overflow-hidden rounded-2xl border-2 border-emerald-200 bg-emerald-50/60 p-2.5 sm:p-3">
+                  <Image
+                    src="/upload-guidance/good-child-photo.webp"
+                    alt="Good example: a clear front-facing child photo"
+                    width={320}
+                    height={320}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
+                  <p className="mt-2 text-center text-xs font-bold text-emerald-700 sm:text-sm">
+                    Good photo
+                  </p>
+                  <p className="mt-1 text-center text-[11px] leading-4 text-emerald-800/80 sm:text-xs">
+                    Clear face · front-facing · good light
+                  </p>
+                </div>
+                <div className="overflow-hidden rounded-2xl border-2 border-red-200 bg-red-50/60 p-2.5 sm:p-3">
+                  <Image
+                    src="/upload-guidance/bad-child-photo.webp"
+                    alt="Bad example: an angled child photo with the face hidden"
+                    width={320}
+                    height={320}
+                    className="aspect-square w-full rounded-xl object-cover"
+                  />
+                  <p className="mt-2 text-center text-xs font-bold text-red-700 sm:text-sm">
+                    Avoid this
+                  </p>
+                  <p className="mt-1 text-center text-[11px] leading-4 text-red-800/80 sm:text-xs">
+                    Face hidden · strange angle · blurry
+                  </p>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label>Hero&apos;s Name *</Label>
                   <Input
                     value={childName}
-                    onChange={(e) => setChildName(e.target.value)}
-                    placeholder="Emma"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setChildName(value);
+                      if (storyLanguage === "arabic") setArabicChildName(value);
+                      else setLatinChildName(value);
+                    }}
+                    placeholder={storyLanguage === "arabic" ? "اكتب اسم الطفل بالعربية" : "Emma"}
                     className="mt-1"
                   />
                 </div>
@@ -645,7 +831,7 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                   <Label>Age</Label>
                   <Input
                     type="number"
-                    min={3}
+                    min={0}
                     max={12}
                     value={childAge}
                     onChange={(e) => setChildAge(Number(e.target.value))}
@@ -767,8 +953,14 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
                   <Button
                     type="button"
-                    onClick={createCustomTemplate}
-                    disabled={customTemplateLoading || customIdea.trim().length < 3}
+                    onClick={() => {
+                      if (!isSignedIn) {
+                        router.push("/login");
+                        return;
+                      }
+                      void createCustomTemplate();
+                    }}
+                    disabled={customTemplateLoading || (Boolean(isSignedIn) && customIdea.trim().length < 3)}
                     className="w-full bg-white text-violet-deep border border-border hover:bg-buttercup/10"
                   >
                     {customTemplateLoading ? (
@@ -779,7 +971,11 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                     ) : (
                       <>
                         <Sparkles className="w-4 h-4 mr-2" />
-                        {customTemplateId ? "Rebuild my story" : "Turn my idea into a story"}
+                        {!isSignedIn
+                          ? "Sign in to create a custom story"
+                          : customTemplateId
+                          ? "Rebuild my story"
+                          : "Turn my idea into a story"}
                       </>
                     )}
                   </Button>
@@ -861,7 +1057,22 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
                 <Label>Story Language</Label>
                 <Select
                   value={storyLanguage}
-                  onValueChange={(v) => setStoryLanguage(v as "english" | "french" | "arabic")}
+                  onValueChange={(v) => {
+                    const nextLanguage = v as "english" | "french" | "arabic";
+                    if (nextLanguage === "arabic") {
+                      const entered = window.prompt(
+                        "Please write your child's name in Arabic. This will replace the English or French name in the Arabic story.",
+                        arabicChildName || "",
+                      )?.trim();
+                      if (!entered) return;
+                      setLatinChildName((current) => current || childName);
+                      setArabicChildName(entered);
+                      setChildName(entered);
+                    } else if (storyLanguage === "arabic") {
+                      setChildName(latinChildName || childName);
+                    }
+                    setStoryLanguage(nextLanguage);
+                  }}
                 >
                   <SelectTrigger className="mt-1 w-full">
                     <SelectValue />
@@ -1026,6 +1237,11 @@ export function StoryGenerator({ shelfTemplate = null }: StoryGeneratorProps = {
 
               {error && (
                 <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm">{error}</div>
+              )}
+              {queueMessage && !error && (
+                <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm" role="status">
+                  {queueMessage}
+                </div>
               )}
             </motion.div>
           )}

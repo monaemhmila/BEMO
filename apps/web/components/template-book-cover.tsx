@@ -27,7 +27,7 @@ export function TemplateBookCover({
       )}
     >
       {/* A template added in the database may have no cover art yet, so the
-          category gradient stands in rather than rendering a broken image. */}
+          category color stands in rather than rendering a broken image. */}
       {template.coverImage ? (
         <img
           src={template.coverImage}
@@ -42,15 +42,15 @@ export function TemplateBookCover({
       ) : null}
 
       {/* spine */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-[7%] bg-gradient-to-r from-violet-900/40 via-violet-900/15 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-[7%] bg-[#07549d]/35" />
       <div className="pointer-events-none absolute inset-y-0 left-[7%] w-px bg-white/30" />
 
       {/* page edges */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-[3%] bg-[repeating-linear-gradient(to_left,rgba(31,22,54,.18)_0_1px,transparent_1px_4px)]" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3%] bg-[repeating-linear-gradient(to_top,rgba(31,22,54,.14)_0_1px,transparent_1px_5px)]" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-[3%] bg-[#14324a]/12" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[3%] bg-[#14324a]/10" />
 
       {/* gloss */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-white/10" />
     </div>
   );
 }
