@@ -87,7 +87,7 @@ export function MagicPromise() {
           className="relative mx-auto mt-14 hidden max-w-4xl overflow-hidden rounded-[2rem] border-4 border-white/15 shadow-2xl md:block"
         >
           <Image src="/home/hero-storybook.png" alt="A personalised storybook made for a little hero" width={1200} height={700} className="h-48 w-full object-cover opacity-80 lg:h-64" />
-          <div className="absolute inset-0 bg-gradient-to-r from-violet-deep/80 via-transparent to-violet-deep/50" />
+          <div className="absolute inset-0 bg-[#07549d]/65" />
           <p className="absolute bottom-5 left-6 font-display text-xl font-semibold text-white lg:left-8 lg:text-2xl">Their imagination. Your memory. One beautiful book.</p>
         </motion.div>
       </div>

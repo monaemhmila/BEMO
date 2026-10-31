@@ -37,11 +37,11 @@ export function Hero() {
   const SceneIcon = scene.icon;
 
   return (
-    <section className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_50%_0%,#fff1c7_0%,#fffaf0_42%,#e8f8fb_100%)]">
+    <section className="relative overflow-hidden bg-paper">
       {/* decorative top banner art — replace with <Image src="/img/top-banner.webp" /> */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_20%_0%,rgba(8,117,209,.16),transparent),radial-gradient(60%_100%_at_85%_0%,rgba(247,201,0,.3),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[#e8f8fb]"
       />
 
       <div className="shell relative grid items-center gap-10 py-14 lg:grid-cols-[1.05fr_1fr] lg:py-20">

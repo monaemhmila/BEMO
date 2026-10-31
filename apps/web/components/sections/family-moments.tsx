@@ -15,7 +15,7 @@ const moments = [
     label: "Bedtime magic",
     title: "One more story becomes their favourite story",
     description: "Create a gentle adventure with your child at the centre — perfect for the last cuddle of the day.",
-    image: "/home/reading-story.png",
+    image: "/home/moment-bedtime.png",
     icon: BedDouble,
     color: "bg-[#e8f8fb] text-primary",
   },
@@ -24,7 +24,7 @@ const moments = [
     label: "A big moment",
     title: "Celebrate who they are becoming",
     description: "Mark a birthday, a brave first day, or a new dream with a keepsake made just for them.",
-    image: "/home/create-together.png",
+    image: "/home/moment-big-moment.png",
     icon: Cake,
     color: "bg-[#fff0d2] text-[#a86d00]",
   },
@@ -33,7 +33,7 @@ const moments = [
     label: "Their imagination",
     title: "Let their wildest ideas take the lead",
     description: "From enchanted gardens to distant planets, their imagination becomes a world they can hold.",
-    image: "/before-after/princess-girl.png",
+    image: "/home/moment-imagination.png",
     icon: Sparkles,
     color: "bg-[#ffe6e1] text-[#c55252]",
   },
@@ -100,7 +100,7 @@ export function FamilyMoments() {
             </div>
           </div>
 
-          <div className="relative min-h-[390px] overflow-hidden rounded-[2.25rem] border-4 border-white bg-white shadow-[0_28px_70px_-30px_rgba(61,38,153,.45)] sm:min-h-[470px]">
+          <div className="relative min-h-[390px] overflow-hidden rounded-[2.25rem] border-4 border-white bg-white shadow-[0_28px_70px_-30px_rgba(8,117,209,.28)] sm:min-h-[470px]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={active.id}
@@ -111,7 +111,7 @@ export function FamilyMoments() {
                 className="absolute inset-0"
               >
                 <Image src={active.image} alt={active.title} fill sizes="(max-width: 1024px) 100vw, 65vw" className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-violet-deep/85 via-violet-deep/10 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 h-2/5 bg-[#07549d]/85" />
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-white sm:p-9">
                   <div className="mb-3 flex items-center gap-2 text-sm font-bold text-buttercup"><ActiveIcon className="size-5" /> {active.label}</div>
                   <h3 className="max-w-xl font-display text-2xl font-bold sm:text-4xl">{active.title}</h3>
