@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
  * the same filler colour between server and client renders.
  */
 const PALETTE = [
-  ["#FFD9E8", "#C39BE8"],
+  ["#FFE2EA", "#E95096"],
   ["#D8ECFF", "#7FB6F2"],
-  ["#FFE9C7", "#F5B855"],
+  ["#FFF1C7", "#F7C900"],
   ["#D9F5E3", "#74C79A"],
-  ["#EDE0FF", "#9B7BE8"],
+  ["#E8F8FB", "#1BB1A6"],
   ["#FFE0D6", "#F28F6B"],
 ];
 
@@ -100,7 +100,7 @@ export function FillerVideo({
     return (
       <div
         className={cn(
-          "relative flex h-full w-full items-center justify-center overflow-hidden bg-[linear-gradient(140deg,#5b3bd4,#8a6bf0_45%,#ffc83d)]",
+          "relative flex h-full w-full items-center justify-center overflow-hidden bg-[linear-gradient(140deg,#0875d1,#1bb1a6_45%,#f7c900)]",
           className,
         )}
         role="img"

@@ -17,7 +17,7 @@ const moments = [
     description: "Create a gentle adventure with your child at the centre — perfect for the last cuddle of the day.",
     image: "/home/reading-story.png",
     icon: BedDouble,
-    color: "bg-[#eee9ff] text-violet-ink",
+    color: "bg-[#e8f8fb] text-primary",
   },
   {
     id: "milestone",

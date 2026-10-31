@@ -7,13 +7,13 @@ import { GameShell } from "./GameShell";
 
 const colors = [
   { id: "red", label: "Red", hex: "#ef5b62" },
-  { id: "yellow", label: "Yellow", hex: "#ffc83d" },
+  { id: "yellow", label: "Yellow", hex: "#f7c900" },
   { id: "blue", label: "Blue", hex: "#5b8def" },
 ];
 const rounds = [
   { name: "Orange", hex: "#f39b3d", recipe: ["red", "yellow"] },
   { name: "Green", hex: "#67ad72", recipe: ["blue", "yellow"] },
-  { name: "Purple", hex: "#8d64bb", recipe: ["red", "blue"] },
+  { name: "Teal", hex: "#1bb1a6", recipe: ["blue", "yellow"] },
 ] as const;
 
 export function ColorLab({ onWin }: { onWin?: () => void }) {

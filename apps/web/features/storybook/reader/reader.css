@@ -18,7 +18,7 @@
 
 /* Hardcover treatment for the front cover leaf. */
 .story-book-page.is-cover {
-  background: linear-gradient(145deg, #f3e8ff 0%, #e9d5ff 55%, #ddd6fe 100%);
+    background: linear-gradient(145deg, #e8f8fb 0%, #c7f0ec 55%, #a8e1dc 100%);
 }
 
 .story-book-page.is-cover::after {

@@ -8,7 +8,7 @@ const stepIcons = [
   <Sparkles key="sparkles" className="size-12" strokeWidth={1.7} aria-hidden />,
   <PackageCheck key="package" className="size-12" strokeWidth={1.7} aria-hidden />,
 ];
-const stepColors = ["bg-[#eee9ff] text-violet-ink", "bg-[#fff0d2] text-[#b87900]", "bg-[#ffe6e1] text-[#d05a58]", "bg-[#e4f6eb] text-[#38815a]"];
+const stepColors = ["bg-[#e8f8fb] text-primary", "bg-[#fff1c7] text-[#a87900]", "bg-[#ffe2ea] text-[#d13f57]", "bg-[#d9f5e3] text-[#258b5b]"];
 
 export function HowItWorks() {
   return (

@@ -111,7 +111,7 @@ export function Appbar() {
       <div
         className={cn(
           "border-b border-border bg-white/90 backdrop-blur-md transition-[box-shadow,background-color] duration-300",
-          scrolled && "shadow-[0_6px_24px_-12px_rgba(31,22,54,.35)]",
+          scrolled && "shadow-[0_6px_24px_-12px_rgba(20,50,74,.25)]",
         )}
       >
         <div className="shell flex h-[72px] items-center justify-between gap-2 sm:gap-4">

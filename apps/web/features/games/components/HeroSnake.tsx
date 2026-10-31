@@ -74,7 +74,7 @@ export function HeroSnake({ onWin }: { onWin?: () => void }) {
             const x = index % COLS; const y = Math.floor(index / COLS);
             const part = snake.find((item) => item.x === x && item.y === y);
             const isFood = food.x === x && food.y === y;
-            return <div key={`${x}-${y}`} className="relative aspect-square rounded-md bg-white/45">{isFood && <motion.div animate={{ scale: [0.75, 1.1, 0.75], rotate: [0, 15, 0] }} transition={{ repeat: Infinity, duration: 1.2 }} className="absolute inset-[18%] rounded-full bg-buttercup shadow-[0_0_12px_#ffc83d]" />}{part && <motion.div layout className={`absolute inset-[8%] rounded-[35%] ${part === snake[0] ? "bg-violet-deep ring-2 ring-white" : "bg-primary/80"}`} />}</div>;
+            return <div key={`${x}-${y}`} className="relative aspect-square rounded-md bg-white/45">{isFood && <motion.div animate={{ scale: [0.75, 1.1, 0.75], rotate: [0, 15, 0] }} transition={{ repeat: Infinity, duration: 1.2 }} className="absolute inset-[18%] rounded-full bg-buttercup shadow-[0_0_12px_#f7c900]" />}{part && <motion.div layout className={`absolute inset-[8%] rounded-[35%] ${part === snake[0] ? "bg-violet-deep ring-2 ring-white" : "bg-primary/80"}`} />}</div>;
           })}
           {!running && <div className="absolute inset-0 grid place-items-center bg-violet-deep/80 p-6 text-center text-white backdrop-blur-sm"><div><Trophy className="mx-auto mb-2 size-9 text-buttercup" /><p className="font-display text-2xl font-bold">Adventure paused!</p><p className="mt-1 text-sm text-white/80">You scored {score}. Tap Start over for another try.</p></div></div>}
         </div>

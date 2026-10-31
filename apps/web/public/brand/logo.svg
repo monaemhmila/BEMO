@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">Mon Petit Hero logo</title>
-  <desc id="desc">A purple open storybook with a golden star</desc>
-  <rect width="128" height="128" rx="30" fill="#5b3bd4"/>
+  <desc id="desc">A blue open storybook with a sunny yellow star</desc>
+  <rect width="128" height="128" rx="30" fill="#0875d1"/>
   <path d="M24 38c15-7 28-5 40 4v55c-12-9-25-11-40-4V38Z" fill="#fff"/>
-  <path d="M104 38c-15-7-28-5-40 4v55c12-9 25-11 40-4V38Z" fill="#f4efff"/>
-  <path d="M64 42v55" stroke="#3d2699" stroke-width="4" stroke-linecap="round"/>
-  <path d="m91 20 3.7 8.3 8.3 3.7-8.3 3.7L91 44l-3.7-8.3L79 32l8.3-3.7L91 20Z" fill="#ffc83d"/>
+  <path d="M104 38c-15-7-28-5-40 4v55c12-9 25-11 40-4V38Z" fill="#e8f8fb"/>
+  <path d="M64 42v55" stroke="#07549d" stroke-width="4" stroke-linecap="round"/>
+  <path d="m91 20 3.7 8.3 8.3 3.7-8.3 3.7L91 44l-3.7-8.3L79 32l8.3-3.7L91 20Z" fill="#f7c900"/>
 </svg>

@@ -14,7 +14,7 @@ export function Hero() {
       id: "imagine",
       label: "Imagine",
       title: "A story made around them",
-      image: "/home/hero-storybook.png",
+      image: "/kids-book-hero.png",
       icon: Sparkles,
     },
     {
@@ -37,11 +37,11 @@ export function Hero() {
   const SceneIcon = scene.icon;
 
   return (
-    <section className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_50%_0%,#ffe9c7_0%,#fdf7ef_38%,#f3ecff_100%)]">
+    <section className="relative overflow-hidden bg-[radial-gradient(120%_90%_at_50%_0%,#fff1c7_0%,#fffaf0_42%,#e8f8fb_100%)]">
       {/* decorative top banner art — replace with <Image src="/img/top-banner.webp" /> */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_20%_0%,rgba(91,59,212,.18),transparent),radial-gradient(60%_100%_at_85%_0%,rgba(255,200,61,.35),transparent)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(60%_100%_at_20%_0%,rgba(8,117,209,.16),transparent),radial-gradient(60%_100%_at_85%_0%,rgba(247,201,0,.3),transparent)]"
       />
 
       <div className="shell relative grid items-center gap-10 py-14 lg:grid-cols-[1.05fr_1fr] lg:py-20">
@@ -62,7 +62,7 @@ export function Hero() {
             <Button
               asChild
               size="lg"
-              className="h-13 w-full rounded-full px-8 text-base font-bold shadow-[0_10px_0_-2px_var(--ww-violet-dark)] transition-transform active:translate-y-0.5 sm:w-auto"
+            className="h-13 w-full rounded-full px-8 text-base font-bold shadow-[0_10px_0_-2px_var(--ww-violet-dark)] transition-transform active:translate-y-0.5 sm:w-auto"
             >
               <Link href="/storybook/create" data-track="hero_try_for_free">Try for free</Link>
             </Button>
@@ -79,7 +79,7 @@ export function Hero() {
 
         <div className="relative order-1 lg:order-2">
           <div className="relative">
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2rem] border-4 border-white bg-[#f5e9dc] shadow-[0_28px_60px_-28px_rgba(31,22,54,.5)]">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[2rem] border-4 border-white bg-[#fffaf0] shadow-[0_28px_60px_-28px_rgba(20,50,74,.24)]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={scene.id}

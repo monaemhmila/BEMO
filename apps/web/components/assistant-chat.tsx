@@ -220,9 +220,9 @@ export function AssistantChat({ mode }: AssistantChatProps) {
       exit={{ opacity: 0, y: 12, scale: 0.96 }}
       transition={{ type: "spring", stiffness: 330, damping: 26 }}
       dir={siteLanguage === "ar" ? "rtl" : "ltr"}
-      className="w-full overflow-hidden rounded-[2rem] border-2 border-white/80 bg-white/95 text-base shadow-[0_25px_70px_-30px_rgba(45,25,90,.55)] backdrop-blur-xl"
+      className="w-full overflow-hidden rounded-[2rem] border-2 border-white/80 bg-white/95 text-base shadow-[0_25px_70px_-30px_rgba(8,117,209,.28)] backdrop-blur-xl"
     >
-      <div className="flex items-center justify-between bg-[linear-gradient(135deg,#5b3bd4,#7c5ce5)] px-5 py-4 text-white">
+      <div className="flex items-center justify-between bg-[linear-gradient(135deg,#0875d1,#1bb1a6)] px-5 py-4 text-white">
         <div className="flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-2xl bg-white/15 ring-1 ring-white/25"><Bot className="size-5" /></span>
           <div>
@@ -240,7 +240,7 @@ export function AssistantChat({ mode }: AssistantChatProps) {
         <AnimatePresence initial={false} mode="popLayout">
         {messages.map((message) => (
           <motion.div key={message.id} layout initial={{ opacity: 0, y: 12, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ type: "spring", stiffness: 400, damping: 28 }} whileHover={{ y: -2 }} className={message.role === "user" ? "flex justify-end" : "flex justify-start"}>
-            <div className={message.role === "user" ? "max-w-[88%] rounded-2xl rounded-br-md border border-blue-400/30 bg-gradient-to-br from-[#2563eb] via-[#3b82f6] to-[#5b3bd4] px-5 py-4 text-base leading-relaxed text-white shadow-[0_12px_28px_-14px_rgba(37,99,235,.8)]" : "max-w-[92%] rounded-2xl rounded-bl-md border border-amber-300/70 bg-gradient-to-br from-[#fff8c9] via-white to-[#e6f4ff] px-5 py-4 text-base leading-relaxed text-[#24305e] shadow-[0_14px_30px_-16px_rgba(245,183,45,.75)]"}>
+            <div className={message.role === "user" ? "max-w-[88%] rounded-2xl rounded-br-md border border-sky-400/30 bg-gradient-to-br from-[#0875d1] via-[#1794df] to-[#1bb1a6] px-5 py-4 text-base leading-relaxed text-white shadow-[0_12px_28px_-14px_rgba(8,117,209,.55)]" : "max-w-[92%] rounded-2xl rounded-bl-md border border-amber-300/70 bg-gradient-to-br from-[#fff7c7] via-white to-[#e8f8fb] px-5 py-4 text-base leading-relaxed text-[#14324a] shadow-[0_14px_30px_-16px_rgba(247,201,0,.5)]"}>
               {message.content}
               {message.templates && message.templates.length > 0 && (
                 <div className="mt-4 grid gap-2">
@@ -275,18 +275,18 @@ export function AssistantChat({ mode }: AssistantChatProps) {
         </AnimatePresence>
       </div>
 
-      <div className="border-t border-violet-100 px-5 py-4 sm:px-8">
+      <div className="border-t border-sky-100 px-5 py-4 sm:px-8">
         {messages.length === 1 && (
           <div className="mb-3 grid gap-2 sm:grid-cols-3">
-            {welcomePrompts.map(({ label, prompt, icon: Icon }, index) => <motion.button key={label} type="button" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }} whileHover={{ y: -4, scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => void sendMessage(prompt)} className="flex items-center gap-2 rounded-2xl border border-blue-100 bg-gradient-to-r from-[#fff8c9] to-[#e6f4ff] px-3 py-3 text-left text-xs font-bold text-[#24305e] shadow-[0_8px_18px_-14px_rgba(37,99,235,.8)] transition hover:border-amber-300 hover:shadow-[0_14px_24px_-14px_rgba(245,183,45,.9)]"><Icon className="size-4 shrink-0 text-blue-600" />{label}</motion.button>)}
+            {welcomePrompts.map(({ label, prompt, icon: Icon }, index) => <motion.button key={label} type="button" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }} whileHover={{ y: -4, scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={() => void sendMessage(prompt)} className="flex items-center gap-2 rounded-2xl border border-sky-100 bg-gradient-to-r from-[#fff7c7] to-[#e8f8fb] px-3 py-3 text-left text-xs font-bold text-[#14324a] shadow-[0_8px_18px_-14px_rgba(8,117,209,.5)] transition hover:border-amber-300 hover:shadow-[0_14px_24px_-14px_rgba(247,201,0,.6)]"><Icon className="size-4 shrink-0 text-blue-600" />{label}</motion.button>)}
           </div>
         )}
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-          {copy.starters.map((starter, index) => <motion.button key={starter} type="button" whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={() => void sendMessage(starter)} className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition ${index % 2 === 0 ? "border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100" : "border-blue-200 bg-blue-50 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}>{starter}</motion.button>)}
+          {copy.starters.map((starter, index) => <motion.button key={starter} type="button" whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.96 }} onClick={() => void sendMessage(starter)} className={`shrink-0 rounded-full border px-3 py-2 text-xs font-semibold shadow-sm transition ${index % 2 === 0 ? "border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-400 hover:bg-amber-100" : "border-teal-200 bg-teal-50 text-teal-800 hover:border-teal-400 hover:bg-teal-100"}`}>{starter}</motion.button>)}
         </div>
-        <form onSubmit={(event) => { event.preventDefault(); void sendMessage(); }} className="flex items-center gap-3 rounded-2xl bg-[#f7f5fc] p-3 ring-1 ring-violet-100 focus-within:ring-primary/40">
+        <form onSubmit={(event) => { event.preventDefault(); void sendMessage(); }} className="flex items-center gap-3 rounded-2xl bg-[#eef8fb] p-3 ring-1 ring-sky-100 focus-within:ring-primary/40">
           <input value={input} onChange={(event) => setInput(event.target.value)} maxLength={1200} placeholder={copy.placeholder} className="min-w-0 flex-1 bg-transparent px-3 text-base text-violet-deep outline-none placeholder:text-muted-foreground" aria-label={copy.placeholder} />
-          <motion.button whileHover={{ scale: 1.08, rotate: -4 }} whileTap={{ scale: 0.92 }} type="submit" disabled={!input.trim() || sending || blocked} aria-label={sendLabel} className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-violet-600 text-white shadow-[0_8px_18px_-8px_rgba(37,99,235,.9)] transition hover:from-amber-400 hover:to-orange-500 disabled:cursor-not-allowed disabled:opacity-40"><Send className="size-5" /></motion.button>
+          <motion.button whileHover={{ scale: 1.08, rotate: -4 }} whileTap={{ scale: 0.92 }} type="submit" disabled={!input.trim() || sending || blocked} aria-label={sendLabel} className="grid size-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-blue-600 to-teal-500 text-white shadow-[0_8px_18px_-8px_rgba(8,117,209,.6)] transition hover:from-amber-400 hover:to-orange-500 disabled:cursor-not-allowed disabled:opacity-40"><Send className="size-5" /></motion.button>
         </form>
       </div>
     </motion.div>

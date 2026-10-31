@@ -35,9 +35,9 @@ export default function LoginPage() {
               signUpUrl="/sign-up"
               appearance={{
                 variables: {
-                  colorPrimary: "#5b3bd4",
+                  colorPrimary: "#0875d1",
                   colorBackground: "#ffffff",
-                  colorText: "#1f1636",
+                  colorText: "#14324a",
                   borderRadius: "0.9rem",
                 },
                 elements: {

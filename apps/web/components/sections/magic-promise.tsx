@@ -12,7 +12,7 @@ const promises = [
     icon: Camera,
     title: "They recognise themselves",
     text: "Their photo, name and personality become part of every adventure.",
-    color: "bg-[#eee9ff] text-violet-ink",
+    color: "bg-[#e8f8fb] text-primary",
   },
   {
     icon: BookHeart,
