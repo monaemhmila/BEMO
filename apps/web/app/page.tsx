@@ -16,7 +16,6 @@ import {
 } from "@/data/story-templates";
 import { getStoreTemplates } from "@/lib/story-templates";
 import { MotionReveal } from "@/components/motion-reveal";
-import { AssistantChat } from "@/components/assistant-chat";
 
 // The shelves are read from the database through the backend.
 export const revalidate = 60;
@@ -49,7 +48,8 @@ export default async function HomePage() {
     // The app bar is fixed, so the storefront sits below it.
     <div className="pt-[7rem]">
       <Hero />
-      <MotionReveal><AssistantChat mode="section" /></MotionReveal>
+      <MotionReveal><BeforeAfter /></MotionReveal>
+      <MotionReveal><HowItWorks /></MotionReveal>
 
       {bestsellersShelf && (
         <MotionReveal>
@@ -72,8 +72,6 @@ export default async function HomePage() {
         </MotionReveal>
       )}
 
-      <MotionReveal><HowItWorks /></MotionReveal>
-      <MotionReveal><BeforeAfter /></MotionReveal>
       <MotionReveal><FamilyMoments /></MotionReveal>
       <MotionReveal><MagicPromise /></MotionReveal>
 
