@@ -11,7 +11,7 @@ import type { StoryTemplate } from "@/data/story-templates";
 const PRICE_FROM = "";
 const PRICE = "70 DT";
 
-/** Wraps a cover image so it looks like a hardcover book with a hinged spine. */
+/** Wraps a cover image so it reads as a physical hardcover book. */
 function BookFrame({ children }: { children: ReactNode }) {
   return (
     <div className="relative w-full pb-[6px] pr-[5px]">
@@ -35,7 +35,6 @@ function BookFrame({ children }: { children: ReactNode }) {
       >
         {children}
 
-        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-[5.5%] bg-[#07549d]/25" />
         <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-[2%] bg-[#14324a]/10" />
 
         {/* Fine edge highlight, like laminated board */}
@@ -58,15 +57,18 @@ function BookFrame({ children }: { children: ReactNode }) {
  * A catalogue card. Tapping a story opens that story's detail page, where the
  * "Personalise my book" button starts the wizard with this story selected.
  */
-export function TemplateBookCard({ template }: { template: StoryTemplate }) {
+export function TemplateBookCard({ template, index = 0 }: { template: StoryTemplate; index?: number }) {
   return (
     <Link href={`/books/${template.slug}`} className="group block">
       <div className="relative mx-auto flex h-full w-full max-w-[357.67px] flex-col items-start space-y-4 pb-6 md:pb-8 lg:mx-0 lg:max-w-none lg:w-full xl:w-[390px]">
-        <div className="relative w-full xl:w-[390px]">
+        <motion.div
+          className="animate-book-rise relative w-full xl:w-[390px]"
+          style={{ animationDelay: `${Math.min(index * 80, 400)}ms` }}
+        >
           <BookFrame>
             <TemplateBookCover template={template} className="!rounded-none !shadow-none" />
           </BookFrame>
-        </div>
+        </motion.div>
 
         <div className="flex w-full flex-1 flex-col">
           <div className="grow">
@@ -117,12 +119,12 @@ export function TemplateBookGrid({ templates }: { templates: StoryTemplate[] }) 
           <motion.div
             key={template.slug}
             layout
-            initial={{ opacity: 0, y: 28, scale: 0.94 }}
+            initial={false}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -18, scale: 0.94 }}
             transition={{ duration: 0.55, delay: Math.min(index * 0.08, 0.45), ease: "easeOut" }}
           >
-            <TemplateBookCard template={template} />
+            <TemplateBookCard template={template} index={index} />
           </motion.div>
         ))}
       </AnimatePresence>

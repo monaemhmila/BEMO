@@ -15,6 +15,7 @@ import {
  * window without a rebuild.
  */
 export const TEMPLATE_REVALIDATE_SECONDS = 60;
+const PRODUCTION_BACKEND_URL = "https://api.monpetithero.shop";
 
 /**
  * Local, high-clarity shop covers. Keeping this presentation override in the
@@ -145,42 +146,42 @@ class TemplateFetchError extends Error {
 }
 
 async function fetchTemplates(): Promise<StorefrontTemplate[]> {
-  let response: Response;
+  const origins = Array.from(new Set([BACKEND_URL, PRODUCTION_BACKEND_URL]));
+  let lastError: unknown;
 
-  try {
-    response = await fetch(`${BACKEND_URL}/storybook/templates`, {
-      next: { revalidate: TEMPLATE_REVALIDATE_SECONDS },
-    });
-  } catch (cause) {
-    const reason = cause instanceof Error ? cause.message : String(cause);
-    throw new TemplateFetchError(
-      `Could not reach the backend at ${BACKEND_URL} (${reason}) — is it running?`
-    );
+  for (const origin of origins) {
+    try {
+      const response = await fetch(`${origin.replace(/\/$/, "")}/storybook/templates`, {
+        next: { revalidate: TEMPLATE_REVALIDATE_SECONDS },
+        signal: AbortSignal.timeout(8_000),
+      });
+
+      if (!response.ok) {
+        lastError = new TemplateFetchError(
+          `${origin}/storybook/templates returned ${response.status} (${response.statusText})`,
+          response.status,
+        );
+        continue;
+      }
+
+      const payload: unknown = await response.json();
+      const templates = (payload as { templates?: unknown })?.templates;
+
+      if (!Array.isArray(templates)) {
+        lastError = new TemplateFetchError(`Unexpected story templates response from ${origin}`);
+        continue;
+      }
+
+      return templates as StorefrontTemplate[];
+    } catch (cause) {
+      lastError = cause;
+    }
   }
 
-  if (response.status === 404) {
-    throw new TemplateFetchError(
-      `${BACKEND_URL}/storybook/templates returned 404 — ` +
-        `check NEXT_PUBLIC_BACKEND_URL points at the API, not a web server.`,
-      404
-    );
-  }
-
-  if (!response.ok) {
-    throw new TemplateFetchError(
-      `Failed to load story templates (${response.status} ${response.statusText})`,
-      response.status
-    );
-  }
-
-  const payload: unknown = await response.json();
-  const templates = (payload as { templates?: unknown })?.templates;
-
-  if (!Array.isArray(templates)) {
-    throw new TemplateFetchError("Unexpected story templates response");
-  }
-
-  return templates as StorefrontTemplate[];
+  const reason = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new TemplateFetchError(
+    `Could not load story templates from ${origins.join(" or ")} (${reason})`,
+  );
 }
 
 /**

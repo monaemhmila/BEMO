@@ -9,8 +9,8 @@ interface TemplateBookCoverProps {
 }
 
 /**
- * Cover art framed to read as a physical book: a darker spine on the left,
- * a stitched page edge on the right and a soft shadow underneath.
+ * Cover art framed to read as a physical book, with a stitched page edge on
+ * the right and a soft shadow underneath.
  */
 export function TemplateBookCover({
   template,
@@ -40,10 +40,6 @@ export function TemplateBookCover({
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : null}
-
-      {/* spine */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-[7%] bg-[#07549d]/35" />
-      <div className="pointer-events-none absolute inset-y-0 left-[7%] w-px bg-white/30" />
 
       {/* page edges */}
       <div className="pointer-events-none absolute inset-y-0 right-0 w-[3%] bg-[#14324a]/12" />
