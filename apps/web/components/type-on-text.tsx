@@ -15,10 +15,20 @@ export function TypeOnText({
 }) {
   const { locale } = useLanguage();
   const translatedText = translateText(children, locale);
+  const isArabic = locale === "ar";
 
   return (
-    <span className={className} aria-label={translatedText}>
-      {translatedText.split(/(\s+)/).map((part, partIndex) => {
+    <span className={className} aria-label={translatedText} dir={isArabic ? "rtl" : undefined}>
+      {isArabic ? (
+        <motion.span
+          aria-hidden="true"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay, duration: 0.35, ease: "easeOut" }}
+        >
+          {translatedText}
+        </motion.span>
+      ) : translatedText.split(/(\s+)/).map((part, partIndex) => {
         if (/^\s+$/.test(part)) {
           return (
             <span key={`space-${partIndex}`} aria-hidden="true">

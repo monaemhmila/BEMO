@@ -413,8 +413,16 @@ export const arFeatures: Record<string, string> = {
   "Supports children through": "يساعد الأطفال على تطوير",
   "A adventure story full of courage and heart": "قصة مغامرة مليئة بالشجاعة والقلب",
   "How is the book personalized for my child?": "كيف يتم تخصيص الكتاب لطفلي؟",
+  "Creating your child’s book is quick and magical: upload your child’s photo so the hero truly looks like them, enter their name and age to personalise the story throughout, then preview before ordering to make sure it’s perfect. Every page is crafted so your child feels like the true hero of the adventure.":
+    "إنشاء كتاب طفلك سريع وساحر: ارفع صورة طفلك ليبدو البطل مثله حقًا، وأدخل اسمه وعمره لتخصيص القصة بالكامل، ثم عاين الكتاب قبل الطلب للتأكد من أنه مثالي. صُممت كل صفحة ليشعر طفلك بأنه البطل الحقيقي للمغامرة.",
   "What if I need to make changes after personalizing?": "ماذا أفعل إذا احتجت إلى تعديلات بعد التخصيص؟",
+  "After personalising, you’ll be able to review and approve your book before it’s finalised. If something isn’t quite right, you can request changes and our support team will help make it perfect.":
+    "بعد التخصيص، ستتمكن من مراجعة كتابك والموافقة عليه قبل اعتماده نهائيًا. إذا لم يكن شيء ما مناسبًا تمامًا، يمكنك طلب تعديلات وسيساعدك فريق الدعم لدينا على جعله مثاليًا.",
   "Size & Quality": "الحجم والجودة",
+  "Each book is a premium hardcover storybook in a large square format, with over 30 beautifully illustrated pages. Made to feel like a keepsake — sturdy, vibrant, and designed to last for years of reading.":
+    "كل كتاب هو قصة فاخرة بغلاف مقوى وبحجم مربع كبير، ويضم أكثر من 30 صفحة مصوّرة بشكل جميل. صُمم ليكون تذكارًا متينًا وحيويًا يدوم لسنوات من القراءة.",
+  "Supports children through compassion and teamwork help us protect one another":
+    "يساعد الأطفال على تطوير التعاطف والعمل الجماعي اللذين يساعداننا على حماية بعضنا بعضًا",
   "A child becoming the hero of a magical storybook adventure":
     "طفل يصبح بطل مغامرة سحرية في كتاب قصص",
   "A child reading a personalized storybook at bedtime":

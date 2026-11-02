@@ -99,7 +99,7 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html
-        lang="en"
+        lang="fr"
         className={`${nunito.variable} ${fredoka.variable} h-full`}
         suppressHydrationWarning
       >
@@ -108,7 +108,7 @@ export default function RootLayout({
           <link rel="preconnect" href="https://api.dicebear.com" crossOrigin="anonymous" />
           <script
             dangerouslySetInnerHTML={{
-            __html: `try{var l=localStorage.getItem("ww_lang");if(l!=="fr"&&l!=="ar"){var n=(navigator.language||"").toLowerCase();l=n.indexOf("fr")===0?"fr":n.indexOf("ar")===0?"ar":"en";}document.documentElement.lang=l;if(l==="ar")document.documentElement.dir="rtl";}catch(e){}`,
+            __html: `try{var l=localStorage.getItem("ww_lang_v2");if(l!=="en"&&l!=="fr"&&l!=="ar"){var a=[navigator.language].concat(navigator.languages||[]).map(function(x){return(x||"").toLowerCase();});l=a.some(function(x){return x.indexOf("ar")===0;})?"ar":"fr";}document.documentElement.lang=l;document.documentElement.dir=l==="ar"?"rtl":"ltr";}catch(e){}`,
             }}
           />
         </head>

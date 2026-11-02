@@ -70,7 +70,7 @@ export function StoryRail({
                   transition={{ type: "spring", stiffness: 280, damping: 20 }}
                   className="h-full"
                 >
-                  <TemplateBookCard template={template} />
+                  <TemplateBookCard template={template} index={i} />
                 </motion.div>
               </CarouselItem>
             ))}

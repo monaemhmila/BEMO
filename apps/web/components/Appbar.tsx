@@ -204,9 +204,17 @@ export function Appbar() {
                         {item.label}
                       </Link>
                     ))}
-                    <Button asChild className="mt-4 rounded-full font-bold">
-                      <Link href="/storybook/dashboard">Go to My Books</Link>
-                    </Button>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <Button asChild className="animate-cta-pulse rounded-full font-bold">
+                        <Link href="/storybook/create">Create Story</Link>
+                      </Button>
+                      <Button
+                        asChild
+                        className="animate-cta-pulse-delayed rounded-full bg-buttercup font-bold text-violet-deep hover:bg-buttercup/90"
+                      >
+                        <Link href="/storybook/dashboard">Go to My Books</Link>
+                      </Button>
+                    </div>
                   </SignedIn>
                 </nav>
                 <div className="px-4 pt-4">

@@ -4,7 +4,7 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import { htmlLangFor, isLocale, translateText, type Locale } from "@/lib/i18n";
 
-const STORAGE_KEY = "ww_lang";
+const STORAGE_KEY = "ww_lang_v2";
 
 interface LanguageContextValue {
   locale: Locale;
@@ -172,7 +172,7 @@ function walkSubtree(root: Node, locale: Locale) {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const [locale, setLocale] = React.useState<Locale>("en");
+  const [locale, setLocale] = React.useState<Locale>("fr");
   const localeRef = React.useRef<Locale>(locale);
   localeRef.current = locale;
 
@@ -185,15 +185,15 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Respect the visitor's browser language on first visit. English remains
-      // the fallback for visitors whose browser is not French or Arabic.
-      const browserLanguage = navigator.language.toLowerCase();
-      const detected: Locale = browserLanguage.startsWith("fr")
-        ? "fr"
-        : browserLanguage.startsWith("ar")
-          ? "ar"
-          : "en";
-      if (detected !== "en") setLocale(detected);
+      // Arabic browser hints take priority; French is the default for everyone
+      // else, including browsers whose preferred language is English.
+      const browserLanguages = [navigator.language, ...(navigator.languages ?? [])]
+        .filter(Boolean)
+        .map((language) => language.toLowerCase());
+      const detected: Locale = browserLanguages.some((language) => language.startsWith("ar"))
+        ? "ar"
+        : "fr";
+      setLocale(detected);
     } catch {
       // ignore
     }
@@ -276,7 +276,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     };
   }, [locale, pathname]);
 
-  const value = React.useMemo(() => ({ locale, setLocale }), [locale]);
+  const changeLocale = React.useCallback(
+    (nextLocale: Locale) => {
+      if (nextLocale === locale) return;
+
+      try {
+        localStorage.setItem(STORAGE_KEY, nextLocale);
+      } catch {
+        // The reload still applies the locale for this session if storage is unavailable.
+      }
+
+      // Rebuild the page from a clean tree so translated server content,
+      // client components, direction, and cached catalogue copy stay aligned.
+      window.location.reload();
+    },
+    [locale],
+  );
+
+  const value = React.useMemo(() => ({ locale, setLocale: changeLocale }), [locale, changeLocale]);
 
   return (
     <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
