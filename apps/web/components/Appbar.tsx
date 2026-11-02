@@ -195,15 +195,17 @@ export function Appbar() {
                     </div>
                   </SignedOut>
                   <SignedIn>
-                    {signedInNav.map((item) => (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        className="rounded-xl px-3 py-3 text-base font-semibold hover:bg-muted"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
+                    {signedInNav
+                      .filter((item) => item.label !== "My Books" && item.label !== "Create Story")
+                      .map((item) => (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          className="rounded-xl px-3 py-3 text-base font-semibold hover:bg-muted"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
                     <div className="mt-4 flex flex-col gap-2">
                       <Button asChild className="animate-cta-pulse rounded-full font-bold">
                         <Link href="/storybook/create">Create Story</Link>
