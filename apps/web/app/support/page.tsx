@@ -4,6 +4,7 @@ import { FileText, HelpCircle, Mail, ShieldCheck } from "lucide-react";
 
 import { SiteFooter } from "@/components/sections/site-footer";
 import { Button } from "@/components/ui/button";
+import { MotionReveal } from "@/components/motion-reveal";
 
 export const metadata: Metadata = {
   title: "Support",
@@ -47,7 +48,7 @@ export default function SupportPage() {
     <div className="min-h-screen bg-paper">
       <main className="pt-[7rem] pb-20">
         <div className="shell">
-          <div className="pt-14 text-center">
+          <MotionReveal className="pt-14 text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
               We&apos;re here to help
             </span>
@@ -58,9 +59,9 @@ export default function SupportPage() {
               Find answers to common questions, get in touch with the team, or
               catch up on the details that matter.
             </p>
-          </div>
+          </MotionReveal>
 
-          <div className="mx-auto mt-12 grid max-w-4xl gap-6 sm:grid-cols-2">
+          <MotionReveal className="mx-auto mt-12 grid max-w-4xl gap-6 sm:grid-cols-2" amount={0.1}>
             {CARDS.map(({ icon: Icon, title, text, href, cta }) => (
               <Link
                 key={title}
@@ -81,9 +82,9 @@ export default function SupportPage() {
                 </span>
               </Link>
             ))}
-          </div>
+          </MotionReveal>
 
-          <div className="mt-14 text-center">
+          <MotionReveal className="mt-14 text-center" amount={0.1}>
             <p className="text-muted-foreground">
               Need a human? Email us at{" "}
               <a
@@ -96,7 +97,7 @@ export default function SupportPage() {
             <Button asChild variant="outline" size="lg" className="mt-5 rounded-full px-8 font-bold">
               <Link href="/contact">Send a message</Link>
             </Button>
-          </div>
+          </MotionReveal>
         </div>
       </main>
       <SiteFooter />

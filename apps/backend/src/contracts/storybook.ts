@@ -39,9 +39,17 @@ export const STORYBOOK_SQUARE_ASPECT_RATIO = "1:1";
 export const A4_LANDSCAPE_WIDTH_PT = 841.89;
 export const A4_LANDSCAPE_HEIGHT_PT = 595.28;
 
-// Exact square page in PDF points (210 x 210 mm).
-export const STORYBOOK_PAGE_WIDTH_PT = 595.28;
-export const STORYBOOK_PAGE_HEIGHT_PT = 595.28;
+// Exact square printed page: 14 x 14 cm (140 x 140 mm).
+// PDF points use 72 points per inch: 140 / 25.4 * 72 = 396.85 pt.
+export const STORYBOOK_PAGE_WIDTH_PT = 396.85;
+export const STORYBOOK_PAGE_HEIGHT_PT = 396.85;
+
+export const STORYBOOK_PDF_PAGE_SIZES = ["14x14", "20x20"] as const;
+export type StorybookPdfPageSize = (typeof STORYBOOK_PDF_PAGE_SIZES)[number];
+
+export function parseStorybookPdfPageSize(value: unknown): StorybookPdfPageSize {
+  return value === "20x20" ? "20x20" : "14x14";
+}
 
 // Approximate print resolution: A4 landscape at 300 DPI.
 export const A4_LANDSCAPE_WIDTH_PX = 3508;
@@ -75,13 +83,12 @@ export interface PageTextLayout {
 }
 
 /**
- * The cover (first page) and the closing (last page) render as a single 1:1
- * square page in the book; every intermediate page is a 16:9 illustration that
- * is printed as two square halves. Both the image pipeline and the reader use
- * this single source of truth so generated images always match the page layout.
+ * The cover (first page) renders as a single 1:1 square page. Story pages are
+ * landscape 16:9 illustrations printed as two square halves. The closing page
+ * remains a special reusable cover asset when one is present.
  */
-export function isSquareBookPage(pageNumber: number, totalPages: number): boolean {
-  return pageNumber === 1 || pageNumber === Math.max(1, totalPages);
+export function isSquareBookPage(pageNumber: number, _totalPages: number): boolean {
+  return pageNumber === 1;
 }
 
 export function getPageAspectRatio(
@@ -133,6 +140,7 @@ export function getPageComposition(
 ): PageComposition {
   const textPosition = getTextPosition(pageNumber, totalPages);
   const isCover = pageNumber === 1;
+  const isOpening = pageNumber === 2;
   const isWide = textPosition === "bottom-center" || textPosition === "center";
 
   const characterSide: CharacterSide =
@@ -145,17 +153,19 @@ export function getPageComposition(
     pageType: getPageType(pageNumber, totalPages),
     textPosition,
     alignment: textPosition === "top-center" || textPosition === "bottom-center" || textPosition === "center" ? "center" : "left",
-    imageAspectRatio: STORYBOOK_IMAGE_ASPECT_RATIO,
+    imageAspectRatio: getPageAspectRatio(pageNumber, totalPages),
     textSafeArea: "",
     characterSide,
     sideCharacterArea: "",
-    textWidthPercent: isCover ? 0.88 : isWide ? 0.6 : 0.5,
+    // The opening page is the first narrative reveal: let its caption run
+    // across the full lower text-safe band while remaining bottom-left.
+    textWidthPercent: isCover ? 0.88 : isOpening ? 0.88 : isWide ? 0.6 : 0.5,
     textMaxWords: textPosition === "center" ? 14 : isCover ? 4 : 60,
   };
 }
 
 /**
- * Numeric text layout in PDF points for the 210x210 mm square page, driven
+ * Numeric text layout in PDF points for the 148.5x148.5 mm square page, driven
  * only by the page number so PDF and image generation stay perfectly in sync.
  */
 export function getPageTextLayout(
@@ -165,7 +175,7 @@ export function getPageTextLayout(
   const composition = getPageComposition(pageNumber, totalPages);
   const width = STORYBOOK_PAGE_WIDTH_PT;
   const height = STORYBOOK_PAGE_HEIGHT_PT;
-  const margin = 56;
+  const margin = 25;
 
   switch (composition.textPosition) {
     case "top-center":
@@ -185,8 +195,8 @@ export function getPageTextLayout(
     case "bottom-left":
       return {
         x: margin,
-        y: height - 150,
-        width: width * composition.textWidthPercent,
+        y: height - 100,
+        width: 300,
         align: "left",
         fontSize: 15,
         lineHeight: 19,
@@ -198,9 +208,9 @@ export function getPageTextLayout(
       };
     case "bottom-right":
       return {
-        x: width - margin - width * composition.textWidthPercent,
-        y: height - 150,
-        width: width * composition.textWidthPercent,
+        x: margin,
+        y: height - 100,
+        width: 300,
         align: "left",
         fontSize: 15,
         lineHeight: 19,

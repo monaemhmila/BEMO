@@ -2,6 +2,8 @@ import { frStorefront } from "./fr";
 import { frFeatures } from "./fr-features";
 import { arStorefront } from "./ar";
 import { arFeatures } from "./ar-features";
+import { frCoverage } from "./coverage-fr";
+import { arCoverage } from "./coverage-ar";
 import {
   LANGUAGE_OPTIONS,
   LOCALES,
@@ -14,8 +16,8 @@ export { LANGUAGE_OPTIONS, LOCALES, htmlLangFor, isLocale };
 export type { Locale };
 
 export const dictionaries: Record<Exclude<Locale, "en">, Record<string, string>> = {
-  fr: { ...frStorefront, ...frFeatures },
-  ar: { ...arStorefront, ...arFeatures },
+  fr: { ...frStorefront, ...frFeatures, ...frCoverage },
+  ar: { ...arStorefront, ...arFeatures, ...arCoverage },
 };
 
 const CURLY = /[\u2018\u2019\u02BC]/g;

@@ -4,6 +4,7 @@ import { logger } from "./lib/logger";
 import { validateStartup } from "./lib/startup";
 import { GenerationQueue } from "./lib/generation-queue";
 import { StoryService } from "./services/story.service";
+import { resumePendingOrderedStories } from "./services/ordered-story-generation.service";
 
 export async function startServer() {
   // Validate database before starting server
@@ -17,6 +18,11 @@ export async function startServer() {
   const generationQueue = GenerationQueue.getInstance();
   const storyService = StoryService.getInstance();
   generationQueue.start((job) => storyService.processQueuedPageGeneration(job).then(() => undefined));
+  // A restart must not strand orders that were already confirmed before the
+  // process went down. Resume them in the background after startup.
+  void resumePendingOrderedStories().catch((error) => {
+    logger.error({ error }, "Failed to resume incomplete confirmed story orders");
+  });
   let preferredPort = env.PORT;
 
   const listenOnPort = (portToTry: number) => {

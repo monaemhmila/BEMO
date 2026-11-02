@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { TemplateBookCover } from "@/components/template-book-cover";
 import { LocalizedStoryText } from "@/components/localized-story-text";
@@ -8,33 +11,7 @@ import type { StoryTemplate } from "@/data/story-templates";
 const PRICE_FROM = "";
 const PRICE = "70 DT";
 
-/** Hinge position as % of cover width. Tweak this one number. */
-const HINGE = 5.5;
-
-const spineGradient = `linear-gradient(90deg,
-  rgba(255,255,255,.38) 0%,
-  rgba(255,255,255,.14) 0.7%,
-  rgba(0,0,0,.06) 1.8%,
-  rgba(0,0,0,.16) ${HINGE - 1.6}%,
-  rgba(0,0,0,.55) ${HINGE - 0.35}%,
-  rgba(0,0,0,.35) ${HINGE}%,
-  rgba(255,255,255,.34) ${HINGE + 0.55}%,
-  rgba(255,255,255,.06) ${HINGE + 1.2}%,
-  rgba(0,0,0,.30) ${HINGE + 2}%,
-  rgba(0,0,0,.14) ${HINGE + 5}%,
-  rgba(0,0,0,.04) ${HINGE + 10}%,
-  transparent ${HINGE + 15}%)`;
-
-const sheenGradient = `linear-gradient(115deg,
-  rgba(255,255,255,.20) 0%,
-  rgba(255,255,255,0) 35%,
-  rgba(255,255,255,0) 65%,
-  rgba(0,0,0,.14) 100%)`;
-
-const edgeGradient = `linear-gradient(180deg, rgba(255,255,255,.14), transparent 6%, transparent 94%, rgba(0,0,0,.18)),
-  linear-gradient(270deg, rgba(0,0,0,.16), transparent 3%)`;
-
-/** Wraps a cover image so it looks like a hardcover book with a hinged spine. */
+/** Wraps a cover image so it reads as a physical hardcover book. */
 function BookFrame({ children }: { children: ReactNode }) {
   return (
     <div className="relative w-full pb-[6px] pr-[5px]">
@@ -43,7 +20,7 @@ function BookFrame({ children }: { children: ReactNode }) {
         aria-hidden
         className="absolute bottom-0 left-[3%] right-0 top-[1.2%] rounded-r-[10px] rounded-bl-[3px]"
         style={{
-          background: "repeating-linear-gradient(90deg,#f4f1ea 0 1px,#ddd8cc 1px 2px)",
+          background: "#fffaf0",
           boxShadow: "inset 0 -1px 0 rgba(0,0,0,.25)",
         }}
       />
@@ -58,9 +35,7 @@ function BookFrame({ children }: { children: ReactNode }) {
       >
         {children}
 
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: edgeGradient }} />
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: sheenGradient }} />
-        <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: spineGradient }} />
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-[2%] bg-[#14324a]/10" />
 
         {/* Fine edge highlight, like laminated board */}
         <div
@@ -82,15 +57,18 @@ function BookFrame({ children }: { children: ReactNode }) {
  * A catalogue card. Tapping a story opens that story's detail page, where the
  * "Personalise my book" button starts the wizard with this story selected.
  */
-export function TemplateBookCard({ template }: { template: StoryTemplate }) {
+export function TemplateBookCard({ template, index = 0 }: { template: StoryTemplate; index?: number }) {
   return (
     <Link href={`/books/${template.slug}`} className="group block">
       <div className="relative mx-auto flex h-full w-full max-w-[357.67px] flex-col items-start space-y-4 pb-6 md:pb-8 lg:mx-0 lg:max-w-none lg:w-full xl:w-[390px]">
-        <div className="relative w-full xl:w-[390px]">
+        <motion.div
+          className="animate-book-rise relative w-full xl:w-[390px]"
+          style={{ animationDelay: `${Math.min(index * 80, 400)}ms` }}
+        >
           <BookFrame>
             <TemplateBookCover template={template} className="!rounded-none !shadow-none" />
           </BookFrame>
-        </div>
+        </motion.div>
 
         <div className="flex w-full flex-1 flex-col">
           <div className="grow">
@@ -136,9 +114,20 @@ export function TemplateBookCard({ template }: { template: StoryTemplate }) {
 export function TemplateBookGrid({ templates }: { templates: StoryTemplate[] }) {
   return (
     <div className="mt-10 grid w-full grid-cols-1 gap-y-7 md:grid-cols-2 md:gap-[21px] lg:grid-cols-3 lg:gap-[21px] xl:grid-cols-[repeat(3,390px)] xl:justify-between xl:gap-x-0">
-      {templates.map((template) => (
-        <TemplateBookCard key={template.slug} template={template} />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {templates.map((template, index) => (
+          <motion.div
+            key={template.slug}
+            layout
+            initial={false}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -18, scale: 0.94 }}
+            transition={{ duration: 0.55, delay: Math.min(index * 0.08, 0.45), ease: "easeOut" }}
+          >
+            <TemplateBookCard template={template} index={index} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

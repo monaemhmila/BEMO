@@ -8,11 +8,11 @@ const stepIcons = [
   <Sparkles key="sparkles" className="size-12" strokeWidth={1.7} aria-hidden />,
   <PackageCheck key="package" className="size-12" strokeWidth={1.7} aria-hidden />,
 ];
-const stepColors = ["bg-[#eee9ff] text-violet-ink", "bg-[#fff0d2] text-[#b87900]", "bg-[#ffe6e1] text-[#d05a58]", "bg-[#e4f6eb] text-[#38815a]"];
+const stepColors = ["bg-[#e8f8fb] text-primary", "bg-[#fff1c7] text-[#a87900]", "bg-[#ffe2ea] text-[#d13f57]", "bg-[#d9f5e3] text-[#258b5b]"];
 
 export function HowItWorks() {
   return (
-    <section className="relative overflow-hidden bg-paper py-16 lg:py-20">
+    <section id="how-it-works" className="relative scroll-mt-24 overflow-hidden bg-paper py-16 lg:py-20">
       <PlayfulShapes tone="paper" />
       <div className="shell relative">
         <div className="animate-reveal-up text-center">

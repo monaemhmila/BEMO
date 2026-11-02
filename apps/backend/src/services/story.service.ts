@@ -4,7 +4,7 @@ import { env } from "../config/env";
 import { logger } from "../lib/logger";
 import { FaceConsistencyService } from "./face-consistency.service";
 import { StoryCompletionService } from "./story-completion.service";
-import { GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
+import { SEEDREAM_EDIT_MODEL, GROK_IMAGINE_MODEL, GROK_IMAGINE_EDIT_MODEL } from "./image-generation.service";
 import { saveRemoteImageLocally, saveJsonLocally } from "../lib/storage";
 import {
   STORYBOOK_PAGE_COUNT,
@@ -17,6 +17,7 @@ import {
 } from "../contracts/storybook";
 import { chooseStoryCover } from "./story-cover.service";
 import { GenerationQueue, PageGenerationJob } from "../lib/generation-queue";
+import { getPersonalizedPageSlot } from "../contracts/personalized-book-layout";
 
 /** The canonical 14-beat prompt document stored in `StoryTemplate.prompts`. */
 export interface StoryTemplatePrompts {
@@ -56,6 +57,8 @@ interface StoryPageInput {
   pageNumber: number;
   text: string;
   imageDescription: string;
+  childImageDescription?: string;
+  sceneImageDescription?: string;
   emotion?: string;
   pageType?: PageType;
   imageAspectRatio?: "16:9" | "1:1";
@@ -63,6 +66,10 @@ interface StoryPageInput {
 
 interface StoryScript {
   title: string;
+  /** Generated exactly once, then injected into every child-image prompt. */
+  clothesGenerated?: string;
+  /** Legacy alias kept for scripts generated before clothesGenerated existed. */
+  characterOutfit?: string;
   pages: StoryPageInput[];
 }
 
@@ -73,7 +80,7 @@ interface CharacterProfile {
 }
 
 const AGE_GUIDANCE = {
-  "2-8": {
+  "0-6": {
     language:
       "very simple words, short sentences, basic concepts",
     themes: "friendship, sharing, bedtime, animals, fun",
@@ -81,12 +88,19 @@ const AGE_GUIDANCE = {
     minPageWords: 15,
     targetPageWords: "15-20",
   },
-  "8-12": {
+  "6-9": {
     language: "simple and clear vocabulary, short complete sentences",
     themes: "adventure, problem-solving, friendship, family, nature",
     textLength: "2 short sentences per page",
     minPageWords: 20,
     targetPageWords: "20-25",
+  },
+  "9-12": {
+    language: "clear and engaging vocabulary, short sentence structures",
+    themes: "bravery, teamwork, moral lessons, discovery, mystery",
+    textLength: "3 sentences per page",
+    minPageWords: 25,
+    targetPageWords: "25-30",
   },
   "12-15": {
     language: "clear and engaging vocabulary, short sentence structures",
@@ -146,12 +160,16 @@ ${language ? `Language: ${language}` : ""}
 Tone & Style:
 - Storytelling: engaging, heartwarming, filled with wonder, adventure, and warmth.
 - Create a playful, kid-friendly title.
+- Make the child the named main character in the title. If the story gives the child a role, put the role before the name: "The Princess ${characterName} and Her Magical Garden", "The Policeman ${characterName} Solves the Mystery", or "The Doctor ${characterName} Helps the Village". If there is no role, begin the title directly with "${characterName}". Never use a detached "For:" label or add an awkward suffix. In French, use a natural form such as "La princesse ${characterName} et son jardin magique" or "L'aventure d'Amine avec l'alphabet".
+- First determine the hero's role in this story, then generate one specific, age-appropriate costume exactly once in a separate clothesGenerated field. For a prince or princess, use a consistent royal costume; for a jungle explorer, use a consistent explorer outfit and equipment; for a diver, use a consistent diving suit and diving equipment; adapt the costume to the story's world, job, and role.
+- clothesGenerated must contain the complete costume description. Do not repeat or rewrite the costume in each imageDescription; the server will inject the exact clothesGenerated value after every child scene. Never change its colors, clothing items, accessories, equipment, or footwear between pages.
 - Make one continuous story with a beginning, adventure, problem, resolution, and joyful warm ending.
 
 For each page:
 - Write a charming paragraph of 2 sentences of story text with heart and imagination.
 - Create a clear visual scene description for the ENVIRONMENT and any SIDE CHARACTERS/CREATURES .
 - Keep the hero as the main character. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
+- In imageDescription, refer to the hero only as a boy or girl and describe the action and emotion. Never include the child's name, age, hair, face, skin tone, eye color, ethnicity, complexion, or other physical identity details.
 - Do not include text, words, signs, billboards, book titles, logos, or speech bubbles in the image description.
 - Ensure the hero child is always fully clothed wearing long trousers and pants (never shorts).
 - Ensure there is no white space , no blank margins.
@@ -161,6 +179,7 @@ Return ONLY valid JSON:
 
 {
   "title": "Kid-friendly title featuring ${characterName}",
+  "clothesGenerated": "The exact complete costume generated once and reused on every child image page",
   "pages": [
     {
       "pageNumber": 1,
@@ -171,7 +190,18 @@ Return ONLY valid JSON:
   ]
 }
 `;
-    return this.withPageComposition(await this.invokeLLM(prompt));
+    const script = await this.invokeLLM(prompt);
+    const outfit = script.clothesGenerated?.trim() || script.characterOutfit?.trim();
+    return this.withPageComposition({
+      ...script,
+      title: this.ensureTitleIncludesChildName(script.title, characterName, language),
+      pages: outfit
+        ? script.pages.map((page) => ({
+          ...page,
+          imageDescription: this.withConsistentOutfit(page.imageDescription, outfit),
+        }))
+        : script.pages,
+    });
   }
 
   /**
@@ -202,6 +232,7 @@ Return ONLY valid JSON:
 
     return {
       title: script.title,
+      clothesGenerated: script.clothesGenerated?.trim() || script.characterOutfit?.trim(),
       pages: ordered,
     };
   }
@@ -247,6 +278,10 @@ Return ONLY valid JSON:
       } pronouns and gendered details consistently on every page, and describe the hero's clothing and presentation as a ${input.gender}'s.\n`
       : "";
 
+    const arabicTitleRule = input.language?.toLowerCase().startsWith("arabic")
+      ? `- Arabic title rule: write the title entirely in Modern Standard Arabic and make the child the named main character. If the story gives the child a role, put the role before the name, such as "الأميرة ${input.childName} ومغامرتها في الحديقة السحرية" or "الشرطية ${input.childName} تحقق في اللغز"; if there is no role, begin directly with the child's name. Do not copy or append the template name, and do not include French or English words such as "et", "le", "the", or "and". Keep only proper names when they are intentionally supplied by the parent.\n`
+      : "";
+
     const prompt = `
 Create a personalized children's story for a ${heroDescription}.
 
@@ -260,6 +295,7 @@ Story:
 - Exactly ${pageCount} pages (pageNumber 1 through ${pageCount}). Every book has the same number of pages.
 - Follow the template beat plan EXACTLY, one beat per page, in order. Do not skip, merge, reorder or add beats.
 - Page 1 is the cover: it shows the hero at the very start of the adventure, its text is a single short hook line (the book title is printed on the page separately).
+- Make the child the named main character in the title while keeping the selected language and title style. If the story gives the child a role, put the role before the name: "The Princess ${input.childName} and Her Magical Garden", "The Policeman ${input.childName} Solves the Mystery", or "The Doctor ${input.childName} Helps the Village". If there is no role, begin the title directly with "${input.childName}". Never use a detached "For:" label or add an awkward suffix. In French, use a natural form such as "La princesse ${input.childName} et son jardin magique" or "L'aventure d'Amine avec l'alphabet".
 - Page 2 is the opening page: introduce the hero, the world and what puts the adventure in motion.
 - Page ${pageCount - 1} resolves the problem and shows the lesson lived out, not just explained.
 - Page ${pageCount} is the closing page: a warm, gentle farewell that echoes the opening. Keep its text very short (about 8-12 words).
@@ -270,16 +306,15 @@ Story:
 - HEART & LESSON: weave the template's moral lesson and educational focus into the story naturally and never preachy.
 ${genderRule}- Themes: ${guidance.themes}
 ${input.language ? `- Language: ${input.language}. Write the story text and title in ${input.language}.` : ""}
-- The imageDescription field must ALWAYS be written in English (it is used to generate the illustrations); only the story text and title are written in the selected language.
+${arabicTitleRule}- The imageDescription field must ALWAYS be written in English (it is used to generate the illustrations); only the story text and title are written in the selected language.
 ${input.dedication ? `- Dedication: "${input.dedication}"` : ""}
 
 Beat plan (page 1 = beat 1, ... page ${pageCount} = beat ${pageCount}):
 ${beatPlan}
 
-${characterProfile?.appearance
-        ? `Character appearance: ${characterProfile.appearance}`
-        : "The uploaded reference image defines the character's real face and appearance."
-      }
+- The uploaded reference image supplies identity consistency only; never describe physical identity details in imageDescription.
+
+First determine the hero's role in the template story, then generate one specific, age-appropriate costume exactly once in clothesGenerated. For a prince or princess, use a consistent royal costume; for a jungle explorer, use a consistent explorer outfit and equipment; for a diver, use a consistent diving suit and diving equipment; adapt the costume to the story's world, job, and role. Do not repeat or rewrite the costume in each childImageDescription or imageDescription; the server will inject the exact clothesGenerated value after every child scene. The costume must remain identical in colors, clothing items, accessories, equipment, and footwear throughout the story. Scene-only pages must remain people-free and must not mention the costume.
 
 "${input.childName}" is the hero throughout the story and must stay the same recognizable child on every page.
 
@@ -291,7 +326,7 @@ For each page:
 - Build the imageDescription by covering the ENTIRE background in four consecutive zones, one after the other: describe what is on the RIGHT side, then the LEFT side, then the TOP, then the BOTTOM, so every part of the backdrop is fully described with absolutely no un-described area.
 - Keep all four zones part of ONE continuous, seamless background scene: same location, same time of day, same weather, same lighting and the same color palette across right/left/top/bottom. The zones must blend smoothly into each other where they meet (no hard seams, no abrupt color or style changes, no cut-off objects at any edge), so the whole frame reads as a single homogeneous environment rather than four separate panels.
 - Make the ENVIRONMENT and any SIDE CHARACTERS/CREATURES imaginative, and detailed.
-- The hero child retains their natural real appearance from their photo. Make the child character highly active and engaging in the story and the scenes. The child should be actively doing things, interacting with the environment, and taking action.
+- In imageDescription, refer to the hero only as a boy or girl and describe only the action, emotion, and setting. Never include the child's name, age, hair, face, skin tone, eye color, ethnicity, complexion, or other physical identity details. The uploaded reference image handles visual consistency.
 - The imageDescription must NEVER mention or imply any art style, illustration style, medium, or drawing technique - never use words like illustration, storybook, cartoon, anime, painting, watercolor, 3D, drawing, sketch, render, or any similar artistic term. Descriptions are purely about the scene CONTENT: the setting, time of day, weather, lighting, colors, characters, objects, and atmosphere. The artwork's visual style is applied separately and is not part of the description.
 - Do not include text, letters, signs, billboards, book titles, logos, or speech bubbles in imageDescription.
 - Do not render any story text inside the image.
@@ -303,6 +338,7 @@ Return ONLY valid JSON:
 
 {
   "title": "Kid-friendly title featuring ${input.childName}",
+  "clothesGenerated": "The exact complete costume generated once and reused on every child image page",
   "pages": [
     {
       "pageNumber": 1,
@@ -313,15 +349,223 @@ Return ONLY valid JSON:
   ]
 }
 `;
-    return this.withPageComposition(
-      await this.expandThinPages(
-        await this.invokeLLM(prompt),
-        input,
-        guidance,
-        pageCount
-      ),
+    const script = await this.expandThinPages(
+      await this.invokeLLM(prompt),
+      input,
+      guidance,
       pageCount
     );
+    const outfit = script.clothesGenerated?.trim() || script.characterOutfit?.trim();
+    return this.withPageComposition(
+      {
+        ...script,
+        clothesGenerated: outfit,
+        title: this.ensureTitleIncludesChildName(script.title, input.childName, input.language),
+        pages: script.pages.map((page) => ({
+          ...page,
+          text: this.ensurePageTextIncludesChildName(page.text, input.childName, input.language),
+          ...(outfit
+            ? { imageDescription: this.withConsistentOutfit(page.imageDescription, outfit) }
+            : {}),
+        })),
+      },
+      pageCount
+    );
+  }
+
+  /**
+   * Generate the text for the printed layout. There are 15 generated story
+   * pages followed by the existing reusable closing cover. Every generated
+   * page contains the child so its 16:9 illustration can be edited from the
+   * same reference image and split into two printed leaves.
+   */
+  async generatePersonalizedPrintStoryScript(
+    characterName: string,
+    input: PersonalizedStoryInput,
+    characterProfile?: CharacterProfile,
+  ): Promise<StoryScript> {
+    const pageCount = 15;
+    const templateBeats = Array.isArray(input.template.prompts.beats)
+      ? input.template.prompts.beats
+      : [];
+    const beatPlan = Array.from({ length: pageCount }, (_, index) => {
+      const beatIndex = Math.min(templateBeats.length - 1, Math.floor((index * templateBeats.length) / pageCount));
+      return `  - Page ${index + 1}: ${templateBeats[beatIndex] || "Continue the warm adventure naturally."}`;
+    }).join("\n");
+    const appearance = characterProfile?.appearance
+      ? "The uploaded reference image supplies identity consistency only; do not copy physical appearance details into any image description."
+      : "The uploaded reference image supplies identity consistency only.";
+
+    const layoutPlan = Array.from({ length: pageCount }, (_, index) => {
+      const pageNumber = index + 1;
+      const aspect = pageNumber === 1 ? "1:1 square cover" : "16:9 landscape spread";
+      const side = pageNumber > 1 ? (pageNumber % 2 === 1 ? "child left, text on right leaf" : "child right, text on left leaf") : "child centered naturally";
+      return `Page ${pageNumber}: ${aspect}, child visible; ${side}`;
+    }).join("\\n");
+
+    const prompt = `
+Create a personalized children's story for a ${input.childAge}-year-old child named "${characterName}".
+
+Return exactly ${pageCount} pages as valid JSON only. Keep one continuous story with a clear beginning,
+adventure, challenge, resolution, and gentle ending. Page 1 is a short cover hook. Page ${pageCount} is a
+short closing story page before the reusable final cover image.
+
+The exact name "${characterName}" MUST appear in the story text on EVERY page. Always use "${characterName}" when referring to the hero in the prose; do not replace the name with generic wording such as "the child", "the boy", or "the girl". Return a childImageDescription for every page. Describe the complete environment and what the ${input.gender || "child"} is doing or feeling. You may say "boy" or "girl" in image descriptions, but never use the child's name, age, hair, face, skin, eyes, ethnicity, complexion, or any other physical identity detail there. Keep the child on the far edge specified by the physical layout, leaving the opposite leaf open for text. Never put image style instructions, text, signs, logos, or story text inside the image prompt.
+
+First determine the hero's story role and generate one complete, specific costume description in clothesGenerated. Generate clothesGenerated exactly once for the whole story. Do not describe or vary the costume separately in any childImageDescription. The server will inject the exact clothesGenerated value after every child scene before sending the prompt to image generation. Keep all clothing items, colors, accessories, equipment, and footwear identical on every child image. Scene-only pages must not mention or include the costume.
+
+Child identity for the prose only: ${appearance}
+${input.language ? `Write the title and story text in ${input.language}.` : "Write the title and story text in English."}
+${input.dedication ? `Dedication: "${input.dedication}"` : ""}
+
+Template beat plan:
+${beatPlan}
+
+Physical image layout (follow this exactly):
+${layoutPlan}
+
+For every page return 15-35 words of warm story text and an English childImageDescription. Keep sceneImageDescription empty when no separate scene is needed.
+Return exactly: { "title": "...", "clothesGenerated": "...", "pages": [{ "pageNumber": 1, "text": "...", "childImageDescription": "...", "sceneImageDescription": "...", "emotion": "..." }] }
+`;
+
+    const parsed = await this.invokeJsonLLM(
+      prompt,
+      "You are a professional children's story writer. Return valid JSON only, with no markdown.",
+      { maxTokens: 6500, temperature: 0.7 },
+    ) as unknown as StoryScript;
+    if (!parsed || !Array.isArray(parsed.pages) || parsed.pages.length !== pageCount) {
+      throw new Error(`Personalized print story must contain exactly ${pageCount} pages`);
+    }
+    const safeSceneFallback = "A richly detailed environment with story-relevant objects, natural lighting, weather, textures, and atmosphere; an empty setting with no people present.";
+    const forbiddenSceneWord = /\b(child|children|kid|kids|boy|girl|person|people|human|humans|face|faces|portrait|portraits|character|characters|hero|heroes|he|she|him|her|his|their|they|them)\b/i;
+
+    const outfit = parsed.clothesGenerated?.trim() || parsed.characterOutfit?.trim();
+    return {
+      title: this.ensureTitleIncludesChildName(parsed.title, input.childName, input.language),
+      clothesGenerated: outfit,
+        pages: parsed.pages.map((page, index) => {
+        const isChildPage = getPersonalizedPageSlot(index + 1).kind === "child";
+        const childImageDescription = page.childImageDescription?.trim() || page.imageDescription?.trim() || page.text?.trim() || "";
+        const imageDescription = page.imageDescription?.trim() || childImageDescription;
+        return {
+          ...page,
+          pageNumber: index + 1,
+          text: this.ensurePageTextIncludesChildName(page.text?.trim() || "", input.childName, input.language),
+          childImageDescription: outfit && isChildPage
+            ? this.withConsistentOutfit(childImageDescription, outfit)
+            : childImageDescription,
+          sceneImageDescription: forbiddenSceneWord.test(page.sceneImageDescription?.trim() || "")
+            ? safeSceneFallback
+            : page.sceneImageDescription?.trim() || safeSceneFallback,
+          imageDescription: outfit && isChildPage
+            ? this.withConsistentOutfit(imageDescription, outfit)
+            : imageDescription,
+        };
+      }),
+    };
+  }
+
+  private withConsistentOutfit(description: string, outfit: string): string {
+    const cleanDescription = description.trim();
+    const cleanOutfit = outfit.trim();
+    if (!cleanOutfit) return cleanDescription;
+    const continuityLock = `The child wears the exact same story-role costume on every page: ${cleanOutfit}.`;
+    if (cleanDescription.toLowerCase().includes(continuityLock.toLowerCase())) return cleanDescription;
+    return `${cleanDescription} ${continuityLock}`;
+  }
+
+  private ensureTitleIncludesChildName(title: string, childName: string, language?: string): string {
+    const cleanTitle = title.trim();
+    const cleanName = childName.trim();
+    if (!cleanName) {
+      return cleanTitle;
+    }
+    const normalizedLanguage = language?.toLocaleLowerCase() || "";
+    const escapedName = cleanName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (normalizedLanguage.startsWith("french") || normalizedLanguage.startsWith("fr")) {
+      const namedGenericRole = new RegExp(
+        `^${escapedName}\\s+et\\s+(?:la|le)\\s+(princesse|prince|policière?|policier|médecin|docteur|exploratrice?|explorateur|astronaute|pirate|détective|chevalière?|chevalier|reine|roi)\\s+et\\s+(sa|son)\\s+(.+)$`,
+        "i",
+      ).exec(cleanTitle);
+      if (namedGenericRole) {
+        const article = /^(princesse|policière|exploratrice|chevalière|reine)$/i.test(namedGenericRole[1]) ? "La" : "Le";
+        return `${article} ${namedGenericRole[1]} ${cleanName} et ${namedGenericRole[2]} ${namedGenericRole[3]}`;
+      }
+      const genericRole = /^(?:la\s+|le\s+)?(princesse|prince|policière?|policier|médecin|docteur|exploratrice?|explorateur|astronaute|pirate|détective|chevalière?|chevalier|reine|roi)\s+et\s+(sa|son)\s+(.+)$/i.exec(cleanTitle);
+      if (genericRole) {
+        const article = /^(princesse|policière|exploratrice|chevalière|reine)$/i.test(genericRole[1]) ? "La" : "Le";
+        return `${article} ${genericRole[1]} ${cleanName} et ${genericRole[2]} ${genericRole[3]}`;
+      }
+      if (cleanTitle.toLocaleLowerCase().includes(cleanName.toLocaleLowerCase())) {
+        return cleanTitle;
+      }
+      return `${cleanName} et ${cleanTitle}`;
+    }
+    if (normalizedLanguage.startsWith("arabic") || normalizedLanguage.startsWith("ar")) {
+      const namedArabicRole = new RegExp(
+        `^${escapedName}\\s+(\\u0627\\u0644\\u0623\\u0645\\u064a\\u0631\\u0629|\\u0627\\u0644\\u0623\\u0645\\u064a\\u0631|\\u0627\\u0644\\u0634\\u0631\\u0637\\u064a\\u0629|\\u0627\\u0644\\u0634\\u0631\\u0637\\u064a|\\u0627\\u0644\\u0637\\u0628\\u064a\\u0628\\u0629|\\u0627\\u0644\\u0637\\u0628\\u064a\\u0628)(.*)$`,
+      ).exec(cleanTitle);
+      if (namedArabicRole) {
+        return `${namedArabicRole[1]} ${cleanName}${namedArabicRole[2]}`;
+      }
+      if (cleanTitle.toLocaleLowerCase().includes(cleanName.toLocaleLowerCase())) {
+        return cleanTitle;
+      }
+      return `\u0645\u063a\u0627\u0645\u0631\u0629 ${cleanName} \u0641\u064a ${cleanTitle}`;
+      return `${cleanTitle} مع ${cleanName}`;
+    }
+    // Replace a generic role protagonist instead of producing titles such as
+    // "Yasmine and The Princess and Her Magical Garden".
+    const namedRoleFirst = new RegExp(
+      `^${escapedName}\\s+the\\s+(princess|prince|policeman|police officer|policewoman|doctor|firefighter|explorer|astronaut|pirate|detective|knight|queen|king)\\b(.*)$`,
+      "i",
+    ).exec(cleanTitle);
+    if (namedRoleFirst) {
+      return `The ${namedRoleFirst[1]} ${cleanName}${namedRoleFirst[2]}`;
+    }
+
+    const namedGenericRole = new RegExp(
+      `^${escapedName}\\s+and\\s+the\\s+(princess|prince|policeman|police officer|policewoman|doctor|firefighter|explorer|astronaut|pirate|detective|knight|queen|king)\\s+and\\s+(her|his)\\s+(.+)$`,
+      "i",
+    ).exec(cleanTitle);
+    if (namedGenericRole) {
+      return `The ${namedGenericRole[1]} ${cleanName} and ${namedGenericRole[2]} ${namedGenericRole[3]}`;
+    }
+
+    const genericRole = /^(?:the\s+)?(princess|prince|policeman|police officer|policewoman|doctor|firefighter|explorer|astronaut|pirate|detective|knight|queen|king)\s+and\s+(her|his)\s+(.+)$/i.exec(cleanTitle);
+    if (genericRole) {
+      return `The ${genericRole[1]} ${cleanName} and ${genericRole[2]} ${genericRole[3]}`;
+    }
+
+    if (cleanTitle.toLocaleLowerCase().includes(cleanName.toLocaleLowerCase())) {
+      return cleanTitle;
+    }
+
+    return `${cleanName} and ${cleanTitle}`;
+  }
+
+  /** Keep the hero named in every piece of reader-facing story prose. */
+  private ensurePageTextIncludesChildName(text: string, childName: string, language?: string): string {
+    const cleanText = text.trim();
+    const cleanName = childName.trim();
+    if (!cleanText || !cleanName) return cleanText;
+
+    const escapedName = cleanName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escapedName}\\b`, "i").test(cleanText)) return cleanText;
+
+    const normalizedLanguage = language?.toLocaleLowerCase() || "";
+    if (normalizedLanguage.startsWith("french") || normalizedLanguage.startsWith("fr")) {
+      const replaced = cleanText.replace(/\\b(l['’]enfant|le petit|la petite|l’enfant)\\b/i, cleanName);
+      return replaced === cleanText ? `${cleanName} ${cleanText}` : replaced;
+    }
+
+    // Arabic prose reads naturally with the name introduced at the beginning;
+    // for English, replace the common generic protagonist phrase directly.
+    const replaced = cleanText.replace(
+      /\b(the child|the boy|the girl|this child|a child)\b/i,
+      cleanName,
+    );
+    return replaced === cleanText ? `${cleanName} ${cleanText}` : replaced;
   }
 
   /**
@@ -431,7 +675,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
   /**
    * Turn a parent's idea into a reusable custom template.
    *
-   * The returned document is validated to contain exactly 14 beats so the
+   * The returned document is validated to contain exactly 15 beats so the
    * custom path produces the same book shape as the predefined templates. The
    * model occasionally returns the wrong number of beats, so one repair pass is
    * attempted before giving up; the beat count itself is never fudged.
@@ -441,7 +685,7 @@ Return ONLY valid JSON: { "pages": [ { "pageNumber": 1, "text": "the rewritten s
     setting?: string;
     extras?: string;
     message?: string;
-    ageRange: "3-5" | "6-8" | "9-12";
+    ageRange: "0-6" | "6-9" | "9-12";
   }): Promise<{
     name: string;
     description: string;
@@ -554,7 +798,12 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
         );
       }
 
-      if (beats.length !== pageCount) {
+      // Models occasionally append an extra closing beat despite the explicit
+      // count in the prompt. Keep the canonical page count deterministic while
+      // still rejecting responses that are too short.
+      const normalizedBeats = beats.slice(0, pageCount);
+
+      if (normalizedBeats.length !== pageCount) {
         throw new Error(
           `The generated template must contain exactly ${pageCount} beats, received ${beats.length}`
         );
@@ -573,7 +822,7 @@ Return ONLY valid JSON, with exactly ${pageCount} items in "beats":
           worldContext: String(
             rawPrompts.worldContext ?? input.setting ?? ""
           ).trim(),
-          beats: beats.map((beat) => beat.trim()),
+          beats: normalizedBeats.map((beat) => beat.trim()),
         },
       };
     };
@@ -635,6 +884,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         status: "Generating",
         childName: personalization?.childName,
         childAge: personalization?.childAge,
+        clothesGenerated: script.clothesGenerated?.trim() || script.characterOutfit?.trim() || null,
         referenceImageUrl: personalization?.childImage || null,
         // Every book has the same 14-page shape, so the legacy storyLength
         // column is no longer written; the template row is the source of truth.
@@ -642,6 +892,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           personalization?.template?.category
         ),
         dedication: personalization?.dedication,
+        language: personalization?.language || "en",
         templateId: personalization?.template?.id,
         includeAudio: personalization?.includeAudio || false,
         voiceId: personalization?.voiceId || "sarah",
@@ -657,7 +908,10 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
             content: page.text,
 
             // Child name is intentionally NOT passed here.
-            imagePrompt: this.buildImagePrompt(page),
+            imagePrompt: this.buildImagePrompt(
+              page,
+              story.clothesGenerated,
+            ),
 
             status: "Pending",
           },
@@ -703,9 +957,10 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
    * The first scene changes with the story like every other page.
    */
   private buildImagePrompt(
-    page: StoryPageInput
+    page: StoryPageInput,
+    clothesGenerated?: string | null,
   ): string {
-    return page.imageDescription;
+    return this.withConsistentOutfit(page.imageDescription, clothesGenerated || "");
   }
 
   /**
@@ -715,7 +970,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
+    options?: { childName?: string; childAge?: number | null; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
   ) {
     const job = {
       pageId,
@@ -737,7 +992,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
     pageId: string,
     prompt: string,
     referenceImageUrl?: string | null,
-    options?: { childName?: string; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
+    options?: { childName?: string; childAge?: number | null; position?: "left" | "right"; artStyle?: string; gender?: "boy" | "girl" }
   ) {
     try {
       const page = await prismaClient.storyPage.findUnique({
@@ -748,6 +1003,9 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           story: {
             select: {
               title: true,
+              language: true,
+              childAge: true,
+              gender: true,
               category: true,
               pages: { select: { imagePrompt: true } },
               template: { select: { name: true, description: true, prompts: true } },
@@ -775,14 +1033,15 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           templateDescription: page.story.template?.description,
           templatePrompts: page.story.template?.prompts,
           pagePrompts: page.story.pages.map((item) => item.imagePrompt),
-          gender: options?.gender,
+          gender: options?.gender ?? (page.story.gender === "boy" || page.story.gender === "girl" ? page.story.gender : undefined),
+          language: page.story.language,
         });
         await prismaClient.storyPage.update({
           where: { id: pageId },
           data: { imageUrl: cover.url, falAiRequestId: null, status: "Generated" },
         });
-        logger.info({ pageId, cover: cover.color }, "Applied story closing cover");
-        return { requestId: `local-cover:${cover.color}` };
+        logger.info({ pageId, cover: cover.color, language: cover.language, filename: cover.filename }, "Applied story closing cover");
+        return { requestId: `local-cover:${cover.color}-${cover.language}` };
       }
       const isSquarePage = isSquareBookPage(page.pageNumber, totalPages);
 
@@ -792,9 +1051,13 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
         position = comp.characterSide === "left" ? "left" : "right";
       }
 
-      const scenePrompt = options?.childName
-        ? `${options.childName} ${prompt.trim()}`
-        : prompt;
+      const childAge = Number.isFinite(options?.childAge)
+        ? options?.childAge
+        : page.story.childAge;
+      const ageDescription = Number.isFinite(childAge)
+        ? `, exactly ${childAge} years old`
+        : "";
+      const scenePrompt = `A ${options?.gender || "child"}${ageDescription} is ${prompt.trim()}`;
 
       const { requestId } =
         await this.faceConsistency.generateFaceConsistentImage(
@@ -1099,8 +1362,9 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
   private getAgeRange(
     age: number
   ): keyof typeof AGE_GUIDANCE {
-    if (age <= 8) return "2-8";
-    if (age <= 12) return "8-12";
+    if (age <= 6) return "0-6";
+    if (age <= 9) return "6-9";
+    if (age <= 12) return "9-12";
 
     return "12-15";
   }
@@ -1210,7 +1474,7 @@ Return the corrected JSON with exactly ${pageCount} items in "beats". Do not add
           // plain one. A wrong endpoint raises rather than resolving empty.
           let result: Awaited<ReturnType<typeof fal.queue.result>> | undefined;
 
-          for (const endpoint of [GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
+          for (const endpoint of [SEEDREAM_EDIT_MODEL, GROK_IMAGINE_EDIT_MODEL, GROK_IMAGINE_MODEL]) {
             try {
               result = await fal.queue.result(endpoint, {
                 requestId: page.falAiRequestId!,

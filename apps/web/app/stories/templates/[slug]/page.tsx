@@ -293,5 +293,8 @@ export async function generateMetadata({
   return {
     title: `${story.title} - Personalize It`,
     description: story.description,
+    alternates: {
+      canonical: `/books/${story.slug}`,
+    },
   };
 }

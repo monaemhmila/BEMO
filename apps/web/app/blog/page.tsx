@@ -5,6 +5,7 @@ import { ArrowRight, CalendarDays, Clock } from "lucide-react";
 import { SITE_URL } from "@/lib/site";
 import { blogPosts } from "@/data/blog-posts";
 import { Button } from "@/components/ui/button";
+import { MotionReveal } from "@/components/motion-reveal";
 
 const blogIndexStructuredData = {
   "@context": "https://schema.org",
@@ -46,12 +47,19 @@ export const metadata: Metadata = {
     url: `${SITE_URL}/blog`,
     siteName: "Mon Petit Hero",
     type: "website",
+    images: [{
+      url: "/brand/social-card.svg",
+      width: 1200,
+      height: 630,
+      alt: "Mon Petit Hero personalised storybooks",
+    }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Personalized Storybook Ideas & Guides | Mon Petit Hero Blog",
     description:
       "Everything parents need to know about creating personalized children's books.",
+    images: ["/brand/social-card.svg"],
   },
 };
 
@@ -59,7 +67,7 @@ export default function BlogIndexPage() {
   return (
     <div className="min-h-screen bg-paper">
       <main className="pt-[7rem]">
-        <div className="shell max-w-5xl pb-4 pt-14 text-center">
+        <MotionReveal className="shell max-w-5xl pb-4 pt-14 text-center">
           <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
             Blog
           </span>
@@ -71,10 +79,10 @@ export default function BlogIndexPage() {
             storybook — with ready-made templates or a story you invent
             yourself.
           </p>
-        </div>
+        </MotionReveal>
 
         <section className="shell max-w-5xl pb-20 pt-6">
-          <div className="grid gap-6 sm:grid-cols-2">
+          <MotionReveal className="grid gap-6 sm:grid-cols-2" amount={0.08}>
             {blogPosts.map((post) => (
               <Link
                 key={post.slug}
@@ -113,9 +121,9 @@ export default function BlogIndexPage() {
                 </div>
               </Link>
             ))}
-          </div>
+          </MotionReveal>
 
-          <div className="mt-16 rounded-[2rem] bg-violet-deep p-10 text-center text-white sm:p-12">
+          <MotionReveal className="mt-16 rounded-[2rem] bg-violet-deep p-10 text-center text-white sm:p-12" amount={0.1}>
             <h2 className="font-display text-3xl font-bold sm:text-4xl">
               Ready to write your child&apos;s next adventure?
             </h2>
@@ -136,7 +144,7 @@ export default function BlogIndexPage() {
                 <Link href="/storybook/create">Use a Template</Link>
               </Button>
             </div>
-          </div>
+          </MotionReveal>
         </section>
 
         <script

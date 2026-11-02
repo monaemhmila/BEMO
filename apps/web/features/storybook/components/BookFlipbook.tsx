@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Home,
-  Download,
   Loader2,
   Volume2,
   VolumeX,
@@ -154,7 +153,9 @@ function PageSheet({
         <>
           <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/60 to-transparent" />
           <p
-            className={`absolute bottom-9 text-white text-xs md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${side === "left" ? "left-5 right-10" : "right-5 left-10"
+            className={`absolute bottom-9 text-white text-xs md:text-sm leading-relaxed [text-shadow:0_2px_6px_rgba(0,0,0,0.9)] ${page.pageNumber === 2
+                ? "left-5 right-5"
+                : side === "left" ? "left-5 right-10" : "right-5 left-10"
               }`}
           >
             {page.content}
@@ -198,7 +199,6 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
   const [loading, setLoading] = useState(true);
   const [spreadIndex, setSpreadIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [exporting, setExporting] = useState(false);
   const [orderOpen, setOrderOpen] = useState(false);
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -266,30 +266,6 @@ export function BookFlipbook({ storyId }: { storyId: string }) {
         () => setAudioPlaying(true),
         () => setAudioPlaying(false)
       );
-    }
-  };
-
-  const handleExportPdf = async () => {
-    if (!story) return;
-    setExporting(true);
-    try {
-      const token = await getToken?.();
-      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: "blob",
-      });
-      const pdfUrl = URL.createObjectURL(
-        new Blob([response.data], { type: "application/pdf" })
-      );
-      const download = document.createElement("a");
-      download.href = pdfUrl;
-      download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}.pdf`;
-      download.click();
-      URL.revokeObjectURL(pdfUrl);
-    } catch (error) {
-      console.error("PDF export failed", error);
-    } finally {
-      setExporting(false);
     }
   };
 

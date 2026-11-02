@@ -2,6 +2,7 @@ import { ClerkLoaded, ClerkLoading, SignIn } from "@clerk/nextjs";
 import type { Metadata } from "next";
 
 import { AuthLoading } from "@/components/auth-loading";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -15,7 +16,8 @@ export default function LoginPage() {
       className="grid min-h-screen place-items-center bg-paper px-4 py-10 pt-[7rem]"
     >
       <div className="w-full max-w-md">
-        <div className="mb-6 text-center">
+        <div className="animate-reveal-up mb-6 text-center">
+          <BrandLogo className="mb-5 justify-center" />
           <h1 className="font-display text-3xl font-bold text-violet-deep">
             Welcome back
           </h1>
@@ -27,15 +29,15 @@ export default function LoginPage() {
           <AuthLoading />
         </ClerkLoading>
         <ClerkLoaded>
-          <div className="flex justify-center overflow-hidden rounded-3xl border border-border bg-white p-1 shadow-[0_18px_40px_-22px_rgba(31,22,54,.45)]">
+          <div className="animate-auth-card flex justify-center overflow-hidden rounded-3xl border border-border bg-white p-1 shadow-[0_18px_40px_-22px_rgba(31,22,54,.45)]">
             <SignIn
               fallbackRedirectUrl="/storybook/dashboard"
               signUpUrl="/sign-up"
               appearance={{
                 variables: {
-                  colorPrimary: "#5b3bd4",
+                  colorPrimary: "#0875d1",
                   colorBackground: "#ffffff",
-                  colorText: "#1f1636",
+                  colorText: "#14324a",
                   borderRadius: "0.9rem",
                 },
                 elements: {

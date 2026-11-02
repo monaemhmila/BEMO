@@ -32,7 +32,7 @@ export function CustomStoryBanner() {
                 asChild
                 size="lg"
                 variant="outline"
-                className="h-13 rounded-full border-white/40 px-9 text-base font-bold text-white hover:bg-white/10"
+                className="h-13 rounded-full border-white/40 px-9 text-base font-bold text-blue-600 hover:bg-white/10 hover:text-white"
               >
                 <Link href="/storybook/create">Use a Template</Link>
               </Button>

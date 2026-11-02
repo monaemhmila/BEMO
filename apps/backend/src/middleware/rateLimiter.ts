@@ -34,6 +34,33 @@ export const storyGenerationLimiter = rateLimit({
   skip: (req: Request) => Boolean((req as any).user?.isPremium),
 });
 
+/**
+ * Guest requests are cookie-backed, so a visitor could otherwise clear the
+ * cookie and create another guest identity. This IP limit is an additional
+ * abuse-control layer; signed-in users continue using their account limits.
+ */
+export const guestGenerationIpLimiter = rateLimit({
+  ...baseConfig,
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 5,
+  skip: (req: Request) => Boolean(req.headers.authorization),
+  message: buildMessage(
+    "Free guest generations from this network are temporarily limited. Please try again tomorrow or sign in.",
+    24 * 60
+  ),
+});
+
+export const guestOrderIpLimiter = rateLimit({
+  ...baseConfig,
+  windowMs: 24 * 60 * 60 * 1000,
+  max: 20,
+  skip: (req: Request) => Boolean(req.headers.authorization),
+  message: buildMessage(
+    "Too many guest order attempts from this network. Please try again later.",
+    24 * 60
+  ),
+});
+
 export const imageGenerationLimiter = rateLimit({
   ...baseConfig,
   windowMs: 5 * 60 * 1000,
@@ -41,6 +68,16 @@ export const imageGenerationLimiter = rateLimit({
   message: buildMessage(
     "Image generation limit reached. Please try again in a few minutes.",
     5
+  ),
+});
+
+export const assistantLimiter = rateLimit({
+  ...baseConfig,
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: buildMessage(
+    "The assistant has reached its short-term limit. Please try again in a few minutes.",
+    15
   ),
 });
 
@@ -61,4 +98,3 @@ export const webhookLimiter = rateLimit({
   max: 120,
   message: buildMessage("Webhook rate limit exceeded.", 1),
 });
-

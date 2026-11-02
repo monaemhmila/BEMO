@@ -7,12 +7,12 @@ import type { Book } from "@/lib/data";
 
 export function BookCard({ book }: { book: Book }) {
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white ring-1 ring-border transition-shadow hover:shadow-[0_18px_40px_-22px_rgba(31,22,54,.45)]">
+    <article className="group flex h-full flex-col overflow-hidden rounded-3xl bg-white ring-1 ring-border transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-22px_rgba(31,22,54,.45)]">
       <Link
         href={`/books/${book.slug}`}
         className="relative block aspect-square overflow-hidden rounded-b-none rounded-t-3xl"
       >
-        <FillerImage label={book.title} />
+        <div className="h-full transition-transform duration-500 group-hover:scale-[1.03]"><FillerImage label={book.title} /></div>
         {book.badge && (
           <span className="absolute left-3 top-3 rounded-full bg-destructive px-2.5 py-1 text-xs font-bold text-white">
             {book.badge}

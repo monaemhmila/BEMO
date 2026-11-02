@@ -122,16 +122,14 @@ export const CATEGORY_META: Record<
  */
 const FALLBACK_CATEGORY: StoryCategory = "adventure";
 
-export function toStoryCategory(raw: string): StoryCategory {
-  return raw in CATEGORY_META ? (raw as StoryCategory) : FALLBACK_CATEGORY;
+export function toStoryCategory(raw: unknown): StoryCategory {
+  return typeof raw === "string" && raw in CATEGORY_META
+    ? (raw as StoryCategory)
+    : FALLBACK_CATEGORY;
 }
 
-export function getCategoryMeta(raw: string) {
+export function getCategoryMeta(raw: unknown) {
   return CATEGORY_META[toStoryCategory(raw)];
-}
-
-function toAudience(raw: string): StoryAudience {
-  return raw === "girl" || raw === "boy" ? raw : "any";
 }
 
 /**

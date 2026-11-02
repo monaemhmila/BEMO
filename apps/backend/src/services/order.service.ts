@@ -4,6 +4,7 @@ import { prismaClient } from "../lib/prisma";
 import { logger } from "../lib/logger";
 import { env } from "../config/env";
 import { trialService, TRIAL_GENERATIONS_PER_ORDER } from "./trial.service";
+import { isGuestUser } from "../middleware/guestAuth";
 
 export interface CreateOrderInput {
   storyId: string;
@@ -12,6 +13,22 @@ export interface CreateOrderInput {
   address: string;
   city: string;
   postalCode?: string;
+  quantity: number;
+}
+
+export const ORDER_DISCOUNTS: Record<number, number> = {
+  1: 0,
+  2: 10,
+  3: 20,
+  4: 30,
+};
+
+export function calculateOrderPricing(quantity: number, unitPrice: number, gameDiscountPercent = 0) {
+  const quantityDiscountPercent = ORDER_DISCOUNTS[quantity] ?? 0;
+  const discountPercent = quantityDiscountPercent + gameDiscountPercent;
+  const subtotalAmount = Math.round(unitPrice * quantity * 100) / 100;
+  const totalAmount = Math.round(subtotalAmount * (1 - discountPercent / 100) * 100) / 100;
+  return { subtotalAmount, totalAmount, discountPercent };
 }
 
 export interface OrderWithStory {
@@ -25,6 +42,10 @@ export interface OrderWithStory {
   city: string;
   postalCode: string | null;
   totalAmount: number;
+  subtotalAmount: number;
+  quantity: number;
+  discountPercent: number;
+  gameDiscountPercent: number;
   currency: string;
   paymentMethod: string;
   paymentStatus: string;
@@ -36,11 +57,24 @@ export interface OrderWithStory {
     title: string;
     childName: string | null;
     pdfUrl: string | null;
+    coverImage: string | null;
   };
 }
 
 const STORY_SELECT = {
-  story: { select: { id: true, title: true, childName: true, pdfUrl: true } },
+  story: {
+    select: {
+      id: true,
+      title: true,
+      childName: true,
+      pdfUrl: true,
+      pages: {
+        select: { imageUrl: true },
+        orderBy: { pageNumber: "asc" },
+        take: 1,
+      },
+    },
+  },
 } as const;
 
 type OrderWithStoryRecord = Prisma.OrderGetPayload<{
@@ -59,6 +93,10 @@ function serializeOrder(order: OrderWithStoryRecord): OrderWithStory {
     city: order.city,
     postalCode: order.postalCode,
     totalAmount: Number(order.totalAmount),
+    subtotalAmount: Number(order.subtotalAmount),
+    quantity: order.quantity,
+    discountPercent: order.discountPercent,
+    gameDiscountPercent: order.gameDiscountPercent,
     currency: order.currency,
     paymentMethod: order.paymentMethod,
     paymentStatus: order.paymentStatus,
@@ -70,6 +108,7 @@ function serializeOrder(order: OrderWithStoryRecord): OrderWithStory {
       title: order.story.title,
       childName: order.story.childName,
       pdfUrl: order.story.pdfUrl,
+      coverImage: order.story.pages[0]?.imageUrl ?? null,
     },
   };
 }
@@ -86,7 +125,8 @@ function generateOrderNumber(): string {
 }
 
 /**
- * Create a physical book order (Cash on Delivery) for a completed story.
+ * Create a physical book order (Cash on Delivery) once the story text and
+ * preview pages exist. Full artwork and the PDF wait for admin confirmation.
  * Prevents duplicate submissions by only allowing one PENDING order per story.
  */
 export async function createOrder(
@@ -101,7 +141,10 @@ export async function createOrder(
     throw new Error("STORY_NOT_FOUND");
   }
 
-  if (story.status !== "Completed") {
+  const previewPages = await prismaClient.storyPage.count({
+    where: { storyId: story.id, pageNumber: { lte: 2 }, status: "Generated", imageUrl: { not: null } },
+  });
+  if (story.status !== "Completed" && previewPages < 2) {
     throw new Error("STORY_NOT_COMPLETED");
   }
 
@@ -115,6 +158,12 @@ export async function createOrder(
   }
 
   let created: OrderWithStoryRecord | null = null;
+  const user = await prismaClient.user.findUnique({
+    where: { id: userId },
+    select: { gameRewardClaimedAt: true, gameRewardUsedAt: true },
+  });
+  const gameDiscountPercent = user?.gameRewardClaimedAt && !user.gameRewardUsedAt ? 10 : 0;
+  const pricing = calculateOrderPricing(input.quantity, env.BOOK_PRICE_TND, gameDiscountPercent);
 
   // Retry order-number generation on the rare collision
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -129,7 +178,11 @@ export async function createOrder(
           address: input.address,
           city: input.city,
           postalCode: input.postalCode || null,
-          totalAmount: env.BOOK_PRICE_TND,
+          subtotalAmount: pricing.subtotalAmount,
+          totalAmount: pricing.totalAmount,
+          quantity: input.quantity,
+          discountPercent: pricing.discountPercent,
+          gameDiscountPercent,
           currency: env.BOOK_CURRENCY,
           paymentMethod: "CASH_ON_DELIVERY",
           paymentStatus: "PENDING",
@@ -159,12 +212,22 @@ export async function createOrder(
 
   logger.info({ orderId: created.id, orderNumber: created.orderNumber }, "Order created");
 
-  // Every printed book order unlocks one extra free story generation.
-  await trialService.grantGenerations(
-    userId,
-    TRIAL_GENERATIONS_PER_ORDER,
-    `book_order:${created.orderNumber}`
-  );
+  if (gameDiscountPercent > 0) {
+    await prismaClient.user.updateMany({
+      where: { id: userId, gameRewardClaimedAt: { not: null }, gameRewardUsedAt: null },
+      data: { gameRewardUsedAt: new Date() },
+    });
+  }
+
+  // Signed-in customers receive the normal post-order generation credit.
+  // Guests are intentionally limited to their single anonymous generation.
+  if (!(await isGuestUser(userId))) {
+    await trialService.grantGenerations(
+      userId,
+      TRIAL_GENERATIONS_PER_ORDER,
+      `book_order:${created.orderNumber}`
+    );
+  }
 
   return { order: serializeOrder(created), alreadyExists: false };
 }

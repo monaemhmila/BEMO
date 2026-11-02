@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import axios from "axios";
 import HTMLFlipBook from "react-pageflip";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Lock, RefreshCw, ShoppingBag } from "lucide-react";
+import { AlertTriangle, Lock, RefreshCw, RotateCw, ShoppingBag, Smartphone } from "lucide-react";
 
 import { BACKEND_URL } from "../../../app/config";
 import { cn } from "@/lib/utils";
@@ -44,7 +44,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const router = useRouter();
   const { getToken } = useAuth();
 
-  const flipBookRef = useRef<{ pageFlip: () => any } | null>(null);
+  const flipBookRef = useRef<{
+    pageFlip: () => { flipPrev: () => void; flipNext: () => void };
+  } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,6 +63,8 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [slowGenerating, setSlowGenerating] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const [currentLeaf, setCurrentLeaf] = useState<FlipPageIndex>(startPage);
   const pendingStartRef = useRef<number | null>(null);
@@ -70,6 +74,25 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const [muted, setMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [isPortraitViewport, setIsPortraitViewport] = useState(false);
+  const [showLandscapeHint, setShowLandscapeHint] = useState(false);
+
+  useEffect(() => {
+    const mobile = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
+    if (!mobile) return;
+
+    setIsMobileDevice(true);
+    const updateOrientation = () => setIsPortraitViewport(window.innerHeight > window.innerWidth);
+    updateOrientation();
+    window.addEventListener("resize", updateOrientation);
+    setShowLandscapeHint(true);
+    const timer = window.setTimeout(() => setShowLandscapeHint(false), 3000);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", updateOrientation);
+    };
+  }, []);
 
   if (isTouchRef.current === null && typeof window !== "undefined") {
     isTouchRef.current =
@@ -80,11 +103,21 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   useEffect(() => {
     const controller = new AbortController();
     const connect = async () => {
+      const loadPublicStory = async () => {
+        const publicResponse = await fetch(`${BACKEND_URL}/story/public/${storyId}`, { signal: controller.signal });
+        if (!publicResponse.ok) throw new Error(`Public story failed: ${publicResponse.status}`);
+        const payload = await publicResponse.json() as { story?: ReaderStory };
+        if (!payload.story) throw new Error("Shared story is unavailable");
+        setCanShare(false);
+        setStory(payload.story);
+        setLoading(false);
+        setError(false);
+      };
+
       try {
         const token = await getToken?.();
         if (!token) {
-          setLoading(false);
-          setError(true);
+          await loadPublicStory();
           return;
         }
 
@@ -92,7 +125,13 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
           signal: controller.signal,
         });
-        if (!response.ok || !response.body) throw new Error(`Story stream failed: ${response.status}`);
+        if (!response.ok || !response.body) {
+          // A signed-in visitor may still be viewing somebody else's public
+          // story, so fall back to the read-only public endpoint.
+          await loadPublicStory();
+          return;
+        }
+        setCanShare(true);
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -165,13 +204,18 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   const hiddenPageCount = sortedPages.length - pages.length;
 
   /** Each source page produces two square leaves (left + right halves). The
- *  cover (first) and closing (last) pages are generated 1:1 and stay ONE
- *  square page. */
+   *  cover (first) page is generated 1:1 and stays ONE square page. */
   const leafCount = useMemo(() => {
     if (!story) return 0;
+    if (pages.length === 30 || sortedPages.length === 30) return pages.length;
     if (pages.length <= 1) return pages.length;
-    return (pages.length - 2) * 2 + 2;
-  }, [story, pages]);
+    // The reusable closing cover is a single square leaf; story pages between
+    // the covers are the two leaves of their 16:9 source image.
+    const includesClosingCover = pages.length === sortedPages.length;
+    return includesClosingCover
+      ? (pages.length - 2) * 2 + 2
+      : 1 + (pages.length - 1) * 2;
+  }, [story, pages, sortedPages.length]);
 
   /**
    * True once the reader has flipped onto the last free page in teaser mode.
@@ -185,11 +229,14 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     (leafIndex: number): number => {
       const n = pages.length;
       if (n <= 1) return 0;
+      if (pages.length === 30 || sortedPages.length === 30) {
+        return Math.max(0, Math.min(leafIndex, n - 1));
+      }
       if (leafIndex <= 0) return 0;
       if (leafIndex >= leafCount - 1) return n - 1;
       return 1 + Math.floor((leafIndex - 1) / 2);
     },
-    [pages.length, leafCount]
+    [pages.length, sortedPages.length, leafCount]
   );
 
   const showControls = useCallback(() => {
@@ -290,12 +337,12 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
   }, [showControls]);
 
   // ---- Export PDF / ordering --------------------------------------------
-  const handleExportPdf = async () => {
+  const handleExportPdf = async (pageSize: "14x14" | "20x20") => {
     if (!story) return;
     setExporting(true);
     try {
       const token = await getToken?.();
-      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf`, {
+      const response = await axios.get(`${BACKEND_URL}/storybook/${story.id}/pdf?size=${pageSize}&v=${Date.now()}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob",
       });
@@ -304,13 +351,49 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       );
       const download = document.createElement("a");
       download.href = pdfUrl;
-      download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}.pdf`;
+      download.download = `${story.title.replace(/[\\/:*?"<>|]/g, "-") || "storybook"}-${pageSize}.pdf`;
       download.click();
       URL.revokeObjectURL(pdfUrl);
-    } catch (err) {
-      console.error("PDF export failed", err);
+    } catch (err: any) {
+      // PDF errors arrive as blobs because successful responses are PDFs.
+      // Decode JSON error blobs so the backend's actual failure is visible
+      // instead of only reporting AxiosError/reader-unmounted.
+      const responseData = err?.response?.data;
+      if (responseData instanceof Blob) {
+        try {
+          const errorBody = JSON.parse(await responseData.text());
+          console.error("PDF export failed", errorBody);
+        } catch {
+          console.error("PDF export failed", err);
+        }
+      } else {
+        console.error("PDF export failed", err);
+      }
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!story) return;
+    try {
+      const token = await getToken?.();
+      if (!token) return;
+      const response = await axios.post(`${BACKEND_URL}/story/${story.id}/share`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const shareUrl = response.data?.shareUrl || `${window.location.origin}/stories/${story.id}`;
+      if (navigator.share) {
+        await navigator.share({ title: story.title, url: shareUrl });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareCopied(true);
+        window.setTimeout(() => setShareCopied(false), 2200);
+      }
+    } catch (err) {
+      if (!(err instanceof DOMException && err.name === "AbortError")) {
+        console.error("Story sharing failed", err);
+      }
     }
   };
 
@@ -324,8 +407,11 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
     if (!story) return [];
     const leaves: ReactNode[] = [];
     const n = pages.length;
+    const materializedSquareLayout = sortedPages.length === 30;
+    const includesClosingCover = pages.length === sortedPages.length;
     pages.forEach((page, sourceIndex) => {
-      const isSingleSquare = sourceIndex === 0 || sourceIndex === n - 1;
+      const isClosing = includesClosingCover && sourceIndex === n - 1;
+      const isSingleSquare = materializedSquareLayout || sourceIndex === 0 || isClosing;
       const leafIndex = leaves.length;
       if (isSingleSquare) {
         leaves.push(
@@ -335,15 +421,21 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
             title={story.title}
             childName={story.childName}
             dedication={story.dedication}
+            language={story.language}
             squareFill
             side={leafSide(leafIndex)}
             isCover={sourceIndex === 0}
-            renderText={sourceIndex !== 0}
+            isClosing={isClosing}
+            renderText={materializedSquareLayout ? sourceIndex !== 0 && sourceIndex !== n - 1 : false}
             leafNumber={leafIndex + 1}
           />
         );
         return;
       }
+      // The shared composition alternates: odd story pages put the child on
+      // the far left, so their text belongs on the right leaf; even pages put
+      // the child on the far right, so their text belongs on the left leaf.
+      const textOnRightLeaf = page.pageNumber % 2 === 1;
       leaves.push(
         <StoryBookPage
           key={`${page.id}-l`}
@@ -351,10 +443,12 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           title={story.title}
           childName={story.childName}
           dedication={story.dedication}
-          squareHalf="left"
+          language={story.language}
+          squareHalf={materializedSquareLayout ? undefined : "left"}
+          squareFill={materializedSquareLayout}
           side={leafSide(leafIndex)}
           isCover={false}
-          renderText
+          renderText={!textOnRightLeaf}
           leafNumber={leafIndex + 1}
         />
       );
@@ -365,16 +459,18 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           title={story.title}
           childName={story.childName}
           dedication={story.dedication}
-          squareHalf="right"
+          language={story.language}
+          squareHalf={materializedSquareLayout ? undefined : "right"}
+          squareFill={materializedSquareLayout}
           side={leafSide(leafIndex + 1)}
           isCover={false}
-          renderText={false}
+          renderText={textOnRightLeaf}
           leafNumber={leafIndex + 2}
         />
       );
     });
     return leaves;
-  }, [pages, story]);
+  }, [pages, sortedPages.length, story]);
 
   useEffect(() => {
     return () => resetPreloadCache();
@@ -434,6 +530,7 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       ref={rootRef}
       className={cn(
         "relative flex w-full flex-col overflow-hidden bg-paper",
+        isMobileDevice && !showLandscapeHint && "story-reader-mobile-horizontal",
         embedded
           ? "h-[70vh] min-h-[420px]"
           : isFullscreen
@@ -444,6 +541,23 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
       onPointerMove={showControls}
       onTouchStart={showControls}
     >
+      {showLandscapeHint && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-violet-deep/95 px-6 text-center text-white backdrop-blur-sm">
+          <div className="max-w-xs animate-in fade-in zoom-in duration-500">
+            <div className="relative mx-auto mb-6 grid size-20 place-items-center rounded-3xl border-2 border-white/40 bg-white/10 shadow-2xl">
+              <Smartphone className="size-10 animate-pulse" aria-hidden="true" />
+              <RotateCw className="absolute -right-5 -top-4 size-8 animate-spin text-buttercup [animation-duration:1.8s]" aria-hidden="true" />
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-buttercup">Your story is ready</p>
+            <h2 className="mt-3 font-display text-2xl font-bold">Turn your phone sideways</h2>
+            <p className="mt-3 text-sm leading-6 text-white/75">Rotate your phone horizontally for the best storybook experience.</p>
+            <div className="mx-auto mt-6 h-1.5 w-32 overflow-hidden rounded-full bg-white/15">
+              <div className="h-full origin-left animate-[landscape-hint-progress_3s_linear_forwards] rounded-full bg-buttercup" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Soft stage wash behind the book */}
       <div
         className="pointer-events-none absolute inset-0"
@@ -474,7 +588,10 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
           />
         </div>
       ) : (
-        <main className="relative flex flex-1 items-center justify-center px-3 pb-20 pt-16 sm:px-12 sm:pb-16 sm:pt-20">
+        <main className={cn(
+          "relative flex flex-1 items-center justify-center px-3 pb-20 pt-16 sm:px-12 sm:pb-16 sm:pt-20",
+          isMobileDevice && !showLandscapeHint && "overflow-x-auto px-1 pt-3 pb-16"
+        )}>
           <div className="relative w-full max-w-5xl xl:max-w-6xl">
             <HTMLFlipBook
               ref={flipBookRef}
@@ -484,13 +601,13 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
               size="stretch"
               width={BOOK_WIDTH}
               height={BOOK_HEIGHT}
-              minWidth={320}
-              maxWidth={640}
-              minHeight={320}
-              maxHeight={640}
+              minWidth={isMobileDevice && isPortraitViewport ? 170 : 320}
+              maxWidth={isMobileDevice && isPortraitViewport ? 360 : 640}
+              minHeight={isMobileDevice && isPortraitViewport ? 170 : 320}
+              maxHeight={isMobileDevice && isPortraitViewport ? 360 : 640}
               drawShadow
               flippingTime={900}
-              usePortrait
+              usePortrait={false}
               startZIndex={1}
               autoSize
               maxShadowOpacity={0.5}
@@ -557,6 +674,9 @@ export function StoryBookReader({ storyId, previewLimit, embedded = false }: Sto
         onClose={() => router.back()}
         onExportPdf={handleExportPdf}
         onOrderBook={() => setOrderOpen(true)}
+        onShare={handleShare}
+        canShare={canShare}
+        shareCopied={shareCopied}
         embedded={embedded}
       />
 

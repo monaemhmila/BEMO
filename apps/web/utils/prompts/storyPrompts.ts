@@ -19,19 +19,19 @@ export interface StoryPromptParams {
 /**
  * Age-appropriate language guidance
  */
-export type AgeBand = "3-5" | "6-8" | "9-12";
+export type AgeBand = "0-6" | "6-9" | "9-12";
 
 export const AGE_GUIDANCE: Record<AgeBand, {
   language: string;
   themes: string;
   complexity: string;
 }> = {
-  "3-5": {
+  "0-6": {
     language: "Very simple words, short sentences, lots of repetition, basic concepts like colors and numbers",
     themes: "Friendship, sharing, bedtime, animals, colors, counting, family love",
     complexity: "One main event per page, simple cause and effect",
   },
-  "6-8": {
+  "6-9": {
     language: "Simple but engaging vocabulary, complete sentences, gentle tension and resolution",
     themes: "Adventure, problem-solving, friendship, family, nature, being brave",
     complexity: "Simple plot with beginning, middle, end. One or two challenges to overcome",
@@ -47,8 +47,8 @@ export const AGE_GUIDANCE: Record<AgeBand, {
  * Get age range key from numeric age
  */
 export function getAgeRange(age: number): AgeBand {
-  if (age <= 5) return "3-5";
-  if (age <= 8) return "6-8";
+  if (age <= 6) return "0-6";
+  if (age <= 9) return "6-9";
   return "9-12";
 }
 

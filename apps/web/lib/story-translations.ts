@@ -213,4 +213,25 @@ export const storyTranslations: Record<
       tagline: "حكاية سحرية عن الحيوانات واللطف والمشاركة",
     },
   },
+  "third-birthday-three-wishes": {
+    ar: {
+      title: "ثلاث أمنيات في عيد ميلادي",
+      tagline: "ثلاث نجوم سحرية، ثلاث أمنيات، وعيد ميلاد مليء بالحب!",
+    },
+  },
+  "the-wonderful-world-of-colors": {
+    ar: {
+      title: "العالم الرائع للألوان",
+    },
+  },
+  "the-unicorns-missing-star": {
+    ar: {
+      title: "نجمة وحيد القرن المفقودة",
+    },
+  },
+  "the-secret-door-to-fairyland": {
+    ar: {
+      title: "الباب السري إلى عالم الجنيات",
+    },
+  },
 };

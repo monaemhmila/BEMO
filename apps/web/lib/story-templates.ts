@@ -15,14 +15,56 @@ import {
  * window without a rebuild.
  */
 export const TEMPLATE_REVALIDATE_SECONDS = 60;
+const PRODUCTION_BACKEND_URL = "https://api.monpetithero.shop";
 
-function toAudience(raw: string): StoryAudience {
+/**
+ * Local, high-clarity shop covers. Keeping this presentation override in the
+ * storefront means existing database templates immediately use the committed
+ * catalogue artwork without requiring a database migration or remote image
+ * upload. The template id remains the source of truth for the story itself.
+ */
+const LOCAL_TEMPLATE_COVERS: Record<string, string> = {
+  "third-birthday-three-wishes": "/templates/third-birthday-three-wishes/cover.png",
+  "the-secret-of-the-forest": "/templates/the-secret-of-the-forest/cover.png",
+  "the-secret-beneath-the-sea": "/templates/the-secret-beneath-the-sea/cover.png",
+  "the-village-hero": "/templates/the-village-hero/cover.png",
+  "the-princess-magical-garden": "/templates/the-princess-magical-garden/cover.png",
+  "lets-count-1-10": "/templates/lets-count-1-10/cover.png",
+  "my-abc-adventure": "/templates/my-abc-adventure/cover.png",
+  "my-little-dragon-friend": "/templates/my-little-dragon-friend/cover.png",
+  "the-castle-above-the-clouds": "/templates/the-castle-above-the-clouds/cover.png",
+  "my-dinosaur-adventure": "/templates/my-dinosaur-adventure/cover.png",
+  "the-secret-door-to-fairyland": "/templates/the-secret-door-to-fairyland/cover.png",
+  "the-little-wizards-first-spell": "/templates/the-little-wizards-first-spell/cover.png",
+  "the-rainbow-that-lost-its-colors": "/templates/the-rainbow-that-lost-its-colors/cover.png",
+  "the-unicorns-missing-star": "/templates/the-unicorns-missing-star/cover.png",
+  "the-magic-toy-shop": "/templates/the-magic-toy-shop/cover.png",
+  "my-magical-shapes-adventure": "/templates/my-magical-shapes-adventure/cover.png",
+  "the-wonderful-world-of-colors": "/templates/the-wonderful-world-of-colors/cover.png",
+  "my-first-trip-to-space": "/templates/my-first-trip-to-space/cover.png",
+  "my-first-day-at-school": "/templates/my-first-day-at-school/cover.png",
+};
+
+function toAudience(raw: unknown): StoryAudience {
   return raw === "girl" || raw === "boy" ? raw : "any";
 }
 
 function toReview(raw: StorefrontTemplate["review"]): StoryReview | undefined {
-  if (!raw || !raw.quote || !raw.author) return undefined;
-  return raw;
+  // The catalogue is persisted as JSON and older rows may contain a partial
+  // review object. Normalise it here so a malformed review can never crash the
+  // detail page (for example when the UI calls count.toLocaleString()).
+  if (!raw || typeof raw !== "object") return undefined;
+
+  const quote = typeof raw.quote === "string" ? raw.quote.trim() : "";
+  const author = typeof raw.author === "string" ? raw.author.trim() : "";
+  if (!quote || !author) return undefined;
+
+  const rating = Number.isFinite(raw.rating)
+    ? Math.max(0, Math.min(5, Math.round(raw.rating)))
+    : 0;
+  const count = Number.isFinite(raw.count) ? Math.max(0, Math.round(raw.count)) : 0;
+
+  return { rating, count, quote, author };
 }
 
 /**
@@ -46,6 +88,7 @@ function toPreviews(raw: StorefrontTemplate["previews"]): StoryMedia[] {
 
   const slides: StoryMedia[] = [];
   for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
     const src = toImageUrl(entry?.src ?? null);
     if (!src) continue;
 
@@ -65,20 +108,25 @@ function toPreviews(raw: StorefrontTemplate["previews"]): StoryMedia[] {
  * than the database, because labels and colours are a presentation concern.
  */
 function toStoryTemplate(row: StorefrontTemplate): StoryTemplate {
+  const id = typeof row.id === "string" ? row.id : "";
+  const title = typeof row.title === "string" ? row.title : "Untitled story";
+  const description = typeof row.description === "string" ? row.description : "";
+  const ageRange = typeof row.ageRange === "string" ? row.ageRange : "2-8";
+
   return {
-    slug: row.id,
-    title: row.title,
+    slug: id,
+    title,
     audience: toAudience(row.audience),
     category: toStoryCategory(row.category),
     categoryLabel: getCategoryMeta(row.category).label,
     emoji: row.emoji ?? "",
     tagline: row.tagline ?? "",
-    description: row.description,
+    description,
     excerpt: row.excerpt ?? "",
     translations: row.translations,
-    coverImage: toImageUrl(row.coverImage),
+    coverImage: LOCAL_TEMPLATE_COVERS[row.id] ?? toImageUrl(row.coverImage),
     previews: toPreviews(row.previews),
-    ageRange: row.ageRange,
+    ageRange,
     theme: row.theme,
     artStyle: row.artStyle ?? "",
     moral: row.moral ?? undefined,
@@ -98,42 +146,42 @@ class TemplateFetchError extends Error {
 }
 
 async function fetchTemplates(): Promise<StorefrontTemplate[]> {
-  let response: Response;
+  const origins = Array.from(new Set([BACKEND_URL, PRODUCTION_BACKEND_URL]));
+  let lastError: unknown;
 
-  try {
-    response = await fetch(`${BACKEND_URL}/storybook/templates`, {
-      next: { revalidate: TEMPLATE_REVALIDATE_SECONDS },
-    });
-  } catch (cause) {
-    const reason = cause instanceof Error ? cause.message : String(cause);
-    throw new TemplateFetchError(
-      `Could not reach the backend at ${BACKEND_URL} (${reason}) — is it running?`
-    );
+  for (const origin of origins) {
+    try {
+      const response = await fetch(`${origin.replace(/\/$/, "")}/storybook/templates`, {
+        next: { revalidate: TEMPLATE_REVALIDATE_SECONDS },
+        signal: AbortSignal.timeout(8_000),
+      });
+
+      if (!response.ok) {
+        lastError = new TemplateFetchError(
+          `${origin}/storybook/templates returned ${response.status} (${response.statusText})`,
+          response.status,
+        );
+        continue;
+      }
+
+      const payload: unknown = await response.json();
+      const templates = (payload as { templates?: unknown })?.templates;
+
+      if (!Array.isArray(templates)) {
+        lastError = new TemplateFetchError(`Unexpected story templates response from ${origin}`);
+        continue;
+      }
+
+      return templates as StorefrontTemplate[];
+    } catch (cause) {
+      lastError = cause;
+    }
   }
 
-  if (response.status === 404) {
-    throw new TemplateFetchError(
-      `${BACKEND_URL}/storybook/templates returned 404 — ` +
-        `check NEXT_PUBLIC_BACKEND_URL points at the API, not a web server.`,
-      404
-    );
-  }
-
-  if (!response.ok) {
-    throw new TemplateFetchError(
-      `Failed to load story templates (${response.status} ${response.statusText})`,
-      response.status
-    );
-  }
-
-  const payload: unknown = await response.json();
-  const templates = (payload as { templates?: unknown })?.templates;
-
-  if (!Array.isArray(templates)) {
-    throw new TemplateFetchError("Unexpected story templates response");
-  }
-
-  return templates as StorefrontTemplate[];
+  const reason = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new TemplateFetchError(
+    `Could not load story templates from ${origins.join(" or ")} (${reason})`,
+  );
 }
 
 /**

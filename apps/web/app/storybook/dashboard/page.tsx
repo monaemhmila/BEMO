@@ -8,7 +8,6 @@ import {
   Loader2,
   Sparkles,
   Clock,
-  ArrowRight,
   Package,
   Truck,
   CheckCircle2,
@@ -38,6 +37,10 @@ interface CustomerOrder {
   status: string;
   paymentStatus: string;
   totalAmount: number;
+  subtotalAmount: number;
+  quantity: number;
+  discountPercent: number;
+  gameDiscountPercent?: number;
   currency: string;
   city: string;
   createdAt: string;
@@ -45,6 +48,7 @@ interface CustomerOrder {
     id: string;
     title: string;
     childName?: string | null;
+    coverImage?: string | null;
   };
 }
 
@@ -68,8 +72,8 @@ function orderStatusIcon(status: string) {
 function OrderProgress({ status }: { status: string }) {
   if (status === "CANCELLED") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs font-semibold">
-        <XCircle className="w-3.5 h-3.5" /> Cancelled
+      <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-sm font-semibold text-red-600">
+        <XCircle className="h-4 w-4" /> Cancelled
       </span>
     );
   }
@@ -82,17 +86,17 @@ function OrderProgress({ status }: { status: string }) {
         {ORDER_STEPS.map((step, i) => (
           <div key={step} className="flex items-center">
             <div
-              className={`w-3 h-3 rounded-full transition-colors ${
+              className={`h-4 w-4 rounded-full transition-colors ${
                 i <= current ? "bg-buttercup/100" : "bg-muted"
               } ${i === current ? "ring-4 ring-buttercup/40" : ""}`}
             />
             {i < ORDER_STEPS.length - 1 && (
-              <div className={`w-7 h-0.5 rounded ${i < current ? "bg-buttercup" : "bg-muted"}`} />
+              <div className={`h-1 w-10 rounded ${i < current ? "bg-buttercup" : "bg-muted"}`} />
             )}
           </div>
         ))}
       </div>
-      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-deep">
+      <span className="inline-flex items-center gap-2 text-sm font-bold text-violet-deep">
         {orderStatusIcon(status)}
         {ORDER_LABELS[status] ?? status}
       </span>
@@ -173,88 +177,28 @@ export default function StorybookDashboardPage() {
   }, [getToken, user]);
 
   return (
-    <div className="space-y-8">
-      <header>
+    <div className="flex flex-col gap-8">
+      <header className="order-1">
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-violet-deep">
           My Books
         </h1>
       </header>
 
-      {/* Quick Actions */}
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="p-6 border-border bg-gradient-to-br from-buttercup/15 to-blush/40">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-white rounded-2xl shadow-sm">
-              <Sparkles className="w-6 h-6 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-display text-xl font-bold text-violet-deep">
-                Create a New Story
-              </h3>
-              <p className="text-muted-foreground text-sm mt-1">
-                Turn your child into the hero of a personalized adventure.
-              </p>
-              <Link href="/books">
-                <Button className="mt-4 bg-primary text-white rounded-full">
-                  Start Creating <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 border-border bg-gradient-to-br from-violet-50 to-fuchsia-50">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-white rounded-2xl shadow-sm">
-              <PenLine className="w-6 h-6 text-violet-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-display text-xl font-bold text-violet-deep">
-                Write Your Own Story
-              </h3>
-              <p className="text-muted-foreground text-sm mt-1">
-                Describe any idea and watch it become a unique illustrated book.
-              </p>
-              <Link href="/create-custom">
-                <Button className="mt-4 bg-violet-deep text-white rounded-full">
-                  No Template <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 border-border bg-gradient-to-br from-blue-50 to-indigo-50">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-white rounded-2xl shadow-sm">
-              <Package className="w-6 h-6 text-blue-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-display text-xl font-bold text-violet-deep">
-                Order a Printed Book
-              </h3>
-              <p className="text-muted-foreground text-sm mt-1">
-                Turn any finished story into a hardcover book - each order also
-                unlocks 1 extra free story.
-              </p>
-              <Button asChild variant="outline" className="mt-4 rounded-full border-border">
-                <a href="#recent-stories">
-                  Choose a Story <ArrowRight className="w-4 h-4 ml-2" />
-                </a>
-              </Button>
-            </div>
-          </div>
-        </Card>
-      </section>
-
       {/* My Orders */}
-      <section>
-        <Card className="p-6 border-border">
-          <div className="mb-6">
-            <h2 className="font-display text-2xl font-bold text-violet-deep">My Orders</h2>
-            <p className="text-muted-foreground text-sm mt-1">
-              Track your printed storybooks from order to delivery.
-            </p>
+      <section className="order-3">
+        <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-white via-blush/20 to-buttercup/15 p-0 shadow-lg shadow-primary/5">
+          <div className="mb-6 bg-gradient-to-r from-violet-deep via-primary to-violet-ink p-6 text-white">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 shadow-inner ring-1 ring-white/25">
+                <Package className="h-8 w-8 text-buttercup" />
+              </div>
+              <div>
+                <h2 className="font-display text-3xl font-bold">My Orders</h2>
+                <p className="mt-2 text-base text-white/80">
+                  See every printed book order, its status, and delivery progress in one place.
+                </p>
+              </div>
+            </div>
           </div>
 
           {loading ? (
@@ -262,35 +206,45 @@ export default function StorybookDashboardPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : orders.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-border bg-paper/50 py-10 text-center">
-              <Package className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+            <div className="mx-6 mb-6 rounded-2xl border-2 border-dashed border-primary/25 bg-white/70 py-10 text-center">
+              <Package className="mx-auto mb-3 h-10 w-10 text-primary" />
               <p className="text-muted-foreground font-medium">No orders yet</p>
               <p className="text-muted-foreground text-sm mt-1">
                 Open a finished story and order your printed book.
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-5 px-6 pb-6">
               {orders.map((order) => (
                 <div
                   key={order.id}
-                  className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-2xl bg-paper border border-border hover:bg-muted/70 transition-colors"
+                  className="flex flex-col gap-5 rounded-3xl border border-primary/15 bg-gradient-to-r from-white to-blush/25 p-6 transition-all hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-md sm:flex-row sm:items-center"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-buttercup/20 to-blush/40 flex items-center justify-center shrink-0">
-                    <Package className="w-6 h-6 text-primary" />
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-buttercup/40 shadow-sm ring-1 ring-primary/15">
+                    {order.story.coverImage ? (
+                      <img
+                        src={order.story.coverImage}
+                        alt={order.story.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <Package className="h-8 w-8 text-violet-deep" />
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium text-violet-deep truncate">{order.story.title}</h4>
-                      <span className="font-mono text-[11px] text-muted-foreground">
+                      <h4 className="truncate text-lg font-bold text-violet-deep">{order.story.title}</h4>
+                      <span className="font-mono text-xs text-muted-foreground">
                         {order.orderNumber}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
+                    <p className="mt-2 flex items-center gap-1.5 text-base text-muted-foreground">
                       <Clock className="w-3 h-3" />
                       {new Date(order.createdAt).toLocaleDateString()}
-                      {` • ${order.currency} ${order.totalAmount.toFixed(2)}`}
+                      {` • ${order.quantity} ${order.quantity === 1 ? "copy" : "copies"} • ${order.currency} ${order.totalAmount.toFixed(2)}`}
                       {order.city ? ` • ${order.city}` : ""}
                     </p>
                   </div>
@@ -299,7 +253,7 @@ export default function StorybookDashboardPage() {
                     <OrderProgress status={order.status} />
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           order.paymentStatus === "PAID"
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-muted text-muted-foreground"
@@ -308,7 +262,7 @@ export default function StorybookDashboardPage() {
                         {order.paymentStatus === "PAID" ? "Paid" : "Cash on Delivery"}
                       </span>
                       <Link href={`/stories/${order.story.id}`}>
-                        <Button variant="ghost" size="sm" className="rounded-full text-xs">
+                        <Button variant="outline" size="default" className="rounded-full border-primary/30 bg-white px-5 text-sm font-bold text-violet-deep hover:bg-buttercup/20">
                           View Book
                         </Button>
                       </Link>
@@ -321,11 +275,11 @@ export default function StorybookDashboardPage() {
         </Card>
       </section>
 
-      {/* Recent Stories */}
-      <section id="recent-stories" className="scroll-mt-32">
+      {/* My Stories */}
+      <section id="recent-stories" className="order-2 scroll-mt-32">
         <Card className="p-6 border-border">
           <h2 className="font-display text-2xl font-bold text-violet-deep mb-6">
-            Recent Stories
+            My Stories
           </h2>
 
           {loading ? (
@@ -355,49 +309,51 @@ export default function StorybookDashboardPage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               {stats.stories.map((story) => (
-                <div
+                <article
                   key={story.id}
-                  className="flex items-center gap-4 p-4 rounded-2xl bg-paper hover:bg-muted transition-colors"
+                  className="relative flex flex-col overflow-hidden rounded-3xl border border-border bg-paper shadow-sm transition-all hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-buttercup/20 to-blush/40 flex items-center justify-center shrink-0">
+                  <Link href={`/stories/${story.id}`} className="block">
+                  <div className="aspect-square w-full overflow-hidden bg-gradient-to-br from-buttercup/20 to-blush/40">
                     {story.coverImage ? (
                       <img
                         loading="lazy"
                         decoding="async"
                         src={story.coverImage}
                         alt={story.title}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                       />
                     ) : (
-                      <BookOpen className="w-6 h-6 text-primary" />
+                      <BookOpen className="mx-auto mt-[42%] h-16 w-16 text-primary" />
                     )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-violet-deep truncate">
+                  <div className="min-w-0 flex-1 p-5">
+                    <h4 className="line-clamp-2 font-display text-xl font-bold text-violet-deep">
                       {story.title}
                     </h4>
-                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <p className="mt-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="w-3 h-3" />
                       {new Date(story.createdAt).toLocaleDateString()}
                       {story.childName && ` • ${story.childName}`}
                       {story.pageCount && ` • ${story.pageCount} pages`}
                     </p>
                   </div>
+                  </Link>
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    className={`absolute right-4 top-4 rounded-full px-3 py-1 text-xs font-medium ${
                       STATUS_COLORS[story.status] || STATUS_COLORS.Pending
                     }`}
                   >
                     {story.status}
                   </span>
-                  <Link href={`/stories/${story.id}`}>
-                    <Button variant="ghost" size="sm" className="rounded-full">
-                      View
+                  <Link href={`/stories/${story.id}`} className="px-5 pb-5">
+                    <Button className="w-full rounded-full bg-violet-deep text-white hover:bg-violet-ink">
+                      View Preview
                     </Button>
                   </Link>
-                </div>
+                </article>
               ))}
             </div>
           )}
