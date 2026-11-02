@@ -30,7 +30,7 @@ export default async function BooksPage() {
             <span className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-bold uppercase tracking-[0.15em] text-primary">
               Mon Petit Hero collection
             </span>
-            <h1 className="mt-4 font-display text-4xl font-bold text-violet-deep sm:text-5xl">
+            <h1 className="mt-4 text-balance font-display text-4xl font-bold text-violet-deep sm:text-5xl">
               <TypeOnText>Personalised storybooks</TypeOnText>
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-[17px] leading-relaxed text-muted-foreground">
