@@ -41,9 +41,9 @@ export default async function BooksPage() {
           </MotionReveal>
 
           {/* Search & filters */}
-          <MotionReveal amount={0.1}>
+          <div>
             <TemplateBookFilters templates={templates} />
-          </MotionReveal>
+          </div>
 
           {/* CTA band */}
           <MotionReveal amount={0.1}>
